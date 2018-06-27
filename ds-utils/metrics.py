@@ -9,6 +9,13 @@ from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, roc_curv
 
 def print_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, positive_label: Union[int, float, str],
                            negative_label: Union[int, float, str]) -> None:
+    """
+    Prints the confusion matrix using seaborn.
+    :param y_test: true labels.
+    :param y_pred: predicted labels.
+    :param positive_label: what is the positive label.
+    :param negative_label: what is the negative label.
+    """
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[negative_label, positive_label]).ravel()
     tpr = (tp / (tp + fn)) if (tp + fn) > 0 else numpy.NaN
     tnr = (tn / (tn + fp)) if (tn + fp) > 0 else numpy.NaN
@@ -31,6 +38,12 @@ def print_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, positiv
 
 
 def plot_roc_curve(y_test: numpy.ndarray, y_score: numpy.ndarray, positive_label: Union[int, float, str]) -> None:
+    """
+    Prints the roc curve using matplotlib.
+    :param y_test: true labels.
+    :param y_score: predicted probability for positive_label.
+    :param positive_label: what is the positive label.
+    """
     fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=positive_label)
     area = auc(fpr, tpr)
     plt.plot(fpr, tpr, label=f"Base model ROC curve (area = {area:.2f})")

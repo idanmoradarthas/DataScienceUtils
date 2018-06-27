@@ -8,6 +8,12 @@ from sklearn.tree import export_graphviz
 
 
 def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, features_names: Optional[List[str]]) -> Image:
+    """
+    This method using graphviz draw a given tree.
+    :param tree: decision tree.
+    :param features_names: the features names.
+    :return: Ipython image of the built tree.
+    """
     dot_data = StringIO()
     export_graphviz(tree, feature_names=features_names, out_file=dot_data, filled=True, rounded=True,
                     special_characters=True)
