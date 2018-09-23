@@ -31,7 +31,7 @@ def append_tags_to_frame(x_train: pandas.DataFrame, x_test: pandas.DataFrame, fi
     x_test_tags.index = x_test.index
 
     x_train_reduced = x_train.drop(columns=[field_name])
-    x_test_reduced = x_test.drop(columns=[field_name], inplace=True)
+    x_test_reduced = x_test.drop(columns=[field_name])
 
     return pandas.merge(x_train_reduced, x_train_tags, left_index=True, right_index=True, how="left"), pandas.merge(
         x_test_reduced, x_test_tags, left_index=True, right_index=True, how="left")

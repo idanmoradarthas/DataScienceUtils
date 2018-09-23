@@ -4,4 +4,4 @@ This project is an ensemble of methods which are frequently used in python ML pr
 requirements:
 * Python >= 3.6
 
-see [docs](docs/index.md) for examples.
+see [docs](https://idanmoradarthas.github.io/DataScienceUtils/) for examples.

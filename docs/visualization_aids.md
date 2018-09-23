@@ -10,7 +10,7 @@ Input:
 Example:
 ```python
 from sklearn.tree import DecisionTreeClassifier
-from ds-utils.visualization_aids import draw_tree
+from ds_utils.visualization_aids import draw_tree
 
 
 model = DecisionTreeClassifier()
