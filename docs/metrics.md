@@ -12,7 +12,7 @@ Input:
 Example:
 ```python
 from sklearn.tree import DecisionTreeClassifier
-from ds-utils.metrics import print_confusion_matrix
+from ds_utils.metrics import print_confusion_matrix
 
 
 model = DecisionTreeClassifier()
@@ -43,7 +43,7 @@ Input:
 Example:
 ```python
 from sklearn.tree import DecisionTreeClassifier
-from ds-utils.metrics import plot_roc_curve
+from ds_utils.metrics import plot_roc_curve
 
 
 model = DecisionTreeClassifier()

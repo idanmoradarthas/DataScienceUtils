@@ -13,7 +13,7 @@ Input:
 
 Example:
 ```python
-from ds-utils.strings import append_tags_to_frame
+from ds_utils.strings import append_tags_to_frame
 
 X_train_with_tags, X_test_with_tags = append_tags_to_frame(X_train, X_test, "article_tags", "tag_", 10, True)
 ```
