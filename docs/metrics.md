@@ -37,7 +37,7 @@ Prints the roc curve using matplotlib.
 
 Input:
 * y_test - true labels.
-* y_score - predicted probability for positive_label.
+* classifiers_scores_dict - dictionary of classifier name and predicted probability for positive label.
 * positive_label - what is the positive label.
 
 Example:
