@@ -28,3 +28,5 @@ Output:
 |income_category_Low|income_category_Medium|-1.0|-0.119|0.119|
 |term_ 36 months|term_ 60 months|-1.0|-0.119|0.119|
 |interest_payments_High|interest_payments_Low|-1.0|-0.119|0.119|
+
+[back to index](index.md)

@@ -17,3 +17,21 @@ from ds_utils.strings import append_tags_to_frame
 
 X_train_with_tags, X_test_with_tags = append_tags_to_frame(X_train, X_test, "article_tags", "tag_", 10, True)
 ```
+
+Output:
+
+Train:
+
+|article_name|tag_ds|tag_ml|tag_dl|
+|:-----------|:-----|:-----|:-----|
+|1|1|1|1|
+|2|1|1|0|
+
+Test:
+
+|article_name|tag_ds|tag_ml|tag_dl|
+|:-----------|:-----|:-----|:-----|
+|3|1|1|0|
+
+
+[back to index](index.md)
