@@ -17,7 +17,7 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     """
     correlations = data_frame[features + [target_feature]].corr()
     target_corr = correlations[target_feature].transpose()
-    features_corr = correlations[features]
+    features_corr = correlations.loc[features, features]
     corr_matrix = features_corr.where(numpy.triu(numpy.ones(features_corr.shape), k=1).astype(numpy.bool))
     corr_matrix = corr_matrix[(~numpy.isnan(corr_matrix))].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]

@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 version = Path(__file__).parents[0].joinpath(".version").read_text().split("==")[1]
 long_description = Path(__file__).parents[0].joinpath("README.md").read_text()
 
-setup(name="Data Science Utils",
+setup(name="DataScienceUtils",
       version=version,
       author="Idan Morad",
       description="This project is an ensemble of methods which are frequently used in python ML projects.",

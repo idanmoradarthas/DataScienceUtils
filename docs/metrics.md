@@ -52,4 +52,7 @@ plot_roc_curve(y_test, {"Base model": model.predict_proba(X_test)[:, 1]}, 1)
 ```
 
 Output:
+
 ![roc_curve](images/roc_curve.png)
+
+[back to index](index.md)

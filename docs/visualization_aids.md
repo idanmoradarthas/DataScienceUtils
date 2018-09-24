@@ -20,3 +20,5 @@ plot = draw_tree(model, X_train.columns)
 
 Output:
 ![tree](images/tree.png)
+
+[back to index](index.md)
