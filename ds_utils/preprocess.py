@@ -23,5 +23,5 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
     corr_matrix["level_0_target_corr"] = target_corr[corr_matrix["level_0"]].values.tolist()[0]
     corr_matrix["level_1_target_corr"] = target_corr[corr_matrix["level_1"]].values.tolist()[0]
-    corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index().drop("index", axis=1)
+    corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index(drop=True)
     return corr_matrix
