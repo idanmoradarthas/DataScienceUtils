@@ -21,4 +21,22 @@ plot = draw_tree(model, X_train.columns)
 Output:
 ![tree](images/tree.png)
 
+## visualize_features
+Visualize features values on graphs.
+
+Input:
+* frame - the data frame
+
+Example:
+```python
+import pandas
+from ds_utils.visualization_aids import visualize_features
+
+frame = pandas.read_csv("path/to/file")
+visualize_features(frame)
+```
+
+Output:
+![features](images/features_viz.png)
+
 [back to index](index.md)
