@@ -37,6 +37,8 @@ def visualize_features(frame: pandas.DataFrame) -> None:
     for feature in features:
         if frame[feature].dtype == "float64":
             plot = seaborn.distplot(frame[feature], ax=axes[i])
+        elif frame[feature].dtype == "datetime64[ns]":
+            plot = frame.groupby(feature).size().plot(ax=axes[i])
         else:
             plot = seaborn.countplot(frame[feature], ax=axes[i])
         plot.set_title(f"{feature} ({frame[feature].dtype})")
