@@ -4,7 +4,7 @@ from typing import Optional, List
 import pandas
 import pydotplus
 import seaborn
-import sklearn
+import sklearn.tree.tree
 from IPython.display import Image
 from matplotlib import pyplot
 from sklearn.tree import export_graphviz
