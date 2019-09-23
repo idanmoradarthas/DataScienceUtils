@@ -1,3 +1,4 @@
+from io import StringIO
 from typing import Optional, List
 
 import pandas
@@ -6,7 +7,6 @@ import seaborn
 import sklearn
 from IPython.display import Image
 from matplotlib import pyplot
-from sklearn.externals.six import StringIO
 from sklearn.tree import export_graphviz
 
 
