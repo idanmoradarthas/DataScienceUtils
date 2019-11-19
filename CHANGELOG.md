@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - changed classifiers in setup.py
 ### Fixed
 - fix tests for strings
+- minor changes
 
 ## [1.0.3] - 2019-09-23
 ### Added
