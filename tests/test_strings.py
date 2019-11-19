@@ -15,5 +15,5 @@ def test_append_tags_to_frame():
                                        columns=["article_name", "tag_dl", "tag_ds", "tag_ml"])
 
     x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_", 1, True)
-    pandas.testing.assert_frame_equal(x_train_expected, x_train_with_tags)
-    pandas.testing.assert_frame_equal(x_test_expected, x_test_with_tags)
+    pandas.testing.assert_frame_equal(x_train_expected, x_train_with_tags, check_like=True)
+    pandas.testing.assert_frame_equal(x_test_expected, x_test_with_tags, check_like=True)
