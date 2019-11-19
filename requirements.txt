@@ -1,8 +1,7 @@
-numpy
-scipy
-pandas
-matplotlib
-seaborn
-scikit-learn
-pydotplus
-ipython
+numpy>=1.3
+pandas>=0.23.0
+matplotlib>2.02,<=3.0.3
+seaborn>=0.8.0
+scikit-learn>=0.19.0
+pydotplus>=2.0.2
+ipython>=5.4.1

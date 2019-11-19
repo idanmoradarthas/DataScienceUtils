@@ -17,9 +17,8 @@ setup(name="DataScienceUtils",
                    "Intended Audience :: Education",
                    "Intended Audience :: Science/Research",
                    "License :: OSI Approved :: MIT License",
-                   "Programming Language :: Python :: 3.7",
-                   "Topic :: Scientific/Engineering :: Artificial Intelligence",
-                   "Topic :: Software Development :: Testing :: Unit",
-                   "Topic :: Software Development :: Version Control :: Git"],
+                   "Programming Language :: Python :: 3.6",
+                   "Topic :: Scientific/Engineering :: Artificial Intelligence"],
       keywords="machine-learning ml scikit-learn",
-      packages=find_packages(exclude=['contrib', 'docs', 'tests']))
+      packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+      python_requires='>=3.6')
