@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 version = Path(__file__).parents[0].joinpath(".version").read_text().split("==")[1]
 long_description = Path(__file__).parents[0].joinpath("README.md").read_text()
+requirements = Path(__file__).parents[0].joinpath("requirements.txt").read_text().splitlines()
 
 setup(name="DataScienceUtils",
       version=version,
@@ -21,4 +22,6 @@ setup(name="DataScienceUtils",
                    "Topic :: Scientific/Engineering :: Artificial Intelligence"],
       keywords="machine-learning ml scikit-learn",
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-      python_requires='>=3.6')
+      install_requires=requirements,
+      python_requires='>=3.6',
+      license="MIT License")
