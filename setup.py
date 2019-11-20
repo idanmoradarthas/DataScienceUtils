@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 version = Path(__file__).parents[0].joinpath(".version").read_text().split("==")[1]
 long_description = Path(__file__).parents[0].joinpath("README.md").read_text()
 requirements = Path(__file__).parents[0].joinpath("requirements.txt").read_text().splitlines()
+license = Path(__file__).parents[0].joinpath("LICENSE").read_text().splitlines()[0]
 
 setup(name="DataScienceUtils",
       version=version,
@@ -24,4 +25,4 @@ setup(name="DataScienceUtils",
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
       install_requires=requirements,
       python_requires='>=3.6',
-      license="MIT License")
+      license=license)

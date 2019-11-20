@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
- 
+
+## [1.1] - 2019-11-20
+### Added
+- added new method metrics::plot_precision_recall for plotting precision recall curve for binary and multi class
+- added matplotlib testing for plot_precision_recall
+### Changed
+- metrics::plot_roc_curve renamed to plot_roc_curve_binary_class
+### Fixed
+- minor changes
+
 ## [1.0.4] - 2019-11-19
 ### Added
 - added install_requires, python_requires and license in setup.py
