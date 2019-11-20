@@ -43,12 +43,12 @@ Input:
 Example:
 ```python
 from sklearn.tree import DecisionTreeClassifier
-from ds_utils.metrics import plot_roc_curve
+from ds_utils.metrics import plot_roc_curve_binary_class
 
 
 model = DecisionTreeClassifier()
 model.fit(X_train, y_train)
-plot_roc_curve(y_test, {"Base model": model.predict_proba(X_test)[:, 1]}, 1)
+plot_roc_curve_binary_class(y_test, {"Base model": model.predict_proba(X_test)[:, 1]}, 1)
 ```
 
 Output:
