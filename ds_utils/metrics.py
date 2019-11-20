@@ -81,6 +81,14 @@ def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score
 
 def plot_precision_recall(y_test: numpy.ndarray, classifiers_score: numpy.ndarray, n_classes: int,
                           figure_size: Tuple[int, int] = (8, 7)) -> pyplot.Figure:
+    """
+    A precision-recall curve is plot of the relationship of the precision (y-axis) and the recall (x-axis).
+    :param y_test: true labels.
+    :param classifiers_score: predicted probability for the labels.
+    :param n_classes: number of classes. Must be greater than 1.
+    :param figure_size: the size of the figure.
+    :return: matplotlib Figure object
+    """
     if n_classes < 2:
         raise ValueError("Number of classes must be greater than 1")
 
