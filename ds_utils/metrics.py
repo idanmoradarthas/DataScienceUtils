@@ -39,13 +39,18 @@ def print_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, positiv
 
 
 def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
-                                positive_label: Union[int, float, str]) -> None:
+                                positive_label: Union[int, float, str]) -> pyplot.Figure:
     """
-    Prints the roc curve using matplotlib.
+    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
+    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
+    prediction, and return it. This method is to use for binary classification problems.
     :param y_test: true labels.
     :param classifiers_scores_dict: dictionary of classifier name and predicted probability for positive_label.
     :param positive_label: what is the positive label.
+    :return: matplotlib Figure object
     """
+    figure = pyplot.figure()
+
     for classifier_name, y_score in classifiers_scores_dict.items():
         fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=positive_label)
         area = auc(fpr, tpr)
@@ -59,7 +64,7 @@ def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: 
     pyplot.ylabel("True Positive Rate")
     pyplot.title("Receiver operating characteristic (ROC)")
     pyplot.legend(loc="lower right")
-    pyplot.show()
+    return figure
 
 
 def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score: numpy.ndarray,
@@ -82,7 +87,8 @@ def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score
 def plot_precision_recall(y_test: numpy.ndarray, classifiers_score: numpy.ndarray, n_classes: int,
                           figure_size: Tuple[int, int] = (8, 7)) -> pyplot.Figure:
     """
-    A precision-recall curve is plot of the relationship of the precision (y-axis) and the recall (x-axis).
+    A precision-recall curve is the plot of the relationship between the precision (y-axis) and the recall (x-axis) of
+    predicted classes. This method creates the plot from given scores and prediction, and return it.
     :param y_test: true labels.
     :param classifiers_score: predicted probability for the labels.
     :param n_classes: number of classes. Must be greater than 1.
