@@ -39,13 +39,18 @@ def print_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, positiv
 
 
 def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
-                                positive_label: Union[int, float, str]) -> None:
+                                positive_label: Union[int, float, str]) -> pyplot.Figure:
     """
-    Prints the roc curve using matplotlib.
+    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
+    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
+    prediction, and return it. This method is to use for binary classification problems.
     :param y_test: true labels.
     :param classifiers_scores_dict: dictionary of classifier name and predicted probability for positive_label.
     :param positive_label: what is the positive label.
+    :return: matplotlib Figure object
     """
+    figure = pyplot.figure()
+
     for classifier_name, y_score in classifiers_scores_dict.items():
         fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=positive_label)
         area = auc(fpr, tpr)
@@ -59,7 +64,46 @@ def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: 
     pyplot.ylabel("True Positive Rate")
     pyplot.title("Receiver operating characteristic (ROC)")
     pyplot.legend(loc="lower right")
-    pyplot.show()
+    return figure
+
+
+def plot_roc_curve_multi_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
+                               n_classes: int, print_only_micro_average: bool = False) -> pyplot.Figure:
+    """
+    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
+    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
+    prediction, and return it. This method is to use for multi classification problems.
+    :param y_test: true labels.
+    :param classifiers_scores_dict: dictionary of classifier name and predicted probability.
+    :param n_classes: number of classes. Must be greater than 1.
+    :param print_only_micro_average: True for plotting only the micro average for each classifier; False, otherwise.
+    :return: matplotlib Figure object
+    """
+    if n_classes < 2:
+        raise ValueError("Number of classes must be greater than 1")
+
+    fig = pyplot.figure()
+    for classifier_name, y_score in classifiers_scores_dict.items():
+        if not print_only_micro_average:
+            for i in range(n_classes):
+                fpr, tpr, _ = roc_curve(y_test[:, i], y_score[:, i])
+                area = auc(fpr, tpr)
+                pyplot.plot(fpr, tpr, label=f"{classifier_name} ROC curve (area = {area:.2f})")
+        fpr, tpr, _ = roc_curve(y_test.ravel(), y_score.ravel())
+        area = auc(fpr, tpr)
+        pyplot.plot(fpr, tpr, label=f"{classifier_name} micro-average ROC curve (area = {area:.2f})", linestyle=':',
+                    linewidth=4)
+
+    # base line (random classifier)
+    pyplot.plot([0, 1], [0, 1], linestyle="--")
+    pyplot.xlim([0.0, 1.0])
+    pyplot.ylim([0.0, 1.01])
+    pyplot.xlabel("False Positive Rate")
+    pyplot.ylabel("True Positive Rate")
+    pyplot.title("Receiver operating characteristic (ROC)")
+    pyplot.legend(loc="lower right")
+
+    return fig
 
 
 def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score: numpy.ndarray,
@@ -82,7 +126,8 @@ def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score
 def plot_precision_recall(y_test: numpy.ndarray, classifiers_score: numpy.ndarray, n_classes: int,
                           figure_size: Tuple[int, int] = (8, 7)) -> pyplot.Figure:
     """
-    A precision-recall curve is plot of the relationship of the precision (y-axis) and the recall (x-axis).
+    A precision-recall curve is the plot of the relationship between the precision (y-axis) and the recall (x-axis) of
+    predicted classes. This method creates the plot from given scores and prediction, and return it.
     :param y_test: true labels.
     :param classifiers_score: predicted probability for the labels.
     :param n_classes: number of classes. Must be greater than 1.
