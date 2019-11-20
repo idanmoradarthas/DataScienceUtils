@@ -67,6 +67,45 @@ def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: 
     return figure
 
 
+def plot_roc_curve_multi_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
+                               n_classes: int, print_only_micro_average: bool = False) -> pyplot.Figure:
+    """
+    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
+    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
+    prediction, and return it. This method is to use for multi classification problems.
+    :param y_test: true labels.
+    :param classifiers_scores_dict: dictionary of classifier name and predicted probability.
+    :param n_classes: number of classes. Must be greater than 1.
+    :param print_only_micro_average: True for plotting only the micro average for each classifier; False, otherwise.
+    :return: matplotlib Figure object
+    """
+    if n_classes < 2:
+        raise ValueError("Number of classes must be greater than 1")
+
+    fig = pyplot.figure()
+    for classifier_name, y_score in classifiers_scores_dict.items():
+        if not print_only_micro_average:
+            for i in range(n_classes):
+                fpr, tpr, _ = roc_curve(y_test[:, i], y_score[:, i])
+                area = auc(fpr, tpr)
+                pyplot.plot(fpr, tpr, label=f"{classifier_name} ROC curve (area = {area:.2f})")
+        fpr, tpr, _ = roc_curve(y_test.ravel(), y_score.ravel())
+        area = auc(fpr, tpr)
+        pyplot.plot(fpr, tpr, label=f"{classifier_name} micro-average ROC curve (area = {area:.2f})", linestyle=':',
+                    linewidth=4)
+
+    # base line (random classifier)
+    pyplot.plot([0, 1], [0, 1], linestyle="--")
+    pyplot.xlim([0.0, 1.0])
+    pyplot.ylim([0.0, 1.01])
+    pyplot.xlabel("False Positive Rate")
+    pyplot.ylabel("True Positive Rate")
+    pyplot.title("Receiver operating characteristic (ROC)")
+    pyplot.legend(loc="lower right")
+
+    return fig
+
+
 def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score: numpy.ndarray,
                                         figure_size: Tuple[int, int]) -> pyplot.Figure:
     average_precision = average_precision_score(y_test, classifiers_score)
