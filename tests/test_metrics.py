@@ -52,8 +52,8 @@ def test_plot_precision_recall_multi_class():
     y_test, y_score, n_classes = _create_classifier()
 
     plot = plot_precision_recall(y_test, y_score, n_classes)
-    Path("result_images").mkdir(exist_ok=True)
-    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_plot_precision_recall_multi_class.png")
     plot.savefig(str(result_path))
@@ -79,8 +79,8 @@ def test_plot_precision_recall_binary_class():
     y_score = classifier.decision_function(x_test)
 
     plot = plot_precision_recall(y_test, y_score, 2)
-    Path("result_images").mkdir(exist_ok=True)
-    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_plot_precision_recall_binary_class.png")
     plot.savefig(str(result_path))
@@ -99,8 +99,8 @@ def test_plot_roc_curve_binary_class():
     y_test, y_score, n_classes = _create_classifier()
 
     plot = plot_roc_curve_binary_class(y_test[:, 0], {"Base Classifier": y_score[:, 0]}, 1)
-    Path("result_images").mkdir(exist_ok=True)
-    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_plot_roc_curve_binary_class.png")
     plot.savefig(str(result_path))
@@ -114,8 +114,8 @@ def test_plot_roc_curve_multi_class():
     y_test, y_score, n_classes = _create_classifier()
 
     plot = plot_roc_curve_multi_class(y_test, {"Base Classifier": y_score}, n_classes)
-    Path("result_images").mkdir(exist_ok=True)
-    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_plot_roc_curve_multi_class.png")
     plot.savefig(str(result_path))
@@ -134,8 +134,8 @@ def test_plot_roc_curve_multi_class_only_average():
     y_test, y_score, n_classes = _create_classifier()
 
     plot = plot_roc_curve_multi_class(y_test, {"Base Classifier": y_score}, n_classes, True)
-    Path("result_images").mkdir(exist_ok=True)
-    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_plot_roc_curve_multi_class_only_average.png")
     plot.savefig(str(result_path))
