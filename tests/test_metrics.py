@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import numpy
 import pytest
-from matplotlib import pyplot
 from matplotlib.testing.compare import compare_images
 from sklearn import datasets, svm
 from sklearn.model_selection import train_test_split
@@ -8,6 +9,8 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import label_binarize
 
 from ds_utils.metrics import plot_precision_recall
+
+IRIS = datasets.load_iris()
 
 
 def _compare_images(first: str, second: str) -> None:
@@ -17,9 +20,8 @@ def _compare_images(first: str, second: str) -> None:
 
 
 def test_plot_precision_recall_multi_class():
-    iris = datasets.load_iris()
-    x = iris.data
-    y = iris.target
+    x = IRIS.data
+    y = IRIS.target
 
     # Add noisy features
     random_state = numpy.random.RandomState(0)
@@ -39,16 +41,20 @@ def test_plot_precision_recall_multi_class():
     y_score = classifier.decision_function(x_test)
 
     plot = plot_precision_recall(y_test, y_score, n_classes)
-    pyplot.savefig("result_images/test_metrics/test_plot_precision_recall_multi_class.png")
+    Path("result_images").mkdir(exist_ok=True)
+    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
+        "test_plot_precision_recall_multi_class.png")
+    plot.savefig(str(result_path))
 
-    _compare_images("baseline_images/test_metrics/test_plot_precision_recall_multi_class.png",
-                    "result_images/test_metrics/test_plot_precision_recall_multi_class.png")
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_plot_precision_recall_multi_class.png")
+    _compare_images(str(baseline_path), str(result_path))
 
 
 def test_plot_precision_recall_binary_class():
-    iris = datasets.load_iris()
-    x = iris.data
-    y = iris.target
+    x = IRIS.data
+    y = IRIS.target
 
     # Add noisy features
     random_state = numpy.random.RandomState(0)
@@ -64,8 +70,15 @@ def test_plot_precision_recall_binary_class():
     y_score = classifier.decision_function(x_test)
 
     plot = plot_precision_recall(y_test, y_score, 2)
-    _compare_images("baseline_images/test_metrics/test_plot_precision_recall_binary_class.png",
-                    "result_images/test_metrics/test_plot_precision_recall_binary_class.png")
+    Path("result_images").mkdir(exist_ok=True)
+    Path("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
+        "test_plot_precision_recall_binary_class.png")
+    plot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_plot_precision_recall_binary_class.png")
+    _compare_images(str(baseline_path), str(result_path))
 
 
 def test_plot_precision_recall_exception():
