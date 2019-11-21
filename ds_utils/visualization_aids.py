@@ -19,6 +19,7 @@ def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, features_names: Optional
     :param  class_names: the classes names or labels.
     :return: matplotlib Figure.
     """
+    figure = pyplot.figure()
     sio = BytesIO()
     graph = pydotplus.graph_from_dot_data(
         export_graphviz(tree, feature_names=features_names, out_file=None, filled=True, rounded=True,
@@ -28,7 +29,7 @@ def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, features_names: Optional
     img = image.imread(sio, format="png")
     pyplot.imshow(img)
     pyplot.gca().set_axis_off()
-    return pyplot.gcf()
+    return figure
 
 
 def visualize_features(frame: pandas.DataFrame) -> pyplot.Figure:

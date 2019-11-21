@@ -25,11 +25,11 @@ def test_draw_tree():
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_visualization_aids").mkdir(
         exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_print_confusion_matrix.png")
+        "test_visualization_aids").joinpath("test_draw_tree.png")
     plot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_print_confusion_matrix.png")
+        "test_visualization_aids").joinpath("test_draw_tree.png")
     compare_images_paths(str(baseline_path), str(result_path))
 
 
