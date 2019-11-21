@@ -10,6 +10,7 @@ def append_tags_to_frame(x_train: pandas.DataFrame, x_test: pandas.DataFrame, fi
     pandas.DataFrame, pandas.DataFrame]:
     """
     Extracts tags from a given field and append them as dataframe.
+
     :param x_train: Pandas' dataframe with the train features.
     :param x_test: Pandas' dataframe with the test features.
     :param field_name: the feature to parse.

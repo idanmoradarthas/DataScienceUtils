@@ -2,12 +2,12 @@ from pathlib import Path
 
 import numpy
 import pytest
-from matplotlib.testing.compare import compare_images
 from sklearn import datasets, svm
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 
 from ds_utils.metrics import plot_confusion_matrix
+from tests.utils import compare_images_paths
 
 IRIS = datasets.load_iris()
 RANDOM_STATE = numpy.random.RandomState(0)
@@ -16,12 +16,6 @@ RANDOM_STATE = numpy.random.RandomState(0)
 def _add_noisy_features(x, random_state):
     n_samples, n_features = x.shape
     return numpy.c_[x, random_state.randn(n_samples, 200 * n_features)]
-
-
-def _compare_images(first: str, second: str) -> None:
-    results = compare_images(first, second, 10)
-    if results is not None:  # the images compare favorably
-        assert False
 
 
 def test_print_confusion_matrix_binary():
@@ -49,7 +43,7 @@ def test_print_confusion_matrix_binary():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix_binary.png")
-    _compare_images(str(baseline_path), str(result_path))
+    compare_images_paths(str(baseline_path), str(result_path))
 
 
 def test_print_confusion_matrix():
@@ -76,7 +70,7 @@ def test_print_confusion_matrix():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix.png")
-    _compare_images(str(baseline_path), str(result_path))
+    compare_images_paths(str(baseline_path), str(result_path))
 
 
 def test_print_confusion_matrix_exception():

@@ -7,7 +7,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - removed metrics::plot_precision_recall and metrics::plot_roc_curve due duplication with Yellowbrick package
 - changed metrics::print_confusion_matrix to plot_confusion_matrix which returns a matplotlib figure
+- visualization_aids now do not require ipython
+- visualization_aids returns matplotlib figure objects
+- metrics returns matplotlib figure objects
 ### Fixed
+- docs
 - minor changes
 
 ## [1.0.4] - 2019-11-19

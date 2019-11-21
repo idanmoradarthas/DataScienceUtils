@@ -1,33 +1,43 @@
-from io import StringIO
+from io import BytesIO
 from typing import Optional, List
 
 import pandas
 import pydotplus
 import seaborn
 import sklearn.tree.tree
-from IPython.display import Image
-from matplotlib import pyplot
+from matplotlib import pyplot, image
 from sklearn.tree import export_graphviz
 
 
-def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, features_names: Optional[List[str]]) -> Image:
+def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, features_names: Optional[List[str]],
+              class_names: Optional[List[str]]) -> pyplot.Figure:
     """
-    This method using graphviz draw a given tree.
+    Receives a decision tree and return a plot graph of the tree for easy interpretation.
+
     :param tree: decision tree.
     :param features_names: the features names.
-    :return: Ipython image of the built tree.
+    :param  class_names: the classes names or labels.
+    :return: matplotlib Figure.
     """
-    dot_data = StringIO()
-    export_graphviz(tree, feature_names=features_names, out_file=dot_data, filled=True, rounded=True,
-                    special_characters=True)
-    graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
-    return Image(graph.create_png())
+    figure = pyplot.figure()
+    sio = BytesIO()
+    graph = pydotplus.graph_from_dot_data(
+        export_graphviz(tree, feature_names=features_names, out_file=None, filled=True, rounded=True,
+                        special_characters=True, class_names=class_names))
+    sio.write(graph.create_png())
+    sio.seek(0)
+    img = image.imread(sio, format="png")
+    pyplot.imshow(img)
+    pyplot.gca().set_axis_off()
+    return figure
 
 
-def visualize_features(frame: pandas.DataFrame) -> None:
+def visualize_features(frame: pandas.DataFrame) -> pyplot.Figure:
     """
-    Visualize features values on graphs.
+    Receives a data frame and visualize the features values on graphs.
+
     :param frame: the data frame.
+    :return: matplotlib Figure.
     """
     features = frame.columns
     figure, axes = pyplot.subplots(nrows=int(len(features) / 2) + 1, ncols=2, figsize=(20, 30))
@@ -50,4 +60,4 @@ def visualize_features(frame: pandas.DataFrame) -> None:
     if len(features) % 2 == 1:
         figure.delaxes(axes[i])
     pyplot.subplots_adjust(hspace=0.5)
-    pyplot.show()
+    return figure
