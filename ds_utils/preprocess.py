@@ -9,6 +9,7 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     """
     Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation
     to the target feature.
+
     :param data_frame: the data frame.
     :param features: list of features names.
     :param target_feature: name of target feature.
