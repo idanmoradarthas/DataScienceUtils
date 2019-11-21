@@ -12,12 +12,12 @@ Input:
 Example:
 ```python
 from sklearn.tree import DecisionTreeClassifier
-from ds_utils.metrics import print_confusion_matrix_binary
+from ds_utils.metrics import plot_confusion_matrix
 
 
 model = DecisionTreeClassifier()
 model.fit(X_train, y_train)
-print_confusion_matrix_binary(y_test, model.predict(X_test), 1, 0)
+plot_confusion_matrix(y_test, model.predict(X_test), 1, 0)
 ```
 
 Output:
