@@ -1,172 +1,73 @@
-from typing import Union, Mapping, Tuple
+from typing import Union, List, Optional
 
 import numpy
 import pandas
 import seaborn
 from matplotlib import pyplot
-from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, roc_curve, auc, average_precision_score, \
-    precision_recall_curve
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 
 
-def print_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, positive_label: Union[int, float, str],
-                           negative_label: Union[int, float, str]) -> None:
+def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: List[Union[str, int]],
+                          sample_weight: Optional[List[float]] = None) -> pyplot.Figure:
     """
-    Prints the confusion matrix using seaborn.
-    :param y_test: true labels.
-    :param y_pred: predicted labels.
-    :param positive_label: what is the positive label.
-    :param negative_label: what is the negative label.
+    Computes and plot confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a
+    classification.
+
+    :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
+    :param y_pred: array, shape = [n_samples]. Estimated targets as returned by a classifier.
+    :param labels: array, shape = [n_classes]. List of labels to index the matrix. This may be used to reorder or select a subset of labels.
+    :param sample_weight: array-like of shape = [n_samples], optional. Sample weights.
+    :return: matplotlib Figure object with the metrics plotted out.
     """
-    tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[negative_label, positive_label]).ravel()
-    tpr = (tp / (tp + fn)) if (tp + fn) > 0 else numpy.NaN
-    tnr = (tn / (tn + fp)) if (tn + fp) > 0 else numpy.NaN
-    npv = (tn / (tn + fn)) if (tn + fn) > 0 else numpy.NaN
-    ppv = (tp / (tp + fp)) if (tp + fp) > 0 else numpy.NaN
+    if len(labels) < 2:
+        raise ValueError("Number of labels must be greater than 1")
 
-    print(f"False Positive Rate: {1 - tnr:.4f}")
-    print(f"False Negative Rate: {1 - tpr:.4f}")
-    print()
-    print("Confusion Matrix:")
-    matrix = numpy.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, numpy.NaN]], dtype=numpy.float)
-    seaborn.heatmap(
-        pandas.DataFrame(matrix, columns=[f"{negative_label} - Predicted", f"{positive_label} - Predicted", "Recall"],
-                         index=[f"{negative_label} - Actual", f"{positive_label} - Actual", "Precision"]), annot=True,
-        fmt="f")
-    pyplot.show()
-    print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
-    print(
-        f"F1 Score: {f1_score(y_test, y_pred, labels=[negative_label, positive_label], pos_label=positive_label):.4f}")
+    cnf_matrix = confusion_matrix(y_test, y_pred, labels, sample_weight)
+    if len(labels) == 2:
+        tn, fp, fn, tp = cnf_matrix.ravel()
+        npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
 
+        table = numpy.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, numpy.NaN]], dtype=numpy.float)
+        df = pandas.DataFrame(table, columns=[f"{labels[0]} - Predicted", f"{labels[1]} - Predicted", "Recall"],
+                              index=[f"{labels[0]} - Actual", f"{labels[1]} - Actual", "Precision"])
+    else:
+        fp = (cnf_matrix.sum(axis=0) - numpy.diag(cnf_matrix)).astype(float)
+        fn = (cnf_matrix.sum(axis=1) - numpy.diag(cnf_matrix)).astype(float)
+        tp = (numpy.diag(cnf_matrix)).astype(float)
+        tn = (cnf_matrix.sum() - (fp + fn + tp)).astype(float)
+        _, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
+        df = pandas.DataFrame(cnf_matrix, columns=[f"{label} - Predicted" for label in labels],
+                              index=[f"{label} - Actual" for label in labels])
+        df["Recall"] = tpr
+        df = df.append(
+            pandas.DataFrame([ppv], columns=[f"{label} - Predicted" for label in labels], index=["Precision"]),
+            sort=False)
 
-def plot_roc_curve_binary_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
-                                positive_label: Union[int, float, str]) -> pyplot.Figure:
-    """
-    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
-    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
-    prediction, and return it. This method is to use for binary classification problems.
-    :param y_test: true labels.
-    :param classifiers_scores_dict: dictionary of classifier name and predicted probability for positive_label.
-    :param positive_label: what is the positive label.
-    :return: matplotlib Figure object
-    """
-    figure = pyplot.figure()
+    figure, axes = pyplot.subplots(nrows=3, ncols=1, gridspec_kw={'height_ratios': [1, 8, 1]})
+    axes = axes.flatten()
 
-    for classifier_name, y_score in classifiers_scores_dict.items():
-        fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=positive_label)
-        area = auc(fpr, tpr)
-        pyplot.plot(fpr, tpr, label=f"{classifier_name} ROC curve (area = {area:.2f})")
-
-    # base line (random classifier)
-    pyplot.plot([0, 1], [0, 1], linestyle="--")
-    pyplot.xlim([0.0, 1.0])
-    pyplot.ylim([0.0, 1.01])
-    pyplot.xlabel("False Positive Rate")
-    pyplot.ylabel("True Positive Rate")
-    pyplot.title("Receiver operating characteristic (ROC)")
-    pyplot.legend(loc="lower right")
+    axes[0].set_axis_off()
+    if len(labels) == 2:
+        axes[0].text(0, 0.85, f"False Positive Rate: {1 - tnr:.4f}")
+        axes[0].text(0, 0.35, f"False Negative Rate: {1 - tpr:.4f}")
+    else:
+        axes[0].text(0, 0.85, f"False Positive Rate: {numpy.array2string(1 - tnr, precision=2, separator=',')}")
+        axes[0].text(0, 0.35, f"False Negative Rate: {numpy.array2string(1 - tpr, precision=2, separator=',')}")
+    axes[0].text(0, -0.5, "Confusion Matrix:")
+    seaborn.heatmap(df, annot=True, fmt=".3f", ax=axes[1])
+    axes[2].set_axis_off()
+    axes[2].text(0, 0.15, f"Accuracy: {accuracy_score(y_test, y_pred, sample_weight=sample_weight):.4f}")
+    if len(labels) == 2:
+        f_score = f1_score(y_test, y_pred, labels, labels[1], "binary", sample_weight)
+    else:
+        f_score = f1_score(y_test, y_pred, labels, average="micro", sample_weight=sample_weight)
+    axes[2].text(0, -0.5, f"F1 Score: {f_score:.4f}")
     return figure
 
 
-def plot_roc_curve_multi_class(y_test: numpy.ndarray, classifiers_scores_dict: Mapping[str, numpy.ndarray],
-                               n_classes: int, print_only_micro_average: bool = False) -> pyplot.Figure:
-    """
-    A Receiver Operating Characteristic (ROC) curve is plot of the relationship between  the true positive rate (TPR)
-    against the false positive rate (FPR) of predicted classes. This method creates the plot from given scores and
-    prediction, and return it. This method is to use for multi classification problems.
-    :param y_test: true labels.
-    :param classifiers_scores_dict: dictionary of classifier name and predicted probability.
-    :param n_classes: number of classes. Must be greater than 1.
-    :param print_only_micro_average: True for plotting only the micro average for each classifier; False, otherwise.
-    :return: matplotlib Figure object
-    """
-    if n_classes < 2:
-        raise ValueError("Number of classes must be greater than 1")
-
-    fig = pyplot.figure()
-    for classifier_name, y_score in classifiers_scores_dict.items():
-        if not print_only_micro_average:
-            for i in range(n_classes):
-                fpr, tpr, _ = roc_curve(y_test[:, i], y_score[:, i])
-                area = auc(fpr, tpr)
-                pyplot.plot(fpr, tpr, label=f"{classifier_name} ROC curve (area = {area:.2f})")
-        fpr, tpr, _ = roc_curve(y_test.ravel(), y_score.ravel())
-        area = auc(fpr, tpr)
-        pyplot.plot(fpr, tpr, label=f"{classifier_name} micro-average ROC curve (area = {area:.2f})", linestyle=':',
-                    linewidth=4)
-
-    # base line (random classifier)
-    pyplot.plot([0, 1], [0, 1], linestyle="--")
-    pyplot.xlim([0.0, 1.0])
-    pyplot.ylim([0.0, 1.01])
-    pyplot.xlabel("False Positive Rate")
-    pyplot.ylabel("True Positive Rate")
-    pyplot.title("Receiver operating characteristic (ROC)")
-    pyplot.legend(loc="lower right")
-
-    return fig
-
-
-def _plot_precision_recall_binary_class(y_test: numpy.ndarray, classifiers_score: numpy.ndarray,
-                                        figure_size: Tuple[int, int]) -> pyplot.Figure:
-    average_precision = average_precision_score(y_test, classifiers_score)
-    precision, recall, _ = precision_recall_curve(y_test, classifiers_score)
-
-    fig = pyplot.figure(figsize=figure_size)
-    pyplot.step(recall, precision, color="b", alpha=0.2, where="post")
-    pyplot.fill_between(recall, precision, alpha=0.2, color="b", step="post")
-    pyplot.xlabel("Recall")
-    pyplot.ylabel("Precision")
-    pyplot.ylim([0.0, 1.05])
-    pyplot.xlim([0.0, 1.0])
-    pyplot.title(f"Precision-Recall curve: AP={average_precision:0.2f}")
-
-    return fig
-
-
-def plot_precision_recall(y_test: numpy.ndarray, classifiers_score: numpy.ndarray, n_classes: int,
-                          figure_size: Tuple[int, int] = (8, 7)) -> pyplot.Figure:
-    """
-    A precision-recall curve is the plot of the relationship between the precision (y-axis) and the recall (x-axis) of
-    predicted classes. This method creates the plot from given scores and prediction, and return it.
-    :param y_test: true labels.
-    :param classifiers_score: predicted probability for the labels.
-    :param n_classes: number of classes. Must be greater than 1.
-    :param figure_size: the size of the figure.
-    :return: matplotlib Figure object
-    """
-    if n_classes < 2:
-        raise ValueError("Number of classes must be greater than 1")
-
-    if n_classes == 2:
-        return _plot_precision_recall_binary_class(y_test, classifiers_score, figure_size)
-
-    fig = pyplot.figure(figsize=figure_size)
-
-    # For each class
-    lines = []
-    labels = []
-    for i in range(n_classes):
-        precision, recall, _ = precision_recall_curve(y_test[:, i], classifiers_score[:, i])
-        average_precision = average_precision_score(y_test[:, i], classifiers_score[:, i])
-        l, = pyplot.plot(recall, precision, lw=2)
-        lines.append(l)
-        labels.append(f"Precision-recall for class {i} (area = {average_precision:0.2f})")
-
-    # A "micro-average": quantifying score on all classes jointly
-    precision, recall, _ = precision_recall_curve(y_test.ravel(), classifiers_score.ravel())
-    average_precision = average_precision_score(y_test, classifiers_score, average="micro")
-
-    l, = pyplot.plot(recall, precision, color='gold', lw=2)
-    lines.append(l)
-    labels.append(f"micro-average Precision-recall (area = {average_precision:0.2f})")
-
-    fig.subplots_adjust(bottom=0.25)
-    pyplot.xlim([0.0, 1.0])
-    pyplot.ylim([0.0, 1.05])
-    pyplot.xlabel("Recall")
-    pyplot.ylabel("Precision")
-    pyplot.title("Precision-Recall curve")
-
-    pyplot.legend(lines, labels, loc=(0, -.38), prop=dict(size=14))
-
-    return fig
+def _calc_precision_recall(fn, fp, tn, tp):
+    tpr = (tp / (tp + fn))
+    tnr = (tn / (tn + fp))
+    npv = (tn / (tn + fn))
+    ppv = (tp / (tp + fp))
+    return npv, ppv, tnr, tpr

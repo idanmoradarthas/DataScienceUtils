@@ -3,11 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.1] - 2019-11-20
 ### Added
-- added new method metrics::plot_precision_recall for plotting precision recall curve for binary and multi class
-- added new method metrics::plot_roc_curve_multi_class for plottingroc curve for multi class
-- added matplotlib testing for plot_precision_recall, plot_roc_curve_binary_class and plot_roc_curve_multi_class
+- added matplotlib testing
 ### Changed
-- metrics::plot_roc_curve renamed to plot_roc_curve_binary_class
+- removed metrics::plot_precision_recall and metrics::plot_roc_curve due duplication with Yellowbrick package
+- changed metrics::print_confusion_matrix to plot_confusion_matrix which returns a matplotlib figure
 ### Fixed
 - minor changes
 
