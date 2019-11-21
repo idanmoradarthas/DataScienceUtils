@@ -2,14 +2,13 @@ from pathlib import Path
 from typing import Tuple
 
 import numpy
-import pytest
 from matplotlib.testing.compare import compare_images
 from sklearn import datasets, svm
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import label_binarize
 
-from ds_utils.metrics import plot_precision_recall, plot_roc_curve_binary_class, plot_roc_curve_multi_class
+from ds_utils.metrics import print_confusion_matrix_binary
 
 IRIS = datasets.load_iris()
 RANDOM_STATE = numpy.random.RandomState(0)
@@ -48,22 +47,7 @@ def _compare_images(first: str, second: str) -> None:
         assert False
 
 
-def test_plot_precision_recall_multi_class():
-    y_test, y_score, n_classes = _create_classifier()
-
-    plot = plot_precision_recall(y_test, y_score, n_classes)
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
-        "test_plot_precision_recall_multi_class.png")
-    plot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_metrics").joinpath("test_plot_precision_recall_multi_class.png")
-    _compare_images(str(baseline_path), str(result_path))
-
-
-def test_plot_precision_recall_binary_class():
+def test_print_confusion_matrix_binary():
     x = IRIS.data
     y = IRIS.target
 
@@ -76,70 +60,16 @@ def test_plot_precision_recall_binary_class():
     # Create a simple classifier
     classifier = svm.LinearSVC(random_state=RANDOM_STATE)
     classifier.fit(x_train, y_train)
-    y_score = classifier.decision_function(x_test)
+    y_pred = classifier.predict(x_test)
 
-    plot = plot_precision_recall(y_test, y_score, 2)
+    plot = print_confusion_matrix_binary(y_test, y_pred, 1, 0)
+
     Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
-        "test_plot_precision_recall_binary_class.png")
+        "test_print_confusion_matrix_binary.png")
     plot.savefig(str(result_path))
 
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_metrics").joinpath("test_plot_precision_recall_binary_class.png")
-    _compare_images(str(baseline_path), str(result_path))
-
-
-def test_plot_precision_recall_exception():
-    with pytest.raises(ValueError):
-        plot_precision_recall(numpy.array([]), numpy.array([]), 1)
-
-
-def test_plot_roc_curve_binary_class():
-    y_test, y_score, n_classes = _create_classifier()
-
-    plot = plot_roc_curve_binary_class(y_test[:, 0], {"Base Classifier": y_score[:, 0]}, 1)
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
-        "test_plot_roc_curve_binary_class.png")
-    plot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_metrics").joinpath("test_plot_roc_curve_binary_class.png")
-    _compare_images(str(baseline_path), str(result_path))
-
-
-def test_plot_roc_curve_multi_class():
-    y_test, y_score, n_classes = _create_classifier()
-
-    plot = plot_roc_curve_multi_class(y_test, {"Base Classifier": y_score}, n_classes)
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
-        "test_plot_roc_curve_multi_class.png")
-    plot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_metrics").joinpath("test_plot_roc_curve_multi_class.png")
-    _compare_images(str(baseline_path), str(result_path))
-
-
-def test_plot_roc_curve_multi_class_exception():
-    with pytest.raises(ValueError):
-        plot_roc_curve_multi_class(numpy.array([]), {}, 1)
-
-
-def test_plot_roc_curve_multi_class_only_average():
-    y_test, y_score, n_classes = _create_classifier()
-
-    plot = plot_roc_curve_multi_class(y_test, {"Base Classifier": y_score}, n_classes, True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
-        "test_plot_roc_curve_multi_class_only_average.png")
-    plot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_metrics").joinpath("test_plot_roc_curve_multi_class_only_average.png")
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
+        "test_print_confusion_matrix_binary.png")
     _compare_images(str(baseline_path), str(result_path))
