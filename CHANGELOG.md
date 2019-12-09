@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2] - 2019-12-09
+### Added
+- visualization_aids::print_decision_paths a method that converts decision tree to a python function.
+### Changed
+- visualization_aids::draw_tree parameter features_names changed to feature_names.
+- visualization_aids::draw_tree parameters feature_names and class_names received default value.
+### Fixed
+- Changed import of sklearn.tree.tree to sklearn.tree due to FutureWarning.
+
 ## [1.1] - 2019-11-20
 ### Added
 - added matplotlib testing
