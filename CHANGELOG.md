@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.2] - 2019-12-10
+## [1.3] - 2019-12-10
 ### Added
 - visualization_aids::visualize_features added parameters: features: list of feature to visualize, 
 num_columns: number of columns in the grid, and remove_na: True to ignore NA values when plotting; False otherwise.
