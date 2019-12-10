@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy
 import pytest
+from matplotlib import pyplot
 from sklearn import datasets, svm
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
@@ -33,13 +34,13 @@ def test_print_confusion_matrix_binary():
     classifier.fit(x_train, y_train)
     y_pred = classifier.predict(x_test)
 
-    plot = plot_confusion_matrix(y_test, y_pred, [1, 0])
+    plot_confusion_matrix(y_test, y_pred, [1, 0])
 
     Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix_binary.png")
-    plot.savefig(str(result_path))
+    pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix_binary.png")
@@ -61,12 +62,12 @@ def test_print_confusion_matrix():
     classifier.fit(x_train, y_train)
     y_pred = classifier.predict(x_test)
 
-    plot = plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
+    plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
     Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix.png")
-    plot.savefig(str(result_path))
+    pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix.png")

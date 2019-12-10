@@ -3,12 +3,12 @@ from typing import Union, List, Optional
 import numpy
 import pandas
 import seaborn
-from matplotlib import pyplot
+from matplotlib import pyplot, axes
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 
 
 def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: List[Union[str, int]],
-                          sample_weight: Optional[List[float]] = None) -> pyplot.Figure:
+                          sample_weight: Optional[List[float]] = None) -> axes.Axes:
     """
     Computes and plot confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a
     classification.
@@ -17,7 +17,7 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
     :param y_pred: array, shape = [n_samples]. Estimated targets as returned by a classifier.
     :param labels: array, shape = [n_classes]. List of labels to index the matrix. This may be used to reorder or select a subset of labels.
     :param sample_weight: array-like of shape = [n_samples], optional. Sample weights.
-    :return: matplotlib Figure object with the metrics plotted out.
+    :return: Returns the Axes object with the matrix drawn onto it.
     """
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
@@ -62,7 +62,7 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
     else:
         f_score = f1_score(y_test, y_pred, labels, average="micro", sample_weight=sample_weight)
     axes[2].text(0, -0.5, f"F1 Score: {f_score:.4f}")
-    return figure
+    return axes
 
 
 def _calc_precision_recall(fn, fp, tn, tp):
