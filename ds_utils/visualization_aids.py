@@ -7,22 +7,26 @@ import pandas
 import pydotplus
 import seaborn
 import sklearn.tree
-from matplotlib import pyplot, image
+from matplotlib import axes, pyplot, image
 from sklearn.tree import _tree as sklearn_tree
 from sklearn.tree import export_graphviz
 
 
-def draw_tree(tree: sklearn.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
-              class_names: Optional[List[str]] = None) -> pyplot.Figure:
+def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
+              class_names: Optional[List[str]] = None, *, ax: Optional[axes.Axes] = None,
+              **kwargs) -> axes.Axes:
     """
     Receives a decision tree and return a plot graph of the tree for easy interpretation.
 
     :param tree: decision tree.
     :param feature_names: the features names.
     :param class_names: the classes names or labels.
-    :return: matplotlib Figure.
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
+    :return: Returns the Axes object with the plot drawn onto it.
     """
-    figure = pyplot.figure()
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
     sio = BytesIO()
     graph = pydotplus.graph_from_dot_data(
         export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
@@ -30,40 +34,59 @@ def draw_tree(tree: sklearn.tree.BaseDecisionTree, feature_names: Optional[List[
     sio.write(graph.create_png())
     sio.seek(0)
     img = image.imread(sio, format="png")
-    pyplot.imshow(img)
-    pyplot.gca().set_axis_off()
-    return figure
+    ax.imshow(img, **kwargs)
+    ax.set_axis_off()
+    return ax
 
 
-def visualize_features(frame: pandas.DataFrame) -> pyplot.Figure:
+def visualize_features(frame: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
+                       remove_na: bool = False) -> axes.Axes:
     """
     Receives a data frame and visualize the features values on graphs.
 
     :param frame: the data frame.
-    :return: matplotlib Figure.
+    :param features: list of feature to visualize.
+    :param num_columns: number of columns in the grid.
+    :param remove_na: True to ignore NA values when plotting; False otherwise.
+    :return: Returns the Axes object with the plot drawn onto it.
     """
-    features = frame.columns
-    figure, axes = pyplot.subplots(nrows=int(len(features) / 2) + 1, ncols=2, figsize=(20, 30))
-    axes = axes.flatten()
+    if not features:
+        features = frame.columns
+
+    if len(features) <= num_columns:
+        nrows = 1
+    else:
+        nrows = int(len(features) / num_columns)
+        if len(features) % num_columns > 0:
+            nrows += 1
+    figure, subplots = pyplot.subplots(nrows=nrows, ncols=num_columns)
+    subplots = subplots.flatten()
+
     i = 0
 
     for feature in features:
-        if frame[feature].dtype == "float64":
-            plot = seaborn.distplot(frame[feature], ax=axes[i])
-        elif frame[feature].dtype == "datetime64[ns]":
-            plot = frame.groupby(feature).size().plot(ax=axes[i])
+        feature_series = frame[feature]
+        frame_reduced = frame
+        if remove_na:
+            feature_series = feature_series.dropna()
+            frame_reduced = frame.dropna(subset=[feature])
+        if str(feature_series.dtype).startswith("float"):
+            plot = seaborn.distplot(feature_series, ax=subplots[i])
+        elif str(feature_series.dtype).startswith("datetime"):
+            plot = frame_reduced.groupby(feature).size().plot(ax=subplots[i])
         else:
-            plot = seaborn.countplot(frame[feature], ax=axes[i])
-        plot.set_title(f"{feature} ({frame[feature].dtype})")
+            plot = seaborn.countplot(feature_series, ax=subplots[i])
+        plot.set_title(f"{feature} ({feature_series.dtype})")
         plot.set_xlabel("")
 
-        pyplot.setp(axes[i].get_xticklabels(), rotation=45)
+        pyplot.setp(subplots[i].get_xticklabels(), rotation=45)
         i += 1
 
-    if len(features) % 2 == 1:
-        figure.delaxes(axes[i])
+    if i < len(subplots):
+        for j in range(i, len(subplots)):
+            figure.delaxes(subplots[j])
     pyplot.subplots_adjust(hspace=0.5)
-    return figure
+    return subplots
 
 
 def _recurse(node, depth, tree, feature_name, class_names, output):
@@ -90,7 +113,7 @@ def _recurse(node, depth, tree, feature_name, class_names, output):
         output.write(f"{indent}return (\"{class_name}\", {prob_array[index]:.4f}){os.linesep}")
 
 
-def print_decision_paths(classifier: sklearn.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
+def print_decision_paths(classifier: sklearn.tree.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
                          class_names: Optional[List[str]] = None, tree_name: Optional[str] = None) -> str:
     """
     Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python

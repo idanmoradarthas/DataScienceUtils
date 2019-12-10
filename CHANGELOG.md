@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2] - 2019-12-10
+### Added
+- visualization_aids::visualize_features added parameters: features: list of feature to visualize, 
+num_columns: number of columns in the grid, and remove_na: True to ignore NA values when plotting; False otherwise.
+### Changed
+- visualization_aids::draw_tree changed signature to matplotlib coding style 
+(see [matplotlib Usage Guide](https://matplotlib.org/tutorials/introductory/usage.html#coding-styles)).
+- all drawing method now return matplotlib.axes.Axes instead of matplotlib.pyplot.Figure.
+### Fixed
+- Revert import change of sklearn.tree.tree to sklearn.tree due to FutureWarning.
+
+
 ## [1.2] - 2019-12-09
 ### Added
 - visualization_aids::print_decision_paths a method that converts decision tree to a python function.
