@@ -8,6 +8,7 @@ of labeled instances increase.
 - visualization_aids::print_decision_paths can now receives a char for indentation markings.
 - metrics::plot_confusion_matrix receives more seaborn parameters for better control over plotting.
 ### Changed
+- package name renamed to ```data_science_utils```.
 - visualization_aids::print_decision_paths default indent char changed from "  " to "\t".
 ### Fixed
 - minor changes
