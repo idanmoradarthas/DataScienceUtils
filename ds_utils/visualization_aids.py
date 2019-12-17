@@ -93,16 +93,15 @@ def visualize_features(frame: pandas.DataFrame, features: Optional[List[str]] = 
     return subplots
 
 
-def _recurse(node, depth, tree, feature_name, class_names, output):
-    # TODO: change to indent char to received one, where the default is tab
-    indent = "  " * depth
+def _recurse(node, depth, tree, feature_name, class_names, output, indent_char):
+    indent = indent_char * depth
     if tree.feature[node] != sklearn_tree.TREE_UNDEFINED:
         name = feature_name[node]
         threshold = tree.threshold[node]
         output.write(f"{indent}if {name} <= {threshold:.4f}:{os.linesep}")
-        _recurse(tree.children_left[node], depth + 1, tree, feature_name, class_names, output)
+        _recurse(tree.children_left[node], depth + 1, tree, feature_name, class_names, output, indent_char)
         output.write(f"{indent}else:  # if {name} > {threshold:.4f}{os.linesep}")
-        _recurse(tree.children_right[node], depth + 1, tree, feature_name, class_names, output)
+        _recurse(tree.children_right[node], depth + 1, tree, feature_name, class_names, output, indent_char)
     else:
         values = tree.value[node][0]
         index = int(numpy.argmax(values))
@@ -119,7 +118,8 @@ def _recurse(node, depth, tree, feature_name, class_names, output):
 
 
 def print_decision_paths(classifier: sklearn.tree.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
-                         class_names: Optional[List[str]] = None, tree_name: Optional[str] = None) -> str:
+                         class_names: Optional[List[str]] = None, tree_name: Optional[str] = None,
+                         indent_char: str = "\t") -> str:
     """
     Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python
     syntax). Original code: https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree
@@ -127,7 +127,8 @@ def print_decision_paths(classifier: sklearn.tree.tree.BaseDecisionTree, feature
     :param classifier: decision tree.
     :param feature_names: the features names.
     :param class_names: the classes names or labels.
-    :param tree_name: the name of the tree (function signature)
+    :param tree_name: the name of the tree (function signature).
+    :param indent_char: the character used for indentation.
     :return: textual representation of the decision paths of the tree.
     """
     tree = classifier.tree_
@@ -146,7 +147,7 @@ def print_decision_paths(classifier: sklearn.tree.tree.BaseDecisionTree, feature
     output.write(
         f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
 
-    _recurse(0, 1, tree, required_features, class_names, output)
+    _recurse(0, 1, tree, required_features, class_names, output, indent_char)
     ans = output.getvalue()
     output.close()
     return ans

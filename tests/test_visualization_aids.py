@@ -122,7 +122,7 @@ def test_print_decision_paths():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree")
+    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -154,7 +154,7 @@ def test_print_decision_paths_no_tree_name():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist())
+    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), indent_char="  ")
 
     expected = 'def tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -186,7 +186,7 @@ def test_print_decision_paths_no_feature_names():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree")
+    result = print_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree", "  ")
 
     expected = 'def iris_tree(feature_3, feature_2):' + os.linesep + \
                '  if feature_3 <= 0.8000:' + os.linesep + \
@@ -218,7 +218,7 @@ def test_print_decision_paths_no_class_names():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, None, "iris_tree")
+    result = print_decision_paths(clf, iris.feature_names, None, "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
