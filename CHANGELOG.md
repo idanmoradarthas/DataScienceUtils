@@ -10,7 +10,9 @@ of labeled instances increase.
 ### Changed
 - package name renamed to ```data_science_utils```.
 - visualization_aids::print_decision_paths default indent char changed from "  " to "\t".
+- rewrite README.md
 ### Fixed
+- package description and keywords
 - minor changes
 
 ## [1.3] - 2019-12-10
