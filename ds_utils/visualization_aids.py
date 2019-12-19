@@ -6,13 +6,13 @@ import numpy
 import pandas
 import pydotplus
 import seaborn
-import sklearn.tree
+import sklearn
 from matplotlib import axes, pyplot, image
 from sklearn.tree import _tree as sklearn_tree
 from sklearn.tree import export_graphviz
 
 
-def draw_tree(tree: sklearn.tree.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
+def draw_tree(tree: sklearn.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
               class_names: Optional[List[str]] = None, *, ax: Optional[axes.Axes] = None,
               **kwargs) -> axes.Axes:
     """
@@ -113,7 +113,7 @@ def _recurse(node, depth, tree, feature_name, class_names, output):
         output.write(f"{indent}return (\"{class_name}\", {prob_array[index]:.4f}){os.linesep}")
 
 
-def print_decision_paths(classifier: sklearn.tree.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
+def print_decision_paths(classifier: sklearn.tree.BaseDecisionTree, feature_names: Optional[List[str]] = None,
                          class_names: Optional[List[str]] = None, tree_name: Optional[str] = None) -> str:
     """
     Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python
