@@ -11,9 +11,9 @@ from sklearn.tree import _tree as sklearn_tree
 from sklearn.tree import export_graphviz
 
 try:
-    from sklearn.tree.tree import BaseDecisionTree
-except ImportError:
     from sklearn.tree import BaseDecisionTree
+except ImportError:
+    from sklearn.tree.tree import BaseDecisionTree
 
 
 def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,

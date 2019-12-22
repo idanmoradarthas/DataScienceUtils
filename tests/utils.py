@@ -1,3 +1,6 @@
+import matplotlib
+
+matplotlib.use('agg')
 from matplotlib.testing.compare import compare_images
 
 
