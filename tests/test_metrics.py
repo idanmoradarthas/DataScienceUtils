@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use('agg')
 import numpy
 import pytest
 from matplotlib import pyplot
