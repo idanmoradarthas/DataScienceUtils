@@ -1,3 +1,6 @@
+services:
+  - xvfb
+
 language: python
 
 python:
