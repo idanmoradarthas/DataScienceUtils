@@ -131,7 +131,6 @@ Code Example
 ************
 We'll create a simple decision tree classifier and print it::
 
-    from matplotlib import pyplot
     from sklearn.tree import DecisionTreeClassifier
 
     from ds_utils.visualization_aids import generate_decision_paths

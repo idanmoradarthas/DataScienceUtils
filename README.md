@@ -24,25 +24,25 @@ RANDOM_STATE = numpy.random.RandomState(0)
 Let's train a SVM classifier on all the target labels and plot confusion matrix:
 ```python
 from matplotlib import pyplot
-    from sklearn.model_selection import train_test_split
-    from sklearn.multiclass import OneVsRestClassifier
-    from sklearn import svm
+from sklearn.model_selection import train_test_split
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn import svm
 
-    from ds_utils.metrics import plot_confusion_matrix
+from ds_utils.metrics import plot_confusion_matrix
 
 
-    x = IRIS.data
-    y = IRIS.target
+x = IRIS.data
+y = IRIS.target
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
 
-    # Create a simple classifier
-    classifier = OneVsRestClassifier(svm.LinearSVC(random_state=RANDOM_STATE))
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
+# Create a simple classifier
+classifier = OneVsRestClassifier(svm.LinearSVC(random_state=RANDOM_STATE))
+classifier.fit(x_train, y_train)
+y_pred = classifier.predict(x_test)
 
-    plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
-    pyplot.show()
+plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
+pyplot.show()
 ```
 And the following image will be shown:
 ![multi label classification confusion matrix](tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
@@ -50,20 +50,19 @@ And the following image will be shown:
 ## Generate Decision Paths
 We'll create a simple decision tree classifier and print it:
 ```python
-from matplotlib import pyplot
-    from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 
-    from ds_utils.visualization_aids import generate_decision_paths
+from ds_utils.visualization_aids import generate_decision_paths
     
-    x = IRIS.data
-    y = IRIS.target
+x = IRIS.data
+y = IRIS.target
 
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3)
+# Create decision tree classifier object
+clf = DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3)
 
-    # Train model
-    clf.fit(x, y)
-    print(generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(),
+# Train model
+clf.fit(x, y)
+print(generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(),
                          "iris_tree"))
 ```
 The following text will be printed:
