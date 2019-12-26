@@ -8,6 +8,87 @@
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
 visualization over data. 
 
+# Code Examples and Documentation
+Let's see some code examples nd outputs. You can read the full documentation with all the code examples from:
+[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)
+
+## Plot Confusion Matrix
+In following example we are going to use the iris dataset from scikit-learn. so firstly let's import it:
+```python
+import numpy
+from sklearn import datasets
+
+IRIS = datasets.load_iris()
+RANDOM_STATE = numpy.random.RandomState(0)
+```
+Let's train a SVM classifier on all the target labels and plot confusion matrix:
+```python
+from matplotlib import pyplot
+    from sklearn.model_selection import train_test_split
+    from sklearn.multiclass import OneVsRestClassifier
+    from sklearn import svm
+
+    from ds_utils.metrics import plot_confusion_matrix
+
+
+    x = IRIS.data
+    y = IRIS.target
+
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
+
+    # Create a simple classifier
+    classifier = OneVsRestClassifier(svm.LinearSVC(random_state=RANDOM_STATE))
+    classifier.fit(x_train, y_train)
+    y_pred = classifier.predict(x_test)
+
+    plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
+    pyplot.show()
+```
+And the following image will be shown:
+![multi label classification confusion matrix](tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
+
+## Generate Decision Paths
+We'll create a simple decision tree classifier and print it:
+```python
+from matplotlib import pyplot
+    from sklearn.tree import DecisionTreeClassifier
+
+    from ds_utils.visualization_aids import generate_decision_paths
+    
+    x = IRIS.data
+    y = IRIS.target
+
+    # Create decision tree classifier object
+    clf = DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3)
+
+    # Train model
+    clf.fit(x, y)
+    print(generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(),
+                         "iris_tree"))
+```
+The following text will be printed:
+```
+def iris_tree(petal width (cm), petal length (cm)):
+    if petal width (cm) <= 0.8000:
+        # return class setosa with probability 0.9804
+        return ("setosa", 0.9804)
+    else:  # if petal width (cm) > 0.8000
+        if petal width (cm) <= 1.7500:
+            if petal length (cm) <= 4.9500:
+                # return class versicolor with probability 0.9792
+                return ("versicolor", 0.9792)
+            else:  # if petal length (cm) > 4.9500
+                # return class virginica with probability 0.6667
+                return ("virginica", 0.6667)
+        else:  # if petal width (cm) > 1.7500
+            if petal length (cm) <= 4.8500:
+                # return class virginica with probability 0.6667
+                return ("virginica", 0.6667)
+            else:  # if petal length (cm) > 4.8500
+                # return class virginica with probability 0.9773
+                return ("virginica", 0.9773)
+```
+
 ## Contributing
 Interested in contributing to Data Science Utils? Great! You're welcome,  and we would love to have you. We follow 
 the [Python Software Foundation Code of Conduct](http://www.python.org/psf/codeofconduct/) and 
@@ -46,6 +127,3 @@ Or install using pip from source:
 ```bash
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
-
-# Read the Documentation
-[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)

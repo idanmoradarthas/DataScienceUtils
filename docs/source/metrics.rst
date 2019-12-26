@@ -94,4 +94,4 @@ And the following image will be shown:
 
 .. image:: ../../tests/baseline_images/test_metrics/test_print_confusion_matrix.png
     :align: center
-    :alt: binary classification confusion matrix
+    :alt: multi label classification confusion matrix
