@@ -2,6 +2,8 @@
 [![License: MIT](https://img.shields.io/github/license/idanmoradarthas/DataScienceUtils)](https://opensource.org/licenses/MIT)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/idanmoradarthas/DataScienceUtils)[![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
 [![Documentation Status](https://readthedocs.org/projects/datascienceutils/badge/?version=latest)](https://datascienceutils.readthedocs.io/en/latest/?badge=latest)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/data-science-utils)
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-utils)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
 visualization over data. 
@@ -17,7 +19,7 @@ requests, bug fixes, product enhancements, and documentation improvements.
 Thank you for your contributions!
 
 ## Find a Bug?
-Check if there’s already an open [issue](https://github.com/idanmoradarthas/DataScienceUtils/issues) on the topic. If 
+Check if there's already an open [issue](https://github.com/idanmoradarthas/DataScienceUtils/issues) on the topic. If 
 needed, file an issue.
 
 ## Open Source
