@@ -9,8 +9,18 @@ Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide si
 visualization over data. 
 
 # Code Examples and Documentation
-Let's see some code examples nd outputs. You can read the full documentation with all the code examples from:
-[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)
+**Let's see some code examples and outputs.** 
+
+**You can read the full documentation with all the code examples from:
+[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)**
+
+In the documentation you can find more methods and more examples.
+
+Read about all the modules here and see more methods and abilities (such as drawing a decision tree and more): 
+* [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
+* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
+* [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.
+* [Visualization Aids](https://datascienceutils.readthedocs.io/en/latest/visualization_aids.html) - The module of visualization aids contains methods that visualize by drawing or printing ML output.
 
 ## Plot Confusion Matrix
 In following example we are going to use the iris dataset from scikit-learn. so firstly let's import it:
