@@ -1,6 +1,22 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.4] - 2019-12-26
+### Added
+- visualization_aids::plot_metric_growth_per_labeled_instances function that plot given metric change where the amount 
+of labeled instances increase.
+- visualization_aids::print_decision_paths can now receives a char for indentation markings.
+- metrics::plot_confusion_matrix receives more seaborn parameters for better control over plotting.
+- visualization_aids::draw_dot_data function that plot Graphviz's dot data.
+### Changed
+- package name renamed to ```data_science_utils```.
+- visualization_aids::print_decision_paths default indent char changed from "  " to "\t".
+- rewrite README.md
+- revamp documentation with ```read the docs``` theme.
+### Fixed
+- package description and keywords
+- minor changes
+
 ## [1.3] - 2019-12-10
 ### Added
 - visualization_aids::visualize_features added parameters: features: list of feature to visualize, 

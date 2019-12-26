@@ -6,11 +6,16 @@ import matplotlib
 matplotlib.use('agg')
 import numpy
 import pandas
+import pytest
 from matplotlib import pyplot
+from numpy.random.mtrand import RandomState
 from sklearn import datasets
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.visualization_aids import draw_tree, visualize_features, print_decision_paths
+from ds_utils.visualization_aids import draw_tree, visualize_features, generate_decision_paths, \
+    plot_metric_growth_per_labeled_instances, draw_dot_data
 from tests.utils import compare_images_paths
 
 iris = datasets.load_iris()
@@ -59,6 +64,57 @@ def test_draw_tree_exists_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_dot_data():
+    dot_data = "digraph D{\n" \
+               "\tA [shape=diamond]\n" \
+               "\tB [shape=box]\n" \
+               "\tC [shape=circle]\n" \
+               "\n" \
+               "\tA -> B [style=dashed, color=grey]\n" \
+               "\tA -> C [color=\"black:invis:black\"]\n" \
+               "\tA -> D [penwidth=5, arrowhead=none]\n" \
+               "\n" \
+               "}"
+
+    draw_dot_data(dot_data)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_dot_data_exist_ax():
+    dot_data = "digraph D{\n" \
+               "\tA [shape=diamond]\n" \
+               "\tB [shape=box]\n" \
+               "\tC [shape=circle]\n" \
+               "\n" \
+               "\tA -> B [style=dashed, color=grey]\n" \
+               "\tA -> C [color=\"black:invis:black\"]\n" \
+               "\tA -> D [penwidth=5, arrowhead=none]\n" \
+               "\n" \
+               "}"
+
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    draw_dot_data(dot_data, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
     compare_images_paths(str(baseline_path), str(result_path))
 
 
@@ -120,7 +176,7 @@ def test_print_decision_paths():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree")
+    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -152,7 +208,7 @@ def test_print_decision_paths_no_tree_name():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, iris.target_names.tolist())
+    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), indent_char="  ")
 
     expected = 'def tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -184,7 +240,7 @@ def test_print_decision_paths_no_feature_names():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree")
+    result = generate_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree", "  ")
 
     expected = 'def iris_tree(feature_3, feature_2):' + os.linesep + \
                '  if feature_3 <= 0.8000:' + os.linesep + \
@@ -216,7 +272,7 @@ def test_print_decision_paths_no_class_names():
     # Train model
     clf.fit(x, y)
 
-    result = print_decision_paths(clf, iris.feature_names, None, "iris_tree")
+    result = generate_decision_paths(clf, iris.feature_names, None, "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -239,3 +295,109 @@ def test_print_decision_paths_no_class_names():
                '        return ("class_2", 0.9773)' + os.linesep
 
     assert result == expected
+
+
+def test_plot_metric_growth_per_labeled_instances_no_n_samples():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)})
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_no_n_samples.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_no_n_samples.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_metric_growth_per_labeled_instances_with_n_samples():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)},
+                                             n_samples=list(range(10, x_train.shape[0], 10)))
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_with_n_samples.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_with_n_samples.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    with pytest.raises(ValueError):
+        plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                                 {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                                  "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                                   n_estimators=5)},
+                                                 n_samples=None, quantiles=None)
+
+
+def test_plot_metric_growth_per_labeled_instances_given_random_state_int():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)},
+                                             random_state=1)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state_int.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state_int.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_metric_growth_per_labeled_instances_given_random_state():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)},
+                                             random_state=RandomState(5))
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_metric_growth_per_labeled_instances_exists_ax():
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)},
+                                             ax=ax)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_exists_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_metric_growth_per_labeled_instances_exists_ax.png")
+    compare_images_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_metric_growth_per_labeled_instances_verbose(capsys):
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
+    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)},
+                                             verbose=1)
+    captured = capsys.readouterr().out
+    expected = "Fitting classifier DecisionTreeClassifier for 20 times\nFitting classifier RandomForestClassifier for 20 times\n"
+
+    assert expected == captured
