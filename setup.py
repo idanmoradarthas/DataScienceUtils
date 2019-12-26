@@ -25,4 +25,5 @@ setup(name="data_science_utils",
       packages=find_packages(exclude=['contrib', 'docs', 'tests']),
       install_requires=requirements,
       python_requires='>=3.6',
-      license=project_license)
+      license=project_license,
+      url="https://datascienceutils.readthedocs.io/en/latest/")
