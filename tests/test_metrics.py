@@ -57,7 +57,6 @@ def test_print_confusion_matrix():
     # Add noisy features
     x = _add_noisy_features(x, RANDOM_STATE)
 
-    # Limit to the two first classes, and split into training and test
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
 
     # Create a simple classifier

@@ -24,23 +24,23 @@ needed, file an issue.
 Data Science Utils license is [MIT License](https://opensource.org/licenses/MIT). 
 
 ## Installing Data Science Utils
-Data Science Utils is compatible with Python 3.6 or later.  The simplest way to install Data Science Utils and its 
+Data Science Utils is compatible with Python 3.6 or later. The simplest way to install Data Science Utils and its 
 dependencies is from PyPI with pip, Python's preferred package installer:
 ```bash
-$ pip install data_science_utils
+pip install data_science_utils
 ```
 Note that this package is an active project and routinely publishes new releases with more methods.  In order to 
 upgrade Data Science Utils to the latest version, use pip as follows:
 ```bash
-$ pip install -U data_science_utils
+pip install -U data_science_utils
 ```
 Alternatively you can install from source by cloning the repo and running:
 ```bash
-$ git clone https://github.com/idanmoradarthas/DataScienceUtils.git
-$ cd DataScienceUtils
-$ python setup.py install
+git clone https://github.com/idanmoradarthas/DataScienceUtils.git
+cd DataScienceUtils
+python setup.py install
 ```
 Or install using pip from source:
 ```bash
-$ pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
+pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
