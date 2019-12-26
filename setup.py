@@ -26,4 +26,5 @@ setup(name="data_science_utils",
       install_requires=requirements,
       python_requires='>=3.6',
       license=project_license,
-      url="https://datascienceutils.readthedocs.io/en/latest/")
+      url="https://datascienceutils.readthedocs.io/en/latest/",
+      download_url="https://github.com/idanmoradarthas/DataScienceUtils/releases/download/1.4/data_science_utils-1.4.tar.gz")

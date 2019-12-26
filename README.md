@@ -1,7 +1,6 @@
 # Data Science Utils: Frequently Used Methods for Data Science
 [![License: MIT](https://img.shields.io/github/license/idanmoradarthas/DataScienceUtils)](https://opensource.org/licenses/MIT)
-![GitHub repo size](https://img.shields.io/github/repo-size/idanmoradarthas/DataScienceUtils)
-[![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/idanmoradarthas/DataScienceUtils)[![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
 [![Documentation Status](https://readthedocs.org/projects/datascienceutils/badge/?version=latest)](https://datascienceutils.readthedocs.io/en/latest/?badge=latest)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
