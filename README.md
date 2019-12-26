@@ -2,6 +2,7 @@
 [![License: MIT](https://img.shields.io/github/license/idanmoradarthas/DataScienceUtils)](https://opensource.org/licenses/MIT)
 ![GitHub repo size](https://img.shields.io/github/repo-size/idanmoradarthas/DataScienceUtils)
 [![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
+[![Documentation Status](https://readthedocs.org/projects/datascienceutils/badge/?version=latest)](https://datascienceutils.readthedocs.io/en/latest/?badge=latest)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
 visualization over data. 
@@ -44,3 +45,6 @@ Or install using pip from source:
 ```bash
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
+
+# Read the Documentation
+[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)
