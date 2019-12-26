@@ -6,12 +6,12 @@ Installation
 Data Science Utils is compatible with Python 3.6 or later. The simplest way to install Data Science Utils and its
 dependencies is from PyPI with pip, Python's preferred package installer::
 
-    pip install data_science_utils
+    pip install data-science-utils
 
 Note that this package is an active project and routinely publishes new releases with more methods.  In order to
 upgrade Data Science Utils to the latest version, use pip as follows::
 
-    pip install -U data_science_utils
+    pip install -U data-science-utils
 
 Alternatively you can install from source by cloning the repo and running::
 

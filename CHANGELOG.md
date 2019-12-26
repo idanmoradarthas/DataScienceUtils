@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2019-12-26
+### Added
+
+### Changed
+
+### Fixed
+- minor changes
+
 ## [1.4] - 2019-12-26
 ### Added
 - visualization_aids::plot_metric_growth_per_labeled_instances function that plot given metric change where the amount 
