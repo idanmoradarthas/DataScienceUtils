@@ -16,12 +16,6 @@ visualization over data.
 
 In the documentation you can find more methods and more examples.
 
-Read about all the modules here and see more methods and abilities (such as drawing a decision tree and more): 
-* [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
-* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
-* [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.
-* [Visualization Aids](https://datascienceutils.readthedocs.io/en/latest/visualization_aids.html) - The module of visualization aids contains methods that visualize by drawing or printing ML output.
-
 ## Plot Confusion Matrix
 In following example we are going to use the iris dataset from scikit-learn. so firstly let's import it:
 ```python
@@ -97,6 +91,14 @@ def iris_tree(petal width (cm), petal length (cm)):
                 # return class virginica with probability 0.9773
                 return ("virginica", 0.9773)
 ```
+
+Excited?
+
+Read about all the modules here and see more methods and abilities (such as drawing a decision tree and more): 
+* [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
+* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
+* [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.
+* [Visualization Aids](https://datascienceutils.readthedocs.io/en/latest/visualization_aids.html) - The module of visualization aids contains methods that visualize by drawing or printing ML output.
 
 ## Contributing
 Interested in contributing to Data Science Utils? Great! You're welcome,  and we would love to have you. We follow 
