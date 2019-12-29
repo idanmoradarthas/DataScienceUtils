@@ -1,6 +1,7 @@
 # Data Science Utils: Frequently Used Methods for Data Science
 [![License: MIT](https://img.shields.io/github/license/idanmoradarthas/DataScienceUtils)](https://opensource.org/licenses/MIT)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/idanmoradarthas/DataScienceUtils)[![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/idanmoradarthas/DataScienceUtils)
+[![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
 [![Documentation Status](https://readthedocs.org/projects/datascienceutils/badge/?version=latest)](https://datascienceutils.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/data-science-utils)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-utils)
@@ -49,8 +50,8 @@ plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 pyplot.show()
 ```
 And the following image will be shown:
-![multi label classification confusion matrix](tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 ## Generate Decision Paths
 We'll create a simple decision tree classifier and print it:
 ```python

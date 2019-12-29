@@ -23,8 +23,7 @@ In this example we'll create our own simple dataset and parse it::
                                 {"article_name": "2", "article_tags": "ds,ml"}])
     x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
-    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_",
-                                                               1, True)
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 
 And the following table will be the output for ``x_train_with_tags``:
 
@@ -43,3 +42,30 @@ And the following table will be the output for ``x_test_with_tags``:
 +============+======+======+======+
 |3           |1     |1     |0     |
 +------------+------+------+------+
+
+Significant Terms
+=================
+
+.. autofunction:: strings::significant_terms
+
+Code Example
+************
+Let's create a simple corpus and extract significant terms from it::
+
+    import pandas
+
+    from ds_utils.strings import significant_terms
+
+    corpus = ['This is the first document.', 'This document is the second document.',
+              'And this is the third one.', 'Is this the first document?']
+    data_frame = pandas.DataFrame(corpus, columns=["content"])
+    subset_data_frame = data_frame[data_frame.index > 1]
+    terms = significant_terms(data_frame, subset_data_frame, "content")
+
+And the following table will be the output for ``terms``:
+
++----+-----+---+---+---+----+-----+----+--------+------+----+
+|this|third|one|Is |And|the |first|is  |document|second|This|
++====+=====+===+===+===+====+=====+====+========+======+====+
+|2.0 |1.0  |1.0|1.0|1.0|0.67|0.5  |0.34|0.25    |0.0   |0.0 |
++----+-----+---+---+---+----+-----+----+--------+------+----+
