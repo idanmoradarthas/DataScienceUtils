@@ -6,6 +6,8 @@ version = Path(__file__).parents[0].joinpath(".version").read_text().split("==")
 long_description = Path(__file__).parents[0].joinpath("README.md").read_text()
 requirements = Path(__file__).parents[0].joinpath("requirements.txt").read_text().splitlines()
 project_license = Path(__file__).parents[0].joinpath("LICENSE").read_text().splitlines()[0]
+download_url = "https://github.com/idanmoradarthas/DataScienceUtils/releases/download/" \
+               f"{version}/data_science_utils-{version}.tar.gz"
 
 setup(name="data_science_utils",
       version=version,
@@ -27,4 +29,4 @@ setup(name="data_science_utils",
       python_requires='>=3.6',
       license=project_license,
       url="https://datascienceutils.readthedocs.io/en/latest/",
-      download_url="https://github.com/idanmoradarthas/DataScienceUtils/releases/download/1.4.1/data_science_utils-1.4.tar.gz")
+      download_url=download_url)
