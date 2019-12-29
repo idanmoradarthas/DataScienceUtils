@@ -94,6 +94,8 @@ def significant_terms(data_frame: pandas.DataFrame, subset_data_frame: pandas.Da
            tokens.
            If None, no stop words will be used.
     :return: Series of terms with scoring over the subset.
+
+    :author: `Eran Hirsch <https://github.com/eranhirs>`_
     """
 
     vectorizer = CountVectorizer(tokenizer=tokenizer, encoding="latin1", lowercase=lowercase, min_df=min_df,
