@@ -46,7 +46,7 @@ And the following table will be the output for ``x_test_with_tags``:
 Significant Terms
 =================
 
-.. autofunction:: strings::significant_terms
+.. autofunction:: strings::extract_significant_terms_from_subset
 
 Code Example
 ************
@@ -54,13 +54,14 @@ Let's create a simple corpus and extract significant terms from it::
 
     import pandas
 
-    from ds_utils.strings import significant_terms
+    from ds_utils.strings import extract_significant_terms_from_subset
 
     corpus = ['This is the first document.', 'This document is the second document.',
               'And this is the third one.', 'Is this the first document?']
     data_frame = pandas.DataFrame(corpus, columns=["content"])
     subset_data_frame = data_frame[data_frame.index > 1]
-    terms = significant_terms(data_frame, subset_data_frame, "content")
+    terms = extract_significant_terms_from_subset(data_frame, subset_data_frame,
+                                                  "content")
 
 And the following table will be the output for ``terms``:
 

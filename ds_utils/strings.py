@@ -60,10 +60,11 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
         x_test_reduced, x_test_tags, left_index=True, right_index=True, how="left")
 
 
-def significant_terms(data_frame: pandas.DataFrame, subset_data_frame: pandas.DataFrame, field_name: str,
-                      vectorizer: CountVectorizer = CountVectorizer(encoding="latin1",
-                                                                    lowercase=True,
-                                                                    max_features=500)) -> pandas.Series:
+def extract_significant_terms_from_subset(data_frame: pandas.DataFrame, subset_data_frame: pandas.DataFrame,
+                                          field_name: str,
+                                          vectorizer: CountVectorizer = CountVectorizer(encoding="latin1",
+                                                                                        lowercase=True,
+                                                                                        max_features=500)) -> pandas.Series:
     """
     Returns interesting or unusual occurrences of terms in a subset.
 

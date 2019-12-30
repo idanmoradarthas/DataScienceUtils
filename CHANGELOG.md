@@ -3,8 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.5] - 2020-01-09
 ### Added
- - strings::significant_terms function that extract significant terms from a data subset like elasticsearch 
- significant_text aggregation.
+ - strings::extract_significant_terms_from_subset function that extract significant terms from a data subset like 
+ elasticsearch significant_text aggregation.
 ### Changed
 - confusion matrix image in read me converted to a github link.
 - strings::append_tags_to_frame added parameters max_features, lowercase and tokenizer.
