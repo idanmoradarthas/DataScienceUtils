@@ -26,8 +26,8 @@ def test_significant_terms():
     subset_data_frame = data_frame[data_frame.index > 1]
     terms = significant_terms(data_frame, subset_data_frame, "content")
 
-    expected = pandas.Series([2.0, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 0.5, 0.3333333333333333, 0.25, 0.0, 0.0],
-                             index=['this', 'third', 'one', 'Is', 'And', 'the', 'first', 'is', 'document', 'second',
-                                    'This'])
+    expected = pandas.Series(
+        [1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.5, 0.25, 0.0],
+        index=['third', 'one', 'and', 'this', 'the', 'is', 'first', 'document', 'second'])
 
     pandas.testing.assert_series_equal(expected, terms)

@@ -26,21 +26,19 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
     :param field_name: the feature to parse.
     :param prefix: the given prefix for new tag feature.
     :param max_features: int or None, default=500.
-           If not None, build a vocabulary that only consider the top max_features ordered by term frequency across
-           the corpus.
-           This parameter is ignored if vocabulary is not None.
+           max tags names to consider.
     :param min_df: float in range [0.0, 1.0] or int, default=1.
-           When building the vocabulary ignore terms that have a document frequency strictly higher than the given
+           When building the tag name set ignore tags that have a document frequency strictly higher than the given
            threshold (corpus-specific stop words). If float, the parameter represents a proportion of documents,
            integer absolute counts.
     :param binary: boolean, default=True.
            If True, all non zero counts are set to 1. This is useful for discrete probabilistic models that model
            binary events rather than integer counts.
     :param lowercase: boolean, default=False.
-           Convert all characters to lowercase before tokenizing.
+           Convert all characters to lowercase before tokenizing the tag names.
     :param tokenizer: callable or None.
            Override the string tokenization step while preserving the preprocessing and n-grams generation steps.
-           Default retain alphanumeric characters with special characters "_", "$" and "-".
+           Default splits by ",", and retain alphanumeric characters with special characters "_", "$" and "-".
     :return: the train and test with tags appended.
     """
     vectorizer = CountVectorizer(binary=binary, tokenizer=tokenizer, encoding="latin1", lowercase=lowercase,
@@ -63,9 +61,9 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
 
 
 def significant_terms(data_frame: pandas.DataFrame, subset_data_frame: pandas.DataFrame, field_name: str,
-                      max_features: int = 500, min_df: Union[int, float] = 1, lowercase=False,
-                      tokenizer: Optional[Callable[[str], List[str]]] = None,
-                      stop_words: Optional[Union[str, List[str]]] = None) -> pandas.Series:
+                      vectorizer: CountVectorizer = CountVectorizer(encoding="latin1",
+                                                                    lowercase=True,
+                                                                    max_features=500)) -> pandas.Series:
     """
     Returns interesting or unusual occurrences of terms in a subset.
 
@@ -76,30 +74,12 @@ def significant_terms(data_frame: pandas.DataFrame, subset_data_frame: pandas.Da
     :param subset_data_frame: the subset partition data, with over it the scoring will be calculated. Can a filter by
            feature or other boolean criteria.
     :param field_name: the feature to parse.
-    :param max_features: int or None, default=500.
-           If not None, build a vocabulary that only consider the top max_features ordered by term frequency across
-           the corpus.
-    :param min_df: float in range [0.0, 1.0] or int, default=1.
-           When building the vocabulary ignore terms that have a document frequency strictly higher than the given
-           threshold (corpus-specific stop words). If float, the parameter represents a proportion of documents,
-           integer absolute counts. This parameter is ignored if vocabulary is not None.
-    :param lowercase: boolean, default=False.
-           Convert all characters to lowercase before tokenizing.
-    :param tokenizer: callable or None.
-           Override the string tokenization step while preserving the preprocessing and n-grams generation steps.
-    :param stop_words: string {‘english’}, list, or None (default).
-           If ‘english’, a built-in stop word list for English is used. There are several known issues with ‘english’
-           and you should consider an alternative (see `Using stop words <https://scikit-learn.org/stable/modules/feature_extraction.html#stop-words>`_).
-           If a list, that list is assumed to contain stop words, all of which will be removed from the resulting
-           tokens.
-           If None, no stop words will be used.
+    :param vectorizer: text count vectorizer which converts collection of text to a matrix of token counts. See more
+                       info `here <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_ .
     :return: Series of terms with scoring over the subset.
 
     :author: `Eran Hirsch <https://github.com/eranhirs>`_
     """
-
-    vectorizer = CountVectorizer(tokenizer=tokenizer, encoding="latin1", lowercase=lowercase, min_df=min_df,
-                                 max_features=max_features, stop_words=stop_words)
     count_matrix = vectorizer.fit_transform(data_frame[field_name].dropna())
     matrix_df = pandas.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names())
 
