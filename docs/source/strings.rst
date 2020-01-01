@@ -12,7 +12,27 @@ Append Tags to Frame
 
 Code Example
 ************
-In this example we'll create our own simple dataset and parse it::
+In this example we'll create our own simple dataset that looks like that:
+
+``x_train``:
+
++------------+------------+
+|article_name|article_tags|
++============+============+
+|1           |ds,ml,dl    |
++------------+------------+
+|2           |ds,ml       |
++------------+------------+
+
+``x_test``:
+
++------------+------------+
+|article_name|article_tags|
++============+============+
+|3           |ds,ml,py    |
++------------+------------+
+
+and parse it::
 
     import pandas
 
@@ -50,7 +70,8 @@ Significant Terms
 
 Code Example
 ************
-Let's create a simple corpus and extract significant terms from it::
+This method will help extract the significant terms that will differentiate between subset of documents from the full
+corpus. Let's create a simple corpus and extract significant terms from it::
 
     import pandas
 
@@ -59,6 +80,7 @@ Let's create a simple corpus and extract significant terms from it::
     corpus = ['This is the first document.', 'This document is the second document.',
               'And this is the third one.', 'Is this the first document?']
     data_frame = pandas.DataFrame(corpus, columns=["content"])
+    # Let's differentiate between the last two documents from the full corpus
     subset_data_frame = data_frame[data_frame.index > 1]
     terms = extract_significant_terms_from_subset(data_frame, subset_data_frame,
                                                   "content")

@@ -105,6 +105,7 @@ from ds_utils.strings import extract_significant_terms_from_subset
 corpus = ['This is the first document.', 'This document is the second document.',
           'And this is the third one.', 'Is this the first document?']
 data_frame = pandas.DataFrame(corpus, columns=["content"])
+# Let's differentiate between the last two documents from the full corpus
 subset_data_frame = data_frame[data_frame.index > 1]
 terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
                                                "content")

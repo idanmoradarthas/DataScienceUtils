@@ -15,8 +15,7 @@ def _tokenize(text_tags: str) -> List[str]:
 
 def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, field_name: str,
                          prefix: Optional[str] = "", max_features: Optional[int] = 500, min_df: Union[int, float] = 1,
-                         binary: bool = True, lowercase=False,
-                         tokenizer: Optional[Callable[[str], List[str]]] = _tokenize) -> Tuple[
+                         lowercase=False, tokenizer: Optional[Callable[[str], List[str]]] = _tokenize) -> Tuple[
     pandas.DataFrame, pandas.DataFrame]:
     """
     Extracts tags from a given field and append them as dataframe.
@@ -31,9 +30,6 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
            When building the tag name set ignore tags that have a document frequency strictly higher than the given
            threshold (corpus-specific stop words). If float, the parameter represents a proportion of documents,
            integer absolute counts.
-    :param binary: boolean, default=True.
-           If True, all non zero counts are set to 1. This is useful for discrete probabilistic models that model
-           binary events rather than integer counts.
     :param lowercase: boolean, default=False.
            Convert all characters to lowercase before tokenizing the tag names.
     :param tokenizer: callable or None.
@@ -41,7 +37,7 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
            Default splits by ",", and retain alphanumeric characters with special characters "_", "$" and "-".
     :return: the train and test with tags appended.
     """
-    vectorizer = CountVectorizer(binary=binary, tokenizer=tokenizer, encoding="latin1", lowercase=lowercase,
+    vectorizer = CountVectorizer(binary=True, tokenizer=tokenizer, encoding="latin1", lowercase=lowercase,
                                  min_df=min_df, max_features=max_features)
     x_train_count_matrix = vectorizer.fit_transform(X_train[field_name].dropna())
     x_train_tags = pandas.DataFrame(x_train_count_matrix.toarray(),
