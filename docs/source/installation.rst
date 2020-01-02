@@ -22,3 +22,7 @@ Alternatively you can install from source by cloning the repo and running::
 Or install using pip from source::
 
     pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
+
+If you're using Anaconda, you can install using conda::
+
+    conda install -c idanmorad data-science-utils
