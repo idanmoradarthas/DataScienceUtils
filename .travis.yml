@@ -11,10 +11,15 @@ before_install:
 install:
   - pip install -U pip
   - pip install tox-travis
-  - pip install python-coveralls
+  - pip install coveralls
 
 script:
-  - tox
+  - coverage run --source=ds_utils -m pytest --cov-config .coveragerc --cov=ds_utils --cov-report=term-missing
 
 after_success:
   - coveralls
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always
