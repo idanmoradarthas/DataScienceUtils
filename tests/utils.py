@@ -1,6 +1,6 @@
 from matplotlib.testing.compare import compare_images
 
-TOLERANCE = 15
+TOLERANCE = 25
 
 
 def compare_images_paths(first: str, second: str) -> None:
