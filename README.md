@@ -5,6 +5,9 @@
 [![Documentation Status](https://readthedocs.org/projects/datascienceutils/badge/?version=latest)](https://datascienceutils.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/data-science-utils)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/data-science-utils)
+[![PyPI version](https://badge.fury.io/py/data-science-utils.svg)](https://badge.fury.io/py/data-science-utils)
+[![Anaconda-Server Badge](https://anaconda.org/idanmorad/data-science-utils/badges/version.svg)](https://anaconda.org/idanmorad/data-science-utils)
+
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
 visualization over data. 
@@ -162,4 +165,8 @@ python setup.py install
 Or install using pip from source:
 ```bash
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
+```
+If you're using Anaconda, you can install using conda:
+```bash
+conda install -c idanmorad data-science-utils
 ```
