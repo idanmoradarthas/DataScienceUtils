@@ -5,9 +5,12 @@ All notable changes to this project will be documented in this file.
 ### Added
  - strings::extract_significant_terms_from_subset function that extract significant terms from a data subset like 
  elasticsearch significant_text aggregation.
+ - automated testing and code coverage.
+ - deployment to conda.
 ### Changed
 - confusion matrix image in read me converted to a github link.
 - strings::append_tags_to_frame added parameters max_features, lowercase and tokenizer.
+- visualization_aids::plot_metric_growth_per_labeled_instances moved to metrics.
 ### Fixed
 - minor changes
 

@@ -168,37 +168,3 @@ The following text will be printed::
                     # return class virginica with probability 0.9773
                     return ("virginica", 0.9773)
 
-.. highlight:: python
-
-Plot Metric Growth per Labeled Instances
-========================================
-
-.. autofunction:: visualization_aids::plot_metric_growth_per_labeled_instances
-
-Code Example
-************
-In this example we'll divide the data into train and test sets, decide on which classifiers we want to measure and plot
-the results::
-
-    from matplotlib import pyplot
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import train_test_split
-    from sklearn.tree import DecisionTreeClassifier
-
-    from ds_utils.visualization_aids import plot_metric_growth_per_labeled_instances
-
-
-
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
-    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
-                                             {"DecisionTreeClassifier":
-                                                DecisionTreeClassifier(random_state=0),
-                                              "RandomForestClassifier":
-                                                RandomForestClassifier(random_state=0, n_estimators=5)})
-    pyplot.show()
-
-And the following image will be shown:
-
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_metric_growth_per_labeled_instances_no_n_samples.png
-    :align: center
-    :alt: Features Visualization
