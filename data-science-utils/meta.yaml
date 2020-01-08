@@ -1,14 +1,13 @@
 {% set name = "data-science-utils" %}
-  {% set data = load_setup_py_data(setup_file='../setup.py', from_recipe_dir=True) %}
-  {% set version = data.get('version') %}
+  {% set version = 1.5 %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: data.get('download_url')
-  sha256: cd1df35e6456262981200a1bd59e5c13d00ae55efe3f2f6eb358adac8555b59b
+  url: https://github.com/idanmoradarthas/DataScienceUtils/releases/download/1.5/data_science_utils-1.5.tar.gz
+  sha256: 345325b895a47ab93e2d9bf6bad394bfffa0e0bf0027ca459dcfee0cc48de172
 
 build:
   number: 0
