@@ -55,8 +55,8 @@ plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 pyplot.show()
 ```
 And the following image will be shown:
-![multi label classification confusion matrix](tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 ## Generate Decision Paths
 We'll create a simple decision tree classifier and print it:
 ```python
@@ -97,6 +97,30 @@ def iris_tree(petal width (cm), petal length (cm)):
                 # return class virginica with probability 0.9773
                 return ("virginica", 0.9773)
 ```
+
+## Extract Significant Terms from Subset
+This method will help extract the significant terms that will differentiate between subset of documents from the full 
+corpus. Based on the [elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
+
+```python
+import pandas
+
+from ds_utils.strings import extract_significant_terms_from_subset
+
+corpus = ['This is the first document.', 'This document is the second document.',
+          'And this is the third one.', 'Is this the first document?']
+data_frame = pandas.DataFrame(corpus, columns=["content"])
+# Let's differentiate between the last two documents from the full corpus
+subset_data_frame = data_frame[data_frame.index > 1]
+terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
+                                               "content")
+
+```
+And the following table will be the output for ``terms``:
+
+|third|one|and|this|the |is  |first|document|second|
+|-----|---|---|----|----|----|-----|--------|------|
+|1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
 
 Excited?
 
