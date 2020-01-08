@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.5] - 2020-01-09
+## [1.5] - 2020-01-08
 ### Added
  - strings::extract_significant_terms_from_subset function that extract significant terms from a data subset like 
  elasticsearch significant_text aggregation.
