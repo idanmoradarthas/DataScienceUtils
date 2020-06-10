@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6] - 2020-06-10
+### Added
+- visualization_aids::visualize_correlations function that plot heatmap of features' correlations.
+- documentation for the new methods.
+### Changed
+- requirements dependencies.
+- visualization_aids::generate_decision_paths moved to xai::generate_decision_paths.
+- visualization_aids::visualize_features changed parameter name frame to data.
+### Fixed
+- documentation fixes.
+- minor changes
+
 ## [1.5] - 2020-01-08
 ### Added
  - strings::extract_significant_terms_from_subset function that extract significant terms from a data subset like 

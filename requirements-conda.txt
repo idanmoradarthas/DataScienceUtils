@@ -1,0 +1,2 @@
+conda-build==3.9.2
+anaconda-client==1.7.2

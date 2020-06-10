@@ -62,7 +62,7 @@ We'll create a simple decision tree classifier and print it:
 ```python
 from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.visualization_aids import generate_decision_paths
+from ds_utils.xai import generate_decision_paths
     
 x = IRIS.data
 y = IRIS.target

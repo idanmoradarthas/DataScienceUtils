@@ -34,6 +34,7 @@ Data Science Utils license is `MIT License <https://opensource.org/licenses/MIT>
    preprocess
    strings
    visualization_aids
+   xai
 
 Indices and tables
 ==================

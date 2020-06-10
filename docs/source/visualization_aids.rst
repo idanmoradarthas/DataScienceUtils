@@ -122,49 +122,32 @@ And the following image will be shown:
     :align: center
     :alt: Features Visualization
 
-Generate Decision Paths
-=======================
+Visualize Correlations
+======================
+This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
+visualization with small latency time.
 
-.. autofunction:: visualization_aids::generate_decision_paths
+.. autofunction:: visualization_aids::visualize_correlations
 
 Code Example
 ************
-We'll create a simple decision tree classifier and print it::
+This example won't take inspation from a real data set. But let's pretend that we have data with various types of fields.
 
-    from sklearn.tree import DecisionTreeClassifier
+Let's see how to use the code::
 
-    from ds_utils.visualization_aids import generate_decision_paths
+    import pandas
+
+    from matplotlib import pyplot
+
+    from ds_utils.visualization_aids import visualize_correlations
 
 
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
+    data = pandas.read_csv(path/to/dataset)
+    visualize_correlations(data)
+    pyplot.show()
 
-    # Train model
-    clf.fit(x, y)
-    print(generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(),
-                         "iris_tree"))
+And the following image will be shown:
 
-.. highlight:: none
-
-The following text will be printed::
-
-    def iris_tree(petal width (cm), petal length (cm)):
-        if petal width (cm) <= 0.8000:
-            # return class setosa with probability 0.9804
-            return ("setosa", 0.9804)
-        else:  # if petal width (cm) > 0.8000
-            if petal width (cm) <= 1.7500:
-                if petal length (cm) <= 4.9500:
-                    # return class versicolor with probability 0.9792
-                    return ("versicolor", 0.9792)
-                else:  # if petal length (cm) > 4.9500
-                    # return class virginica with probability 0.6667
-                    return ("virginica", 0.6667)
-            else:  # if petal width (cm) > 1.7500
-                if petal length (cm) <= 4.8500:
-                    # return class virginica with probability 0.6667
-                    return ("virginica", 0.6667)
-                else:  # if petal length (cm) > 4.8500
-                    # return class virginica with probability 0.9773
-                    return ("virginica", 0.9773)
-
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_correlations.png
+    :align: center
+    :alt: Features Correlations

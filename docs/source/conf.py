@@ -11,8 +11,9 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
-import sys
 from pathlib import Path
+
+import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath("../../ds_utils"))
@@ -20,7 +21,7 @@ sys.path.insert(0, os.path.abspath("../../ds_utils"))
 # -- Project information -----------------------------------------------------
 
 project = 'Data Science Utils'
-copyright = '2019, Idan Morad'
+copyright = '2020, Idan Morad'
 author = 'Idan Morad'
 
 # The full version, including alpha/beta/rc tags

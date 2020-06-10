@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import matplotlib
@@ -10,8 +9,7 @@ from matplotlib import pyplot
 from sklearn import datasets
 from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.visualization_aids import draw_tree, visualize_features, generate_decision_paths, \
-    draw_dot_data
+from ds_utils.visualization_aids import draw_tree, visualize_features, draw_dot_data, visualize_correlations
 from tests.utils import compare_images_paths
 
 iris = datasets.load_iris()
@@ -165,129 +163,66 @@ def test_visualize_features_remove_na():
     compare_images_paths(str(baseline_path), str(result_path))
 
 
-def test_print_decision_paths():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
+def test_visualize_correlations():
+    file_path = Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip")
+    data = pandas.read_csv(file_path, compression='zip', index_col=0)
+    data_minimal = data[['days_since_first', 'positives', 'scan_date', 'times_submitted', 'unique_sources',
+                         'additional_info.exiftool.CodeSize', 'additional_info.exiftool.FileType',
+                         'additional_info.exiftool.InitializedDataSize',
+                         'additional_info.exiftool.UninitializedDataSize',
+                         'additional_info.exiftool.PEType', 'size', 'network_activity']].copy()
+    data_minimal["network_activity"] = data_minimal["network_activity"].astype("bool")
+    data_minimal = data_minimal.rename(
+        {"days_since_first": "x1", "positives": "x2", "scan_date": "x3", "times_submitted": "x4",
+         "unique_sources": "x5", "additional_info.exiftool.CodeSize": "x6",
+         "additional_info.exiftool.FileType": "x7",
+         "additional_info.exiftool.InitializedDataSize": "x8",
+         "additional_info.exiftool.UninitializedDataSize": "x9",
+         "additional_info.exiftool.PEType": "x10", "size": "x11",
+         "network_activity": "x12"}, axis="columns")
 
-    # Train model
-    clf.fit(x, y)
+    visualize_correlations(data_minimal)
 
-    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree", "  ")
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_correlations.png")
+    pyplot.gcf().set_size_inches(14, 9)
+    pyplot.savefig(str(result_path))
 
-    expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
-               '  if petal width (cm) <= 0.8000:' + os.linesep + \
-               '    # return class setosa with probability 0.9804' + os.linesep + \
-               '    return ("setosa", 0.9804)' + os.linesep + \
-               '  else:  # if petal width (cm) > 0.8000' + os.linesep + \
-               '    if petal width (cm) <= 1.7500:' + os.linesep + \
-               '      if petal length (cm) <= 4.9500:' + os.linesep + \
-               '        # return class versicolor with probability 0.9792' + os.linesep + \
-               '        return ("versicolor", 0.9792)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.9500' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '    else:  # if petal width (cm) > 1.7500' + os.linesep + \
-               '      if petal length (cm) <= 4.8500:' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.8500' + os.linesep + \
-               '        # return class virginica with probability 0.9773' + os.linesep + \
-               '        return ("virginica", 0.9773)' + os.linesep
-
-    assert result == expected
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_correlations.png")
+    compare_images_paths(str(baseline_path), str(result_path))
 
 
-def test_print_decision_paths_no_tree_name():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
+def test_visualize_correlations_exist_ax():
+    file_path = Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip")
+    data = pandas.read_csv(file_path, compression='zip', index_col=0)
+    data_minimal = data[['days_since_first', 'positives', 'scan_date', 'times_submitted', 'unique_sources',
+                         'additional_info.exiftool.CodeSize', 'additional_info.exiftool.FileType',
+                         'additional_info.exiftool.InitializedDataSize',
+                         'additional_info.exiftool.UninitializedDataSize',
+                         'additional_info.exiftool.PEType', 'size', 'network_activity']].copy()
+    data_minimal["network_activity"] = data_minimal["network_activity"].astype("bool")
+    data_minimal = data_minimal.rename(
+        {"days_since_first": "x1", "positives": "x2", "scan_date": "x3", "times_submitted": "x4",
+         "unique_sources": "x5", "additional_info.exiftool.CodeSize": "x6",
+         "additional_info.exiftool.FileType": "x7",
+         "additional_info.exiftool.InitializedDataSize": "x8",
+         "additional_info.exiftool.UninitializedDataSize": "x9",
+         "additional_info.exiftool.PEType": "x10", "size": "x11",
+         "network_activity": "x12"}, axis="columns")
 
-    # Train model
-    clf.fit(x, y)
+    pyplot.figure()
+    ax = pyplot.gca()
 
-    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), indent_char="  ")
+    ax.set_title("My ax")
 
-    expected = 'def tree(petal width (cm), petal length (cm)):' + os.linesep + \
-               '  if petal width (cm) <= 0.8000:' + os.linesep + \
-               '    # return class setosa with probability 0.9804' + os.linesep + \
-               '    return ("setosa", 0.9804)' + os.linesep + \
-               '  else:  # if petal width (cm) > 0.8000' + os.linesep + \
-               '    if petal width (cm) <= 1.7500:' + os.linesep + \
-               '      if petal length (cm) <= 4.9500:' + os.linesep + \
-               '        # return class versicolor with probability 0.9792' + os.linesep + \
-               '        return ("versicolor", 0.9792)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.9500' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '    else:  # if petal width (cm) > 1.7500' + os.linesep + \
-               '      if petal length (cm) <= 4.8500:' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.8500' + os.linesep + \
-               '        # return class virginica with probability 0.9773' + os.linesep + \
-               '        return ("virginica", 0.9773)' + os.linesep
+    visualize_correlations(data_minimal, ax=ax)
 
-    assert result == expected
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_correlations_exist_ax.png")
+    pyplot.gcf().set_size_inches(14, 9)
+    pyplot.savefig(str(result_path))
 
-
-def test_print_decision_paths_no_feature_names():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(x, y)
-
-    result = generate_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree", "  ")
-
-    expected = 'def iris_tree(feature_3, feature_2):' + os.linesep + \
-               '  if feature_3 <= 0.8000:' + os.linesep + \
-               '    # return class setosa with probability 0.9804' + os.linesep + \
-               '    return ("setosa", 0.9804)' + os.linesep + \
-               '  else:  # if feature_3 > 0.8000' + os.linesep + \
-               '    if feature_3 <= 1.7500:' + os.linesep + \
-               '      if feature_2 <= 4.9500:' + os.linesep + \
-               '        # return class versicolor with probability 0.9792' + os.linesep + \
-               '        return ("versicolor", 0.9792)' + os.linesep + \
-               '      else:  # if feature_2 > 4.9500' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '    else:  # if feature_3 > 1.7500' + os.linesep + \
-               '      if feature_2 <= 4.8500:' + os.linesep + \
-               '        # return class virginica with probability 0.6667' + os.linesep + \
-               '        return ("virginica", 0.6667)' + os.linesep + \
-               '      else:  # if feature_2 > 4.8500' + os.linesep + \
-               '        # return class virginica with probability 0.9773' + os.linesep + \
-               '        return ("virginica", 0.9773)' + os.linesep
-
-    assert result == expected
-
-
-def test_print_decision_paths_no_class_names():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(x, y)
-
-    result = generate_decision_paths(clf, iris.feature_names, None, "iris_tree", "  ")
-
-    expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
-               '  if petal width (cm) <= 0.8000:' + os.linesep + \
-               '    # return class class_0 with probability 0.9804' + os.linesep + \
-               '    return ("class_0", 0.9804)' + os.linesep + \
-               '  else:  # if petal width (cm) > 0.8000' + os.linesep + \
-               '    if petal width (cm) <= 1.7500:' + os.linesep + \
-               '      if petal length (cm) <= 4.9500:' + os.linesep + \
-               '        # return class class_1 with probability 0.9792' + os.linesep + \
-               '        return ("class_1", 0.9792)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.9500' + os.linesep + \
-               '        # return class class_2 with probability 0.6667' + os.linesep + \
-               '        return ("class_2", 0.6667)' + os.linesep + \
-               '    else:  # if petal width (cm) > 1.7500' + os.linesep + \
-               '      if petal length (cm) <= 4.8500:' + os.linesep + \
-               '        # return class class_2 with probability 0.6667' + os.linesep + \
-               '        return ("class_2", 0.6667)' + os.linesep + \
-               '      else:  # if petal length (cm) > 4.8500' + os.linesep + \
-               '        # return class class_2 with probability 0.9773' + os.linesep + \
-               '        return ("class_2", 0.9773)' + os.linesep
-
-    assert result == expected
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_correlations_exist_ax.png")
+    compare_images_paths(str(baseline_path), str(result_path))

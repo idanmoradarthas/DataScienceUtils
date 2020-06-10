@@ -1,13 +1,11 @@
-import os
-from io import BytesIO, StringIO
-from typing import Optional, List
+from io import BytesIO
+from typing import Optional, List, Union, Callable
 
 import numpy
 import pandas
 import pydotplus
 import seaborn
 from matplotlib import axes, pyplot, image
-from sklearn.tree import _tree as sklearn_tree
 from sklearn.tree import export_graphviz
 
 try:
@@ -27,7 +25,8 @@ def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,
     :param class_names: the classes names or labels.
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
     :param kwargs: other keyword arguments
-                    All other keyword arguments are passed to ``ax.pcolormesh``.
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the plot drawn onto it.
     """
     return draw_dot_data(export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
@@ -41,7 +40,8 @@ def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) ->
     :param dot_data: Graphiz's Dot language string.
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
     :param kwargs: other keyword arguments
-                    All other keyword arguments are passed to ``ax.pcolormesh``.
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
@@ -57,19 +57,19 @@ def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) ->
     return ax
 
 
-def visualize_features(frame: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
+def visualize_features(data: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
                        remove_na: bool = False) -> axes.Axes:
     """
     Receives a data frame and visualize the features values on graphs.
 
-    :param frame: the data frame.
+    :param data: the data frame.
     :param features: list of feature to visualize.
     :param num_columns: number of columns in the grid.
     :param remove_na: True to ignore NA values when plotting; False otherwise.
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if not features:
-        features = frame.columns
+        features = data.columns
 
     if len(features) <= num_columns:
         nrows = 1
@@ -83,11 +83,11 @@ def visualize_features(frame: pandas.DataFrame, features: Optional[List[str]] = 
     i = 0
 
     for feature in features:
-        feature_series = frame[feature]
-        frame_reduced = frame
+        feature_series = data[feature]
+        frame_reduced = data
         if remove_na:
             feature_series = feature_series.dropna()
-            frame_reduced = frame.dropna(subset=[feature])
+            frame_reduced = data.dropna(subset=[feature])
         if str(feature_series.dtype).startswith("float"):
             plot = seaborn.distplot(feature_series, ax=subplots[i])
         elif str(feature_series.dtype).startswith("datetime"):
@@ -107,61 +107,33 @@ def visualize_features(frame: pandas.DataFrame, features: Optional[List[str]] = 
     return subplots
 
 
-def _recurse(node, depth, tree, feature_name, class_names, output, indent_char):
-    indent = indent_char * depth
-    if tree.feature[node] != sklearn_tree.TREE_UNDEFINED:
-        name = feature_name[node]
-        threshold = tree.threshold[node]
-        output.write(f"{indent}if {name} <= {threshold:.4f}:{os.linesep}")
-        _recurse(tree.children_left[node], depth + 1, tree, feature_name, class_names, output, indent_char)
-        output.write(f"{indent}else:  # if {name} > {threshold:.4f}{os.linesep}")
-        _recurse(tree.children_right[node], depth + 1, tree, feature_name, class_names, output, indent_char)
-    else:
-        values = tree.value[node][0]
-        index = int(numpy.argmax(values))
-        prob_array = values / numpy.sum(values)
-        if numpy.max(prob_array) >= 1:
-            prob_array = values / (numpy.sum(values) + 1)
-        if class_names:
-            class_name = class_names[index]
-        else:
-            class_name = f"class_{index}"
-        output.write(
-            f"{indent}# return class {class_name} with probability {prob_array[index]:.4f}{os.linesep}")
-        output.write(f"{indent}return (\"{class_name}\", {prob_array[index]:.4f}){os.linesep}")
-
-
-def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optional[List[str]] = None,
-                            class_names: Optional[List[str]] = None, tree_name: Optional[str] = None,
-                            indent_char: str = "\t") -> str:
+def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] = 'pearson',
+                           min_periods: Optional[int] = 1, *, ax: Optional[axes.Axes] = None,
+                           **kwargs) -> axes.Axes:
     """
-    Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python
-    syntax). `Original code <https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree>`_
+    Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
 
-    :param classifier: decision tree.
-    :param feature_names: the features names.
-    :param class_names: the classes names or labels.
-    :param tree_name: the name of the tree (function signature).
-    :param indent_char: the character used for indentation.
-    :return: textual representation of the decision paths of the tree.
+    :param data: the data frame, were each feature is a column.
+    :param method: {‘pearson’, ‘kendall’, ‘spearman’} or callable
+
+                   Method of correlation:
+
+                   * pearson : standard correlation coefficient
+                   * kendall : Kendall Tau correlation coefficient
+                   * spearman : Spearman rank correlation
+                   * callable: callable with input two 1d ndarrays and returning a float. Note that the returned matrix from corr will have 1 along the diagonals and will be symmetric regardless of the callable’s behavior.
+    :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
+    :param ax: Axes in which to draw the plot, otherwise use the currently-active Axes.
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
+    :return: Returns the Axes object with the plot drawn onto it.
     """
-    tree = classifier.tree_
-    if feature_names:
-        required_features = [feature_names[i] if i != sklearn_tree.TREE_UNDEFINED else "undefined!" for i in
-                             tree.feature]
-    else:
-        required_features = [f"feature_{i}" if i != sklearn_tree.TREE_UNDEFINED else "undefined!" for i in tree.feature]
-    if not tree_name:
-        tree_name = "tree"
-    output = StringIO()
-    signature_vars = list()
-    for feature in required_features:
-        if (feature not in signature_vars) and (feature != 'undefined!'):
-            signature_vars.append(feature)
-    output.write(
-        f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
 
-    _recurse(0, 1, tree, required_features, class_names, output, indent_char)
-    ans = output.getvalue()
-    output.close()
-    return ans
+    corr = data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
+    mask = numpy.triu(numpy.ones_like(corr, dtype=numpy.bool))
+    seaborn.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
+    return ax
