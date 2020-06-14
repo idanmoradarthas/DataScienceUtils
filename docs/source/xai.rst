@@ -1,7 +1,7 @@
 ###
 XAI
 ###
-lorem impsom
+The module of xai contains methods that help explain a model decisions.
 
 ***********************
 Generate Decision Paths

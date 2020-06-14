@@ -1,13 +1,13 @@
 {% set name = "data-science-utils" %}
-  {% set version = 1.5 %}
+  {% set version = 1.6 %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://github.com/idanmoradarthas/DataScienceUtils/releases/download/1.5/data_science_utils-1.5.tar.gz
-  sha256: 345325b895a47ab93e2d9bf6bad394bfffa0e0bf0027ca459dcfee0cc48de172
+  url: https://github.com/idanmoradarthas/DataScienceUtils/releases/download/1.6/data_science_utils-1.6.tar.gz
+  sha256:
 
 build:
   number: 0
