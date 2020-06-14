@@ -41,7 +41,7 @@ from sklearn import svm
 from ds_utils.metrics import plot_confusion_matrix
 
 
-x = IRIS.data
+x = IRIS.data_1M
 y = IRIS.target
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
@@ -64,7 +64,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import generate_decision_paths
     
-x = IRIS.data
+x = IRIS.data_1M
 y = IRIS.target
 
 # Create decision tree classifier object

@@ -1,9 +1,13 @@
 import os
 
+from sklearn import datasets
 from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import generate_decision_paths
-from tests.test_visualization_aids import x, y, iris
+
+iris = datasets.load_iris()
+x = iris.data
+y = iris.target
 
 
 def test_print_decision_paths():

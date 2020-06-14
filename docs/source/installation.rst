@@ -1,6 +1,6 @@
-*****************************
+############
 Installation
-*****************************
+############
 .. highlight:: bash
 
 Data Science Utils is compatible with Python 3.6 or later. The simplest way to install Data Science Utils and its

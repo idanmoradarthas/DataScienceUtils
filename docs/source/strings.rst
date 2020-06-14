@@ -1,17 +1,19 @@
-*******
+#######
 Strings
-*******
+#######
+
 The module of strings contains methods that help manipulate and process strings in a dataframe.
 
+********************
 Append Tags to Frame
-====================
+********************
 
 .. autofunction:: strings::append_tags_to_frame
 
 .. highlight:: python
 
 Code Example
-************
+============
 In this example we'll create our own simple dataset that looks like that:
 
 ``x_train``:
@@ -63,13 +65,14 @@ And the following table will be the output for ``x_test_with_tags``:
 |3           |1     |1     |0     |
 +------------+------+------+------+
 
+*****************
 Significant Terms
-=================
+*****************
 
 .. autofunction:: strings::extract_significant_terms_from_subset
 
 Code Example
-************
+============
 This method will help extract the significant terms that will differentiate between subset of documents from the full
 corpus. Let's create a simple corpus and extract significant terms from it::
 

@@ -1,15 +1,16 @@
-******************
+###
 XAI
-******************
+###
 lorem impsom
 
+***********************
 Generate Decision Paths
-=======================
+***********************
 
 .. autofunction:: xai::generate_decision_paths
 
 Code Example
-************
+============
 We'll create a simple decision tree classifier and print it::
 
     from sklearn.tree import DecisionTreeClassifier

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [1.6] - 2020-06-10
 ### Added
 - visualization_aids::visualize_correlations function that plot heatmap of features' correlations.
+- visualization_aids::plot_features_relationship function that plot the shared distribution of two features.
 - documentation for the new methods.
 ### Changed
 - requirements dependencies.
@@ -11,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - visualization_aids::visualize_features changed parameter name frame to data.
 ### Fixed
 - documentation fixes.
+- tests fixes.
 - minor changes
 
 ## [1.5] - 2020-01-08
