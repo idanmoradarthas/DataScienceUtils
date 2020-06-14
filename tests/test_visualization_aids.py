@@ -12,7 +12,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.visualization_aids import draw_tree, visualize_features, draw_dot_data, visualize_correlations, \
     plot_features_relationship
-from tests.utils import compare_images_paths
+from tests.utils import compare_images_from_paths
 
 iris = datasets.load_iris()
 x = iris.data
@@ -41,7 +41,9 @@ def test_draw_tree():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_draw_tree_exists_ax():
@@ -64,7 +66,9 @@ def test_draw_tree_exists_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_draw_dot_data():
@@ -87,7 +91,9 @@ def test_draw_dot_data():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_draw_dot_data_exist_ax():
@@ -115,7 +121,9 @@ def test_draw_dot_data_exist_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_features():
@@ -128,7 +136,9 @@ def test_visualize_features():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_features.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_features_list_of_features():
@@ -141,7 +151,9 @@ def test_visualize_features_list_of_features():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_features_list_of_features.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_features_remove_na():
@@ -160,7 +172,9 @@ def test_visualize_features_remove_na():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_features_remove_na.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_correlations():
@@ -173,7 +187,9 @@ def test_visualize_correlations():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_correlations.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_correlations_exist_ax():
@@ -191,7 +207,9 @@ def test_visualize_correlations_exist_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_correlations_exist_ax.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_both_numeric():
@@ -203,7 +221,9 @@ def test_plot_relationship_between_features_both_numeric():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_numeric.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_both_numeric_exist_ax():
@@ -220,7 +240,9 @@ def test_plot_relationship_between_features_both_numeric_exist_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_numeric_exist_ax.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_numeric_categorical():
@@ -233,7 +255,9 @@ def test_plot_relationship_between_features_numeric_categorical():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_categorical.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_numeric_categorical_reverse():
@@ -246,7 +270,9 @@ def test_plot_relationship_between_features_numeric_categorical_reverse():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_categorical_reverse.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_numeric_boolean():
@@ -259,7 +285,9 @@ def test_plot_relationship_between_features_numeric_boolean():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_boolean.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_relationship_between_features_both_categorical():
@@ -272,7 +300,9 @@ def test_plot_relationship_between_features_both_categorical():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_categorical.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 @pytest.mark.skip()
@@ -290,8 +320,9 @@ def test_loop_plot_features_relationship_example():
 
     figure.delaxes(axes[11])
     figure.subplots_adjust(hspace=0.7)
-    pyplot.show()
 
     result_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("loop_plot_features_relationship_example.png")
     pyplot.savefig(str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
