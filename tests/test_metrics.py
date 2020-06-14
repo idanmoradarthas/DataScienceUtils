@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 
 from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances
-from tests.utils import compare_images_paths
+from tests.utils import compare_images_from_paths
 
 iris = datasets.load_iris()
 x = iris.data
@@ -50,7 +50,9 @@ def test_print_confusion_matrix_binary():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix_binary.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_print_confusion_matrix():
@@ -73,7 +75,9 @@ def test_print_confusion_matrix():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_print_confusion_matrix_exception():
@@ -93,7 +97,9 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_no_n_samples.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_metric_growth_per_labeled_instances_with_n_samples():
@@ -109,7 +115,9 @@ def test_plot_metric_growth_per_labeled_instances_with_n_samples():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_with_n_samples.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles():
@@ -135,7 +143,9 @@ def test_plot_metric_growth_per_labeled_instances_given_random_state_int():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state_int.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_metric_growth_per_labeled_instances_given_random_state():
@@ -151,7 +161,9 @@ def test_plot_metric_growth_per_labeled_instances_given_random_state():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_given_random_state.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_metric_growth_per_labeled_instances_exists_ax():
@@ -171,7 +183,9 @@ def test_plot_metric_growth_per_labeled_instances_exists_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_exists_ax.png")
-    compare_images_paths(str(baseline_path), str(result_path))
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_metric_growth_per_labeled_instances_verbose(capsys):

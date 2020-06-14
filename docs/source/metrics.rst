@@ -1,17 +1,19 @@
-*******
+#######
 Metrics
-*******
+#######
+
 The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
 
+*********************
 Plot Confusion Matrix
-=====================
+*********************
 
 .. autofunction:: metrics::plot_confusion_matrix
 
 .. highlight:: python
 
 Code Examples
-*************
+=============
 In following examples we are going to use the iris dataset from scikit-learn. so firstly let's import it::
 
     import numpy
@@ -26,7 +28,8 @@ Next we'll add a small function to add noise::
         n_samples, n_features = x.shape
         return numpy.c_[x, random_state.randn(n_samples, 200 * n_features)]
 
-**Binary Classification**
+Binary Classification
+---------------------
 
 So We'll use the only first two classes in the iris dataset, build a SVM classifier and evaluate it::
 
@@ -62,7 +65,8 @@ And the following image will be shown:
     :align: center
     :alt: binary classification confusion matrix
 
-**Multi-Label Classification**
+Multi-Label Classification
+--------------------------
 
 This time we'll train on all the classes and plot an evaluation::
 
@@ -96,13 +100,14 @@ And the following image will be shown:
     :align: center
     :alt: multi label classification confusion matrix
 
+****************************************
 Plot Metric Growth per Labeled Instances
-========================================
+****************************************
 
 .. autofunction:: metrics::plot_metric_growth_per_labeled_instances
 
 Code Example
-************
+============
 In this example we'll divide the data into train and test sets, decide on which classifiers we want to measure and plot
 the results::
 

@@ -24,15 +24,20 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
     :param labels: array, shape = [n_classes]. List of labels to index the matrix. This may be used to reorder or
                     select a subset of labels.
     :param sample_weight: array-like of shape = [n_samples], optional
+
                             Sample weights.
     :param annot_kws: dict of key, value mappings, optional
+
                         Keyword arguments for ``ax.text``.
     :param cbar: boolean, optional
+
                 Whether to draw a colorbar.
     :param cbar_kws: dict of key, value mappings, optional
-                    Keyword arguments for `fig.colorbar`
+
+                    Keyword arguments for ``figure.colorbar``
     :param kwargs: other keyword arguments
-                    All other keyword arguments are passed to ``ax.pcolormesh``.
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the matrix drawn onto it.
     """
     if len(labels) < 2:
@@ -135,21 +140,24 @@ def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: nu
     :param metric: sklearn.metrics api function which receives y_true and y_pred and returns float.
 
     :param random_state: int, RandomState instance or None, optional (default=None)
-        The seed of the pseudo random number generator to use when shuffling
-        the data.  If int, random_state is the seed used by the random number
-        generator; If RandomState instance, random_state is the random number
-        generator; If None, the random number generator is the RandomState
-        instance initiated with seed zero.
+
+        The seed of the pseudo random number generator to use when shuffling the data.
+
+        * If int, random_state is the seed used by the random number generator;
+        * If RandomState instance, random_state is the random number generator;
+        * If None, the random number generator is the RandomState instance initiated with seed zero.
 
     :param n_jobs: int or None, optional (default=None)
+
         Number of jobs to run in parallel.
-        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-        ``-1`` means using all processors. See :term:`Glossary <n_jobs>`
-        for more details.
+
+        * ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        * ``-1`` means using all processors.
 
     :param verbose: integer. Controls the verbosity: the higher, the more messages.
 
     :param pre_dispatch:  int, or string, optional
+
         Controls the number of jobs that get dispatched during parallel
         execution. Reducing this number can be useful to avoid an
         explosion of memory consumption when more jobs get dispatched

@@ -1,17 +1,19 @@
-**********
+##########
 Preprocess
-**********
+##########
+
 The module of preprocess contains methods that are processes that could be made to data before training.
 
+***********************
 Get Correlated Features
-=======================
+***********************
 
 .. autofunction:: preprocess::get_correlated_features
 
 .. highlight:: python
 
 Code Example
-************
+============
 The example uses a small sample from of a dataset from
 `kaggle <https://www.kaggle.com/mrferozi/loan-data-for-dummy-bank>`_, which a dummy bank provides loans.
 

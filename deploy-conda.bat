@@ -1,3 +1,5 @@
+:: taken from: https://medium.com/@giswqs/building-a-conda-package-and-uploading-it-to-anaconda-cloud-6a3abd1c5c52
+
 conda skeleton pypi data-science-utils --python-version 3.6
 FOR %G IN (3.6 3.7 3.8) DO(
 conda-build --python %G data-science-utils
