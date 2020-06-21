@@ -10,7 +10,7 @@ from matplotlib import pyplot
 from sklearn import datasets
 
 from ds_utils.visualization_aids import visualize_features, visualize_correlations, \
-    plot_features_interaction
+    plot_features_interaction, plot_correlation_dendrogram
 from tests.utils import compare_images_from_paths
 
 iris = datasets.load_iris()
@@ -367,6 +367,39 @@ def test_plot_relationship_between_features_both_bool():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_bool.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_correlation_dendrogram():
+    plot_correlation_dendrogram(data_1M)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_correlation_dendrogram_exist_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    plot_correlation_dendrogram(data_1M, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram_exist_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram_exist_ax.png")
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))

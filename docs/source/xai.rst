@@ -16,7 +16,7 @@ For more information see `here <https://graphviz.gitlab.io/download>`_.
 *********
 Draw Tree
 *********
-.. autofunction:: visualization_aids::draw_tree
+.. autofunction:: xai::draw_tree
 
 .. highlight:: python
 
@@ -58,7 +58,7 @@ And the following image will be shown:
 Draw Dot Data
 *************
 
-.. autofunction:: visualization_aids::draw_dot_data
+.. autofunction:: xai::draw_dot_data
 
 Code Example
 ============

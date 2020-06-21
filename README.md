@@ -134,6 +134,13 @@ Compute pairwise correlation of columns, excluding NA/null values, and visualize
 
 ![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
 
+### Plot Correlation Dendrogram
+Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
+most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the 
+features are.
+
+![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
+
 ### Plot Features' Relationship
 Plots the joint distribution between two features:
 * If both features are either categorical, boolean or object then the method plots the shared histogram.

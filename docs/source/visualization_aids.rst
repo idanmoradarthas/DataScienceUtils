@@ -71,6 +71,37 @@ And the following image will be shown:
     :alt: Features Correlations
 
 ***************************
+Plot Correlation Dendrogram
+***************************
+This method was created due the lack of maintenance of the package `EthicalML / xai <https://github.com/EthicalML/XAI>`_.
+
+.. autofunction:: visualization_aids::plot_correlation_dendrogram
+
+Code Example
+============
+
+For this example I created a dummy data set. You can find the data at the resources directory in the packages tests folder.
+
+Let's see how to use the code::
+
+    import pandas
+
+    from matplotlib import pyplot
+
+    from ds_utils.visualization_aids import plot_correlation_dendrogram
+
+
+    data_1M = pandas.read_csv(path/to/dataset)
+    plot_correlation_dendrogram(data_1M)
+    pyplot.show()
+
+And the following image will be shown:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/plot_correlation_dendrogram.png
+    :align: center
+    :alt: Plot Correlation Dendrogram
+
+***************************
 Plot Features' Relationship
 ***************************
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick

@@ -4,6 +4,7 @@ import numpy
 import pandas
 import seaborn
 from matplotlib import axes, pyplot, dates
+from scipy.cluster import hierarchy
 
 
 def visualize_features(data: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
@@ -87,10 +88,78 @@ def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] 
         pyplot.figure()
         ax = pyplot.gca()
 
-    corr = data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
+    corr = _calc_corrections(data, method, min_periods)
     mask = numpy.triu(numpy.ones_like(corr, dtype=numpy.bool))
     seaborn.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
+
+
+def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Union[str, Callable] = 'pearson',
+                                min_periods: Optional[int] = 1,
+                                cluster_distance_method: Union[str, Callable] = "average", *,
+                                ax: Optional[axes.Axes] = None,
+                                **kwargs) -> axes.Axes:
+    """
+    Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that
+    are most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the features are.
+
+    :param data: the data frame, were each feature is a column.
+    :param correlation_method: {‘pearson’, ‘kendall’, ‘spearman’} or callable
+
+                   Method of correlation:
+
+                   * pearson : standard correlation coefficient
+                   * kendall : Kendall Tau correlation coefficient
+                   * spearman : Spearman rank correlation
+                   * callable: callable with input two 1d ndarrays and returning a float. Note that the returned matrix from corr will have 1 along the diagonals and will be symmetric regardless of the callable’s behavior.
+
+    :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
+    :param cluster_distance_method: The following are methods for calculating the distance between the newly formed cluster.
+
+            Methods of linkage:
+
+            * single: This is also known as the Nearest Point Algorithm.
+            * complete: This is also known by the Farthest Point Algorithm or Voor Hees Algorithm.
+            * average:
+            .. math:: d(u,v) = \\sum_{ij} \\frac{d(u[i], v[j])}{(|u|*|v|)}
+
+            This is also called the UPGMA algorithm.
+
+            * weighted:
+            .. math:: d(u,v) = (dist(s,v) + dist(t,v))/2
+
+            where cluster u was formed with cluster s and t and v
+            is a remaining cluster in the forest. (also called WPGMA)
+
+            * centroid: Euclidean distance between the centroids
+            * median: This is also known as the WPGMC algorithm.
+            * ward: uses the Ward variance minimization algorithm.
+
+            see `scipy.cluster.hierarchy.linkage <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_ for more information.
+
+    :param ax: Axes in which to draw the plot, otherwise use the currently-active Axes.
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
+    :return: Returns the Axes object with the plot drawn onto it.
+    """
+
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
+
+    corr = _calc_corrections(data, correlation_method, min_periods)
+    # reverse the distance
+    corr_condensed = hierarchy.distance.squareform(1 - corr)
+    z = hierarchy.linkage(corr_condensed, method=cluster_distance_method)
+    ax.set(**kwargs)
+    hierarchy.dendrogram(z, labels=data.columns, orientation="left", ax=ax)
+    return ax
+
+
+def _calc_corrections(data: pandas.DataFrame, method: Union[str, Callable],
+                      min_periods: Optional[int]) -> numpy.ndarray:
+    return data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
 
 
 def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataFrame, *,
