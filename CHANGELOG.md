@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 2020-06-21
+### Added
+- visualization_aids::plot_features_relationship added support dor datetime features.
+- visualization_aids::plot_correlation_dendrogram method that plots correlation dendrogram.
+### Changed
+- Moved visualization_aids::draw_tree and visualization_aids::draw_dot_data to xai module.
+- Redesign README.md file
+### Fixed
+- Converting bool features in visualization_aids::plot_features_relationship to avoid RuntimeWarning from numpy (Converting input from bool to <class 'numpy.uint8'> for compatibility.)
+- minor changes
+
 ## [1.6] - 2020-06-14
 ### Added
 - visualization_aids::visualize_correlations function that plot heatmap of features' correlations.

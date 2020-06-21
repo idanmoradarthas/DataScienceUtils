@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 
+from matplotlib import pyplot
 from sklearn import datasets
 from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.xai import generate_decision_paths
+from ds_utils.xai import generate_decision_paths, draw_tree, draw_dot_data
+from tests.utils import compare_images_from_paths
 
 iris = datasets.load_iris()
 x = iris.data
@@ -136,3 +139,102 @@ def test_print_decision_paths_no_class_names():
                '        return ("class_2", 0.9773)' + os.linesep
 
     assert result == expected
+
+
+def test_draw_tree():
+    # Create decision tree classifier object
+    clf = DecisionTreeClassifier(random_state=0)
+
+    # Train model
+    clf.fit(x, y)
+
+    draw_tree(clf, iris.feature_names, iris.target_names)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_tree.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_tree.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_tree_exists_ax():
+    # Create decision tree classifier object
+    clf = DecisionTreeClassifier(random_state=0)
+
+    # Train model
+    clf.fit(x, y)
+
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    draw_tree(clf, iris.feature_names, iris.target_names, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_dot_data():
+    dot_data = "digraph D{\n" \
+               "\tA [shape=diamond]\n" \
+               "\tB [shape=box]\n" \
+               "\tC [shape=circle]\n" \
+               "\n" \
+               "\tA -> B [style=dashed, color=grey]\n" \
+               "\tA -> C [color=\"black:invis:black\"]\n" \
+               "\tA -> D [penwidth=5, arrowhead=none]\n" \
+               "\n" \
+               "}"
+
+    draw_dot_data(dot_data)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_dot_data_exist_ax():
+    dot_data = "digraph D{\n" \
+               "\tA [shape=diamond]\n" \
+               "\tB [shape=box]\n" \
+               "\tC [shape=circle]\n" \
+               "\n" \
+               "\tA -> B [style=dashed, color=grey]\n" \
+               "\tA -> C [color=\"black:invis:black\"]\n" \
+               "\tA -> D [penwidth=5, arrowhead=none]\n" \
+               "\n" \
+               "}"
+
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    draw_dot_data(dot_data, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))

@@ -8,10 +8,9 @@ import numpy
 import pandas
 from matplotlib import pyplot
 from sklearn import datasets
-from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.visualization_aids import draw_tree, visualize_features, draw_dot_data, visualize_correlations, \
-    plot_features_relationship
+from ds_utils.visualization_aids import visualize_features, visualize_correlations, \
+    plot_features_interaction, plot_correlation_dendrogram
 from tests.utils import compare_images_from_paths
 
 iris = datasets.load_iris()
@@ -25,105 +24,6 @@ loan_data = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").join
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_visualization_aids").mkdir(
     exist_ok=True)
-
-
-def test_draw_tree():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(x, y)
-
-    draw_tree(clf, iris.feature_names, iris.target_names)
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_tree.png")
-    pyplot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_tree.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-def test_draw_tree_exists_ax():
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(x, y)
-
-    pyplot.figure()
-    ax = pyplot.gca()
-
-    ax.set_title("My ax")
-
-    draw_tree(clf, iris.feature_names, iris.target_names, ax=ax)
-
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
-    pyplot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-def test_draw_dot_data():
-    dot_data = "digraph D{\n" \
-               "\tA [shape=diamond]\n" \
-               "\tB [shape=box]\n" \
-               "\tC [shape=circle]\n" \
-               "\n" \
-               "\tA -> B [style=dashed, color=grey]\n" \
-               "\tA -> C [color=\"black:invis:black\"]\n" \
-               "\tA -> D [penwidth=5, arrowhead=none]\n" \
-               "\n" \
-               "}"
-
-    draw_dot_data(dot_data)
-
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_dot_data.png")
-    pyplot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_dot_data.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-def test_draw_dot_data_exist_ax():
-    dot_data = "digraph D{\n" \
-               "\tA [shape=diamond]\n" \
-               "\tB [shape=box]\n" \
-               "\tC [shape=circle]\n" \
-               "\n" \
-               "\tA -> B [style=dashed, color=grey]\n" \
-               "\tA -> C [color=\"black:invis:black\"]\n" \
-               "\tA -> D [penwidth=5, arrowhead=none]\n" \
-               "\n" \
-               "}"
-
-    pyplot.figure()
-    ax = pyplot.gca()
-
-    ax.set_title("My ax")
-
-    draw_dot_data(dot_data, ax=ax)
-
-    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
-    pyplot.savefig(str(result_path))
-
-    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_visualize_features():
@@ -213,7 +113,7 @@ def test_visualize_correlations_exist_ax():
 
 
 def test_plot_relationship_between_features_both_numeric():
-    plot_features_relationship("x4", "x5", data_1M)
+    plot_features_interaction("x4", "x5", data_1M)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_numeric.png")
@@ -232,7 +132,7 @@ def test_plot_relationship_between_features_both_numeric_exist_ax():
 
     ax.set_title("My ax")
 
-    plot_features_relationship("x4", "x5", data_1M, ax=ax)
+    plot_features_interaction("x4", "x5", data_1M, ax=ax)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_numeric_exist_ax.png")
@@ -246,7 +146,7 @@ def test_plot_relationship_between_features_both_numeric_exist_ax():
 
 
 def test_plot_relationship_between_features_numeric_categorical():
-    plot_features_relationship("x1", "x7", data_1M)
+    plot_features_interaction("x1", "x7", data_1M)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_categorical.png")
@@ -261,7 +161,7 @@ def test_plot_relationship_between_features_numeric_categorical():
 
 
 def test_plot_relationship_between_features_numeric_categorical_reverse():
-    plot_features_relationship("x7", "x1", data_1M)
+    plot_features_interaction("x7", "x1", data_1M)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_categorical_reverse.png")
@@ -276,7 +176,7 @@ def test_plot_relationship_between_features_numeric_categorical_reverse():
 
 
 def test_plot_relationship_between_features_numeric_boolean():
-    plot_features_relationship("x1", "x12", data_1M)
+    plot_features_interaction("x1", "x12", data_1M)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_numeric_boolean.png")
@@ -291,7 +191,7 @@ def test_plot_relationship_between_features_numeric_boolean():
 
 
 def test_plot_relationship_between_features_both_categorical():
-    plot_features_relationship("x7", "x10", data_1M)
+    plot_features_interaction("x7", "x10", data_1M)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_categorical.png")
@@ -316,7 +216,7 @@ def test_loop_plot_features_relationship_example():
 
     for i in range(0, len(other_features)):
         axes[i].set_title(f"{feature_1} vs. {other_features[i]}")
-        plot_features_relationship(feature_1, other_features[i], data_1M, ax=axes[i])
+        plot_features_interaction(feature_1, other_features[i], data_1M, ax=axes[i])
 
     figure.delaxes(axes[11])
     figure.subplots_adjust(hspace=0.7)
@@ -326,3 +226,180 @@ def test_loop_plot_features_relationship_example():
     pyplot.savefig(str(result_path))
     pyplot.cla()
     pyplot.close(pyplot.gcf())
+
+
+def test_plot_relationship_between_features_categorical_bool():
+    plot_features_interaction("x10", "x12", data_1M)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_categorical_bool.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_categorical_bool.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_numeric():
+    daily_min_temperatures = pandas.read_csv(
+        Path(__file__).parents[0].joinpath("resources").joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
+
+    plot_features_interaction("Date", "Temp", daily_min_temperatures)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_numeric.png")
+    pyplot.gcf().set_size_inches(18, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_numeric.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_numeric_2():
+    daily_min_temperatures = pandas.read_csv(
+        Path(__file__).parents[0].joinpath("resources").joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
+
+    plot_features_interaction("Temp", "Date", daily_min_temperatures)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_numeric_2.png")
+    pyplot.gcf().set_size_inches(18, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_numeric_2.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_datetime():
+    plot_features_interaction("issue_d", "issue_d", loan_data)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_datetime.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_datetime.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_categorical():
+    plot_features_interaction("issue_d", "home_ownership", loan_data)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_categorical.png")
+    pyplot.gcf().set_size_inches(10, 11.5)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_categorical.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_categorical_2():
+    plot_features_interaction("home_ownership", "issue_d", loan_data)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_categorical_2.png")
+    pyplot.gcf().set_size_inches(10, 11.5)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_categorical_2.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_bool():
+    df = pandas.DataFrame()
+    df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
+    df["issue_d"] = loan_data["issue_d"]
+    plot_features_interaction("issue_d", "loan_condition_cat", df)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_bool.png")
+    pyplot.gcf().set_size_inches(10, 11.5)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_bool.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_datetime_bool_2():
+    df = pandas.DataFrame()
+    df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
+    df["issue_d"] = loan_data["issue_d"]
+    plot_features_interaction("loan_condition_cat", "issue_d", df)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_bool_2.png")
+    pyplot.gcf().set_size_inches(10, 11.5)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_datetime_bool_2.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_relationship_between_features_both_bool():
+    plot_features_interaction("x12", "x12", data_1M)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_bool.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_relationship_between_features_both_bool.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_correlation_dendrogram():
+    plot_correlation_dendrogram(data_1M)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_correlation_dendrogram_exist_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    plot_correlation_dendrogram(data_1M, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram_exist_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_plot_correlation_dendrogram_exist_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
