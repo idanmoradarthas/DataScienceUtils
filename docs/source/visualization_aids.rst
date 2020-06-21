@@ -97,7 +97,7 @@ Let's see how to use the code::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/plot_correlation_dendrogram.png
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png
     :align: center
     :alt: Plot Correlation Dendrogram
 
