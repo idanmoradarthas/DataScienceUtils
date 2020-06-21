@@ -1,60 +1,9 @@
-from io import BytesIO
 from typing import Optional, List, Union, Callable
 
 import numpy
 import pandas
-import pydotplus
 import seaborn
-from matplotlib import axes, pyplot, image
-from sklearn.tree import export_graphviz
-
-try:
-    from sklearn.tree import BaseDecisionTree
-except ImportError:
-    from sklearn.tree.tree import BaseDecisionTree
-
-
-def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,
-              class_names: Optional[List[str]] = None, *, ax: Optional[axes.Axes] = None,
-              **kwargs) -> axes.Axes:
-    """
-    Receives a decision tree and return a plot graph of the tree for easy interpretation.
-
-    :param tree: decision tree.
-    :param feature_names: the features names.
-    :param class_names: the classes names or labels.
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
-
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
-    """
-    return draw_dot_data(export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
-                                         special_characters=True, class_names=class_names), ax=ax, **kwargs)
-
-
-def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
-    """
-    Receives a Graphiz's Dot language string and return a plot graph of the data.
-
-    :param dot_data: Graphiz's Dot language string.
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
-
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
-    """
-    if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
-    sio = BytesIO()
-    graph = pydotplus.graph_from_dot_data(dot_data)
-    sio.write(graph.create_png())
-    sio.seek(0)
-    img = image.imread(sio, format="png")
-    ax.imshow(img, **kwargs)
-    ax.set_axis_off()
-    return ax
+from matplotlib import axes, pyplot, dates
 
 
 def visualize_features(data: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
@@ -144,13 +93,15 @@ def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] 
     return ax
 
 
-def plot_features_relationship(feature_1: str, feature_2: str, data: pandas.DataFrame, *,
-                               ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataFrame, *,
+                              ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Plots the joint distribution between two features:
 
     * If both features are either categorical, boolean or object then the method plots the shared histogram.
-    * If one feature is either categorical, boolean or object and the other is numeric then the method plots boxplot chart.
+    * If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
+    * If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
+    * If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
     * If both features are numeric then the method plots scatter graph.
 
     :param feature_1: the name of the first feature.
@@ -177,17 +128,41 @@ def plot_features_relationship(feature_1: str, feature_2: str, data: pandas.Data
                     label=group_feature_1, **kwargs)
             ax.set_xlabel(feature_1)
             ax.legend(title=feature_2)
+        elif str(data[feature_2].dtype) == "datetime64[ns]":
+            # first feature is categorical and the second is datetime
+            dup_df[feature_2] = data[feature_2].apply(dates.date2num)
+            chart = seaborn.violinplot(feature_2, feature_1, data=dup_df, ax=ax)
+            chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
+            ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
         else:
             # first feature is categorical and the second is numeric
             dup_df[feature_2] = data[feature_2]
             chart = seaborn.boxplot(feature_1, feature_2, data=dup_df, ax=ax, **kwargs)
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
+    elif str(data[feature_1].dtype) == "datetime64[ns]":
+        if str(data[feature_2].dtype) in ["object", "category", "bool"]:
+            # first feature is datetime and the second is categorical
+            dup_df[feature_1] = data[feature_1].apply(dates.date2num)
+            dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
+            chart = seaborn.violinplot(feature_1, feature_2, data=dup_df, ax=ax)
+            chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
+            ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+        else:
+            # first feature is datetime and the second is numeric or datetime
+            ax.plot(data[feature_1], data[feature_2], **kwargs)
+            ax.set_xlabel(feature_1)
+            ax.set_ylabel(feature_2)
     elif str(data[feature_2].dtype) in ["object", "category", "bool"]:
         # first feature is numeric and the second is categorical
         dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
         dup_df[feature_1] = data[feature_1]
         chart = seaborn.boxplot(feature_2, feature_1, data=dup_df, ax=ax, **kwargs)
         chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
+    elif str(data[feature_2].dtype) == "datetime64[ns]":
+        # first feature is numeric and the second is datetime
+        ax.plot(data[feature_2], data[feature_1], **kwargs)
+        ax.set_xlabel(feature_2)
+        ax.set_ylabel(feature_1)
     else:
         # both feature are numeric
         ax.scatter(data[feature_1], data[feature_2], **kwargs)
@@ -198,7 +173,15 @@ def plot_features_relationship(feature_1: str, feature_2: str, data: pandas.Data
 
 
 def _copy_series_or_keep_top_10(series: pandas.Series) -> pandas.Series:
+    if str(series.dtype) == "bool":
+        # avoiding RuntimeWarning from numpy (Converting input from bool to <class 'numpy.uint8'> for compatibility.)
+        return series.apply(lambda val: "True" if val else "False")
     if len(series.unique().tolist()) > 10:
         top10 = series.value_counts()[:10].index.tolist()
         return series.apply(lambda val: val if val in top10 else "Other values")
     return series
+
+
+@pyplot.FuncFormatter
+def _convert_numbers_to_dates(x, pos):
+    return dates.num2date(x).strftime('%Y-%m-%d %H:%M')

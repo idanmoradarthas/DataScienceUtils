@@ -3,92 +3,6 @@ Visualization Aids
 ##################
 The module of visualization aids contains methods that visualize by drawing or printing ML output.
 
-In order for this module to work properly, Graphiz must be installed. In linux based operating systems use::
-
-    sudo apt-get install graphviz
-
-Or using conda::
-
-    conda install graphviz
-
-For more information see `here <https://graphviz.gitlab.io/download>`_.
-
-*********
-Draw Tree
-*********
-.. autofunction:: visualization_aids::draw_tree
-
-.. highlight:: python
-
-Code Example
-============
-In following examples we are going to use the iris dataset from scikit-learn. so firstly let's import it::
-
-    from sklearn import datasets
-
-
-    iris = datasets.load_iris()
-    x = iris.data
-    y = iris.target
-
-We'll create a simple decision tree classifier and plot it::
-
-    from matplotlib import pyplot
-    from sklearn.tree import DecisionTreeClassifier
-
-    from ds_utils.visualization_aids import draw_tree
-
-
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(x, y)
-
-    draw_tree(clf, iris.feature_names, iris.target_names)
-    pyplot.show()
-
-And the following image will be shown:
-
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_draw_tree.png
-    :align: center
-    :alt: Decision Tree Visualization
-
-*************
-Draw Dot Data
-*************
-
-.. autofunction:: visualization_aids::draw_dot_data
-
-Code Example
-============
-We'll create a simple diagram and plot it::
-
-    from matplotlib import pyplot
-
-    from ds_utils.visualization_aids import draw_dot_data
-
-
-    dot_data = "digraph D{\n" \
-               "\tA [shape=diamond]\n" \
-               "\tB [shape=box]\n" \
-               "\tC [shape=circle]\n" \
-               "\n" \
-               "\tA -> B [style=dashed, color=grey]\n" \
-               "\tA -> C [color=\"black:invis:black\"]\n" \
-               "\tA -> D [penwidth=5, arrowhead=none]\n" \
-               "\n" \
-               "}"
-
-    draw_dot_data(dot_data)
-    pyplot.show()
-
-And the following image will be shown:
-
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_draw_dot_data.png
-    :align: center
-    :alt: Diagram Visualization
-
 ******************
 Visualize Features
 ******************
@@ -191,7 +105,7 @@ A scatter plot of the shared distribution is shown:
     :align: center
     :alt: Both Features are Numeric
 
-One Feature is Numeric and The Other is Not Numeric
+One Feature is Numeric and The Other is Categorical
 ---------------------------------------------------
 If one feature is numeric, but the the other is either an ``object``, a ``category`` or a ``bool``, then a box
 plot is shown. In the plot it can be seen for each unique value of the category feature what is the distribution of the
@@ -216,6 +130,31 @@ values are shown and the other are labeled "Other Values".
 .. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png
     :align: center
     :alt: Both Features are Categorical
+
+One Feature is Datetime Series and the Other is Numeric or Datetime Series
+---------------------------------------------------------------------------
+A line plot where the datetime series is at x axis is shown:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png
+    :align: center
+    :alt: One Feature is Datetime Series and the other is Numeric or Datetime Series
+
+One Feature is Datetime Series and the Other is Categorical
+-----------------------------------------------------------
+If one feature is datetime series, but the the other is either an ``object``, a ``category`` or a ``bool``, then a
+violin plot is shown. Violin plot is a combination of boxplot and kernel density estimate. If the categorical feature
+has more than 10 unique values, then the 10 most common values are shown and the other are labeled "Other Values". The
+datetime series will be at x axis:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png
+    :align: center
+    :alt: Datetime Series and Categorical
+
+Here is an example for boolean feature plot:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png
+    :align: center
+    :alt: Datetime Series and Boolean
 
 Looping One Feature over The Others
 -----------------------------------

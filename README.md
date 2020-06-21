@@ -22,35 +22,143 @@ visualization over data.
 
 In the documentation you can find more methods and more examples.
 
-The API of the package is build to work with Scikit-Learn API and Matplotlib API. Here is an example of a typical 
-workflow sequence with scikit-learn, matplotlib and data-science-utils:
+The API of the package is build to work with Scikit-Learn API and Matplotlib API. Here are some of capabilities of this
+package:
+
+## Metrics
 ### Plot Confusion Matrix
-```python
-from matplotlib import pyplot
-from sklearn.model_selection import train_test_split
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn import svm
-
-from ds_utils.metrics import plot_confusion_matrix
-
-
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5)
-
-# Create a simple classifier
-classifier = OneVsRestClassifier(svm.LinearSVC())
-classifier.fit(x_train, y_train)
-y_pred = classifier.predict(x_test)
-
-plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
-pyplot.show()
-```
-The following image will be shown:
+Computes and plot confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a classification.
 
 ![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 
-**see full example [here](https://datascienceutils.readthedocs.io/en/latest/metrics.html#plot-confusion-matrix).**
+### Plot Metric Growth per Labeled Instances
+
+Receives a train and test sets, and plots given metric change in increasing amount of trained instances.
+
+![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
+
+## Preprocess
+### Get Correlated Features
+
+Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation to 
+the target feature.
+
+|level_0               |level_1               |level_0_level_1_corr|level_0_target_corr|level_1_target_corr|
+|----------------------|----------------------|--------------------|-------------------|-------------------|
+|income_category_Low   |income_category_Medium|-0.9999999999999999 |-0.1182165609358650|0.11821656093586504|
+|term\_ 36 months      |term\_ 60 months      |-1.0                |-0.1182165609358650|0.11821656093586504|
+|interest_payments_High|interest_payments_Low |-1.0                |-0.1182165609358650|0.11821656093586504|
+
+## Strings
+### Append Tags to Frame
+
+Extracts tags from a given field and append them as dataframe.
+
+A dataset that looks like this:
+
+``x_train``:
+
+|article_name|article_tags|
+|------------|------------|
+|1           |ds,ml,dl    |
+|2           |ds,ml       |
+
+``x_test``:
+
+|article_name|article_tags|
+|------------|------------|
+|3           |ds,ml,py    |
+
+Using this code:
+```python
+    import pandas
+
+    from ds_utils.strings import append_tags_to_frame
+
+
+    x_train = pandas.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
+                                {"article_name": "2", "article_tags": "ds,ml"}])
+    x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
+
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
+```
+
+will be parsed into this:
+
+``x_train_with_tags``:
+
+|article_name|tag_ds|tag_ml|tag_dl|
+|------------|------|------|------|
+|1           |1     |1     |1     |
+|2           |1     |1     |0     |
+
+``x_test_with_tags``:
+
+|article_name|tag_ds|tag_ml|tag_dl|
+|------------|------|------|------|
+|3           |1     |1     |0     |
+
+### Extract Significant Terms from Subset
+Returns interesting or unusual occurrences of terms in a subset. Based on the [elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
+
+```python
+import pandas
+
+from ds_utils.strings import extract_significant_terms_from_subset
+
+corpus = ['This is the first document.', 'This document is the second document.',
+          'And this is the third one.', 'Is this the first document?']
+data_frame = pandas.DataFrame(corpus, columns=["content"])
+# Let's differentiate between the last two documents from the full corpus
+subset_data_frame = data_frame[data_frame.index > 1]
+terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
+                                               "content")
+
+```
+And the following table will be the output for ``terms``:
+
+|third|one|and|this|the |is  |first|document|second|
+|-----|---|---|----|----|----|-----|--------|------|
+|1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
+
+## Visualization Aids
+### Visualize Features
+
+Receives a data frame and visualize the features values on graphs.
+
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_features.png)
+
+### Visualize Correlations
+Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
+[Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
+
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
+
+### Plot Features' Relationship
+Plots the joint distribution between two features:
+* If both features are either categorical, boolean or object then the method plots the shared histogram.
+* If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
+* If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
+* If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
+* If both features are numeric then the method plots scatter graph.
+
+|               | Numeric | Categorical | Boolean | Datetime
+|---------------|---------|-------------|---------|---------|
+|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|
+|**Categorical**| |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|
+|**Boolean**    | | |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|
+|**Datetime**   | | | |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
+
+##XAI
+### Draw Tree
+Receives a decision tree and return a plot graph of the tree for easy interpretation.
+
+![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_draw_tree.png)
 
 ### Generate Decision Paths
+Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 
+[Original code](https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree)
+
 ```python
 from sklearn.tree import DecisionTreeClassifier
 
@@ -89,31 +197,6 @@ def iris_tree(petal width (cm), petal length (cm)):
 ```
 
 **see full example [here](https://datascienceutils.readthedocs.io/en/latest/xai.html#generate-decision-paths).**
-
-### Extract Significant Terms from Subset
-Based on the [elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
-
-```python
-import pandas
-
-from ds_utils.strings import extract_significant_terms_from_subset
-
-corpus = ['This is the first document.', 'This document is the second document.',
-          'And this is the third one.', 'Is this the first document?']
-data_frame = pandas.DataFrame(corpus, columns=["content"])
-# Let's differentiate between the last two documents from the full corpus
-subset_data_frame = data_frame[data_frame.index > 1]
-terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
-                                               "content")
-
-```
-And the following table will be the output for ``terms``:
-
-|third|one|and|this|the |is  |first|document|second|
-|-----|---|---|----|----|----|-----|--------|------|
-|1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
-
-**see full example [here](https://datascienceutils.readthedocs.io/en/latest/strings.html#significant-terms).**
 
 Excited?
 
