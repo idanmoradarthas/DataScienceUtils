@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 2020-06-28
+### Added
+- visualization_aids::visualize_feature method that visualize one feature distribution.
+### Changed
+- visualization_aids::visualize_features was deprecated.
+### Fixed
+- minor changes
+
 ## [1.6.1] - 2020-06-21
 ### Added
 - visualization_aids::plot_features_relationship added support for datetime features.

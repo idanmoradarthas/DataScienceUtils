@@ -3,13 +3,13 @@ Visualization Aids
 ##################
 The module of visualization aids contains methods that visualize by drawing or printing ML output.
 
-******************
-Visualize Features
-******************
+*****************
+Visualize Feature
+*****************
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
 visualization with small latency time.
 
-.. autofunction:: visualization_aids::visualize_features
+.. autofunction:: visualization_aids::visualize_feature
 
 Code Example
 ============
@@ -22,15 +22,88 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import visualize_features
+    from ds_utils.visualization_aids import visualize_feature
+
+    loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
+                                 parse_dates=["issue_d"])
+    loan_frame = loan_frame.drop("id", axis=1)
+
+
+    visualize_features(loan_frame["some feature"])
+
+    pyplot.show()
+
+For ech different type of feature a different graph will be generated:
+
+Float
+-----
+A distribution plot is shown:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png
+    :align: center
+    :alt: Visualize Feature Float
+
+Datetime Series
+---------------
+A line plot is shown:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png
+    :align: center
+    :alt: Visualize Feature Datetime Series
+
+Object, Categorical, Boolean or Integer
+---------------------------------------
+A count plot is shown.
+
+Categorical / Object:
+
+If the categorical / object feature has more than 10 unique values, then the 10 most common values are shown and
+the other are labeled "Other Values".
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png
+    :align: center
+    :alt: Visualize Feature Categorical
+
+Boolean:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png
+    :align: center
+    :alt: Visualize Feature Boolean
+
+Integer:
+
+.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png
+    :align: center
+    :alt: Visualize Feature Integer
+
+Looping Over All the Features
+-----------------------------
+This code example shows how a loop can be constructed in order to show all of features::
+
+    import pandas
+
+    from matplotlib import pyplot
+
+    from ds_utils.visualization_aids import visualize_feature
 
 
     loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
                                  parse_dates=["issue_d"])
     loan_frame = loan_frame.drop("id", axis=1)
 
-    visualize_features(loan_frame)
+    figure, axes = pyplot.subplots(5, 2)
+    axes = axes.flatten()
+    figure.set_size_inches(16, 25)
 
+    features = loan_frame.columns
+    i = 0
+
+    for feature in features:
+        visualize_feature(loan_frame[feature], ax=axes[i])
+        i += 1
+
+    figure.delaxes(axes[9])
+    pyplot.subplots_adjust(hspace=0.5)
     pyplot.show()
 
 And the following image will be shown:
