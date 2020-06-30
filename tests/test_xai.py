@@ -1,16 +1,15 @@
 import os
 from pathlib import Path
 
+import pandas
 from matplotlib import pyplot
-from sklearn import datasets
 from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import generate_decision_paths, draw_tree, draw_dot_data
 from tests.utils import compare_images_from_paths
 
-iris = datasets.load_iris()
-x = iris.data
-y = iris.target
+x = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_x_full.csv"))
+y = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_y_full.csv"))
 
 
 def test_print_decision_paths():
@@ -20,7 +19,9 @@ def test_print_decision_paths():
     # Train model
     clf.fit(x, y)
 
-    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree", "  ")
+    result = generate_decision_paths(clf,
+                                     ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+                                     ['setosa', 'versicolor', 'virginica'], "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -52,7 +53,9 @@ def test_print_decision_paths_no_tree_name():
     # Train model
     clf.fit(x, y)
 
-    result = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), indent_char="  ")
+    result = generate_decision_paths(clf,
+                                     ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+                                     ['setosa', 'versicolor', 'virginica'], indent_char="  ")
 
     expected = 'def tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -84,7 +87,7 @@ def test_print_decision_paths_no_feature_names():
     # Train model
     clf.fit(x, y)
 
-    result = generate_decision_paths(clf, None, iris.target_names.tolist(), "iris_tree", "  ")
+    result = generate_decision_paths(clf, None, ['setosa', 'versicolor', 'virginica'], "iris_tree", "  ")
 
     expected = 'def iris_tree(feature_3, feature_2):' + os.linesep + \
                '  if feature_3 <= 0.8000:' + os.linesep + \
@@ -116,7 +119,9 @@ def test_print_decision_paths_no_class_names():
     # Train model
     clf.fit(x, y)
 
-    result = generate_decision_paths(clf, iris.feature_names, None, "iris_tree", "  ")
+    result = generate_decision_paths(clf,
+                                     ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+                                     None, "iris_tree", "  ")
 
     expected = 'def iris_tree(petal width (cm), petal length (cm)):' + os.linesep + \
                '  if petal width (cm) <= 0.8000:' + os.linesep + \
@@ -148,7 +153,8 @@ def test_draw_tree():
     # Train model
     clf.fit(x, y)
 
-    draw_tree(clf, iris.feature_names, iris.target_names)
+    draw_tree(clf, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+              ['setosa', 'versicolor', 'virginica'])
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree.png")
     pyplot.savefig(str(result_path))
@@ -172,7 +178,8 @@ def test_draw_tree_exists_ax():
 
     ax.set_title("My ax")
 
-    draw_tree(clf, iris.feature_names, iris.target_names, ax=ax)
+    draw_tree(clf, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+              ['setosa', 'versicolor', 'virginica'], ax=ax)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")

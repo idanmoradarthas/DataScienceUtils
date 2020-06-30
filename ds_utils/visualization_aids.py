@@ -43,10 +43,9 @@ def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Opt
         seaborn.countplot(_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
         labels = ax.get_xticklabels()
 
-    ax.set_xlabel("")
-
     if not ax.get_title():
         ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
+        ax.set_xlabel("")
 
     ax.set_xticklabels(labels, rotation=45, horizontalalignment='right')
 

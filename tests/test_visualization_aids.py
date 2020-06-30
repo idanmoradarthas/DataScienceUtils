@@ -45,6 +45,7 @@ def test_visualize_feature_float_exist_ax():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_visualize_feature_float_exist_ax.png")
+    pyplot.gcf().set_size_inches(10, 8)
     pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
