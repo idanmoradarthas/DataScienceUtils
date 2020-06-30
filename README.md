@@ -122,11 +122,17 @@ And the following table will be the output for ``terms``:
 |1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
 
 ## Visualization Aids
-### Visualize Features
+### Visualize Feature
 
-Receives a data frame and visualize the features values on graphs.
+Receives a feature and visualize its values on a graph.
 
-![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_features.png)
+|Feature Type      |Plot|
+|------------------|----|
+|Float             |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png)|
+|Integer           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_integer.png)|
+|Datetime          |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png)|
+|Category / Object |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png)|
+|Boolean           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png)|
 
 ### Visualize Correlations
 Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
