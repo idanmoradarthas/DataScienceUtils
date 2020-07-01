@@ -97,12 +97,6 @@ def _calc_precision_recall(fn, fp, tn, tp):
     return npv, ppv, tnr, tpr
 
 
-def _perform_data_partition_and_evaluation(X_train, y_train, X_test, y_test, classifier, metric):
-    classifier.fit(X_train, y_train)
-    y_pred = classifier.predict(X_test)
-    return metric(y_test, y_pred)
-
-
 def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: numpy.ndarray, X_test: numpy.ndarray,
                                              y_test: numpy.ndarray,
                                              classifiers_dict: Dict[str, sklearn.base.ClassifierMixin],
@@ -214,3 +208,12 @@ def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: nu
     ax.legend(loc="lower right", **kwargs)
 
     return ax
+
+
+def _perform_data_partition_and_evaluation(X_train, y_train, X_test, y_test, classifier, metric):
+    if y_train.shape[1] == 1:
+        classifier.fit(X_train, y_train.values.ravel())
+    else:
+        classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
+    return metric(y_test, y_pred)

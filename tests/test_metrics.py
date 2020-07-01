@@ -88,6 +88,24 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples():
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
+def test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs():
+    custom_y_train = pandas.get_dummies(y_train.astype(str))
+    custom_y_test = pandas.get_dummies(y_test.astype(str))
+    plot_metric_growth_per_labeled_instances(x_train, custom_y_train.values, x_test, custom_y_test.values,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)})
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
 def test_plot_metric_growth_per_labeled_instances_with_n_samples():
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),

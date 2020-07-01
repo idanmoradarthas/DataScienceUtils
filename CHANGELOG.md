@@ -1,12 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.2] - 2020-06-28
+## [1.6.2] - 2020-07-01
 ### Added
 - visualization_aids::visualize_feature method that visualize one feature distribution.
 ### Changed
 - visualization_aids::visualize_features was deprecated.
 ### Fixed
+- Ravel y_train in metrics::plot_metric_growth_per_labeled_instances if the shape is (n_sample, 1) to avoid DataConversionWarning (A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().)
 - minor changes
 
 ## [1.6.1] - 2020-06-21
