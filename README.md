@@ -124,7 +124,12 @@ And the following table will be the output for ``terms``:
 ## Visualization Aids
 ### Visualize Feature
 
-Receives a feature and visualize its values on a graph.
+Receives a feature and visualize its values on a graph:
+
+* If the feature is float then the method plots the distribution plot.
+* If the feature is datetime then the method plots a line plot of progression of amount thought time.
+* If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
+
 
 |Feature Type      |Plot|
 |------------------|----|
@@ -157,10 +162,11 @@ Plots the joint distribution between two features:
 
 |               | Numeric | Categorical | Boolean | Datetime
 |---------------|---------|-------------|---------|---------|
-|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|
-|**Categorical**| |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|
-|**Boolean**    | | |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|
-|**Datetime**   | | | |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
+|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)| | | |
+|**Categorical**|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)| | |
+|**Boolean**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)| |
+|**Datetime**   |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
+
 
 ##XAI
 ### Draw Tree
