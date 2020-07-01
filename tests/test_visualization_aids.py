@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import matplotlib
-import pytest
 
 matplotlib.use('agg')
 import numpy
@@ -295,29 +294,6 @@ def test_plot_relationship_between_features_both_categorical():
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-@pytest.mark.skip()
-def test_loop_plot_features_relationship_example():
-    figure, axes = pyplot.subplots(6, 2)
-    axes = axes.flatten()
-    figure.set_size_inches(16, 25)
-
-    feature_1 = "x1"
-    other_features = ["x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12"]
-
-    for i in range(0, len(other_features)):
-        axes[i].set_title(f"{feature_1} vs. {other_features[i]}")
-        plot_features_interaction(feature_1, other_features[i], data_1M, ax=axes[i])
-
-    figure.delaxes(axes[11])
-    figure.subplots_adjust(hspace=0.7)
-
-    result_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("loop_plot_features_relationship_example.png")
-    pyplot.savefig(str(result_path))
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
 
 
 def test_plot_relationship_between_features_categorical_bool():
