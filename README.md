@@ -37,6 +37,19 @@ Receives a train and test sets, and plots given metric change in increasing amou
 
 ![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
 
+### Visualize Accuracy Grouped by Probability
+
+Receives test true labels and classifier probabilities predictions, divide and classify the results and finally
+plots a stacked bar chart with the results.
+
+Without breakdown:
+
+![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability.png)
+
+With breakdown:
+
+![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
+
 ## Preprocess
 ### Get Correlated Features
 

@@ -1,9 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.2] - 2020-07-01
+## [1.6.2] - 2020-07-02
 ### Added
 - visualization_aids::visualize_feature method that visualize one feature distribution.
+- metrics::visualize_accuracy_grouped_by_probability method that visualize accuracy stacked by probability.
 ### Changed
 - visualization_aids::visualize_features was deprecated.
 ### Fixed

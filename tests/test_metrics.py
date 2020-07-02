@@ -11,7 +11,8 @@ import numpy
 import pytest
 from matplotlib import pyplot
 
-from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances
+from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances, \
+    visualize_accuracy_grouped_by_probability
 from tests.utils import compare_images_from_paths
 
 RANDOM_STATE = numpy.random.RandomState(0)
@@ -198,3 +199,120 @@ def test_plot_metric_growth_per_labeled_instances_verbose(capsys):
                "for 20 times\n"
 
     assert expected == captured
+
+
+def test_visualize_accuracy_grouped_by_probability():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"])
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_exists_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], ax=ax)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_exists_ax.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_exists_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_with_breakdown():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], display_breakdown=True)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_with_breakdown.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_with_breakdown.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_custom_bins():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], bins=[0, 0.3, 0.5, 0.8, 1])
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_bins.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_bins.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_custom_threshold():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], threshold=0.3)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_threshold.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_threshold.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+@pytest.mark.skip
+def test_visualize_accuracy_grouped_by_probability_1():
+    loan_data = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313.csv"),
+                                encoding="latin1", parse_dates=["issue_d"], nrows=110000).drop("id", axis=1)
+    loan_data = loan_data.drop("application_type", axis=1)
+    loan_data = loan_data.sort_values("issue_d")
+    loan_data = pandas.get_dummies(loan_data)
+    train = loan_data.head(int(loan_data.shape[0] * 0.7)).sample(frac=1).reset_index(drop=True).drop("issue_d", axis=1)
+    test = loan_data.tail(int(loan_data.shape[0] * 0.3)).drop("issue_d", axis=1)
+
+    selected_features = ['emp_length_int', 'home_ownership_MORTGAGE', 'home_ownership_RENT',
+                         'income_category_Low', 'term_ 36 months', 'purpose_debt_consolidation',
+                         'purpose_small_business', 'interest_payments_High']
+    classifier = RandomForestClassifier(min_samples_leaf=int(train.shape[0] * 0.01), class_weight="balanced",
+                                        n_estimators=1000, random_state=0)
+    classifier.fit(train[selected_features], train["loan_condition_cat"])
+
+    probabilities = classifier.predict_proba(test[selected_features])
+    visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
+                                              display_breakdown=True)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))

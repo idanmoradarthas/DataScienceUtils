@@ -148,7 +148,7 @@ def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Unio
     corr_condensed = hierarchy.distance.squareform(1 - corr)
     z = hierarchy.linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    hierarchy.dendrogram(z, labels=data.columns, orientation="left", ax=ax)
+    hierarchy.dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
     return ax
 
 
