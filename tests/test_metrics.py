@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import matplotlib
+import pandas
 from numpy.random.mtrand import RandomState
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -9,38 +10,28 @@ matplotlib.use('agg')
 import numpy
 import pytest
 from matplotlib import pyplot
-from sklearn import datasets, svm
-from sklearn.model_selection import train_test_split
-from sklearn.multiclass import OneVsRestClassifier
 
-from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances
+from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances, \
+    visualize_accuracy_grouped_by_probability
 from tests.utils import compare_images_from_paths
 
-iris = datasets.load_iris()
-x = iris.data
-y = iris.target
 RANDOM_STATE = numpy.random.RandomState(0)
 
-
-def _add_noisy_features(x, random_state):
-    n_samples, n_features = x.shape
-    return numpy.c_[x, random_state.randn(n_samples, 200 * n_features)]
+x_train = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_x_train.csv"))
+x_test = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_x_test.csv"))
+y_train = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_y_train.csv"))
+y_test = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_y_test.csv"))
 
 
 def test_print_confusion_matrix_binary():
-    # Add noisy features
-    x_noisy = _add_noisy_features(x, RANDOM_STATE)
+    custom_y_test = "1 1 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 0 1 0 1 0 0 1 1 1 1 1 0 0 0 1 0 1 0 1 0 0 0 0 1 1 1 1 0 1 1 " \
+                    "0 1 0"
+    custom_y_pred = "0 1 1 1 1 0 0 0 1 0 0 0 0 1 1 0 1 1 0 0 1 0 0 1 1 0 1 1 0 0 0 1 0 1 0 1 1 0 1 0 1 1 1 1 0 1 1 " \
+                    "1 1 1"
 
-    # Limit to the two first classes, and split into training and test
-    x_train, x_test, y_train, y_test = train_test_split(x_noisy[y < 2], y[y < 2], test_size=.5,
-                                                        random_state=RANDOM_STATE)
-
-    # Create a simple classifier
-    classifier = svm.LinearSVC(random_state=RANDOM_STATE)
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
-
-    plot_confusion_matrix(y_test, y_pred, [1, 0])
+    plot_confusion_matrix(numpy.fromstring(custom_y_test, dtype=int, sep=' '),
+                          numpy.fromstring(custom_y_pred, dtype=int, sep=' '),
+                          [1, 0])
 
     Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
@@ -56,17 +47,14 @@ def test_print_confusion_matrix_binary():
 
 
 def test_print_confusion_matrix():
-    # Add noisy features
-    x_noisy = _add_noisy_features(x, RANDOM_STATE)
+    custom_y_test = "1 0 1 1 0 0 0 0 2 2 1 1 1 2 2 0 1 0 0 1 1 2 2 2 2 1 1 0 1 1 0 0 2 0 1 1 0 2 1 2 2 1 2 1 0 0 0 1 " \
+                    "0 2 1 0 1 2 2 2 1 1 2 2 1 2 1 0 1 1 2 0 0 2 0 2 1 2 0"
+    y_pred = "0 0 2 2 2 0 1 0 1 2 2 2 2 2 2 0 2 1 2 2 0 2 2 2 1 1 2 0 1 2 0 2 2 0 2 2 2 2 2 2 2 0 2 1 0 0 1 1 1 0 1 1" \
+             " 2 0 1 2 0 0 0 2 2 2 2 0 0 2 2 1 0 2 0 0 2 0 2"
 
-    x_train, x_test, y_train, y_test = train_test_split(x_noisy, y, test_size=.5, random_state=RANDOM_STATE)
-
-    # Create a simple classifier
-    classifier = OneVsRestClassifier(svm.LinearSVC(random_state=RANDOM_STATE))
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
-
-    plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
+    plot_confusion_matrix(numpy.fromstring(custom_y_test, dtype=int, sep=' '),
+                          numpy.fromstring(y_pred, dtype=int, sep=' '),
+                          [0, 1, 2])
     Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
     Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
@@ -86,7 +74,6 @@ def test_print_confusion_matrix_exception():
 
 
 def test_plot_metric_growth_per_labeled_instances_no_n_samples():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier": RandomForestClassifier(random_state=0,
@@ -102,8 +89,25 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples():
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
+def test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs():
+    custom_y_train = pandas.get_dummies(y_train.astype(str))
+    custom_y_test = pandas.get_dummies(y_test.astype(str))
+    plot_metric_growth_per_labeled_instances(x_train, custom_y_train.values, x_test, custom_y_test.values,
+                                             {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier": RandomForestClassifier(random_state=0,
+                                                                                               n_estimators=5)})
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_plot_metric_growth_per_labeled_instances_y_shape_n_outputs.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
 def test_plot_metric_growth_per_labeled_instances_with_n_samples():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier": RandomForestClassifier(random_state=0,
@@ -121,9 +125,8 @@ def test_plot_metric_growth_per_labeled_instances_with_n_samples():
 
 
 def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     with pytest.raises(ValueError):
-        plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+        plot_metric_growth_per_labeled_instances(numpy.array([]), numpy.array([]), numpy.array([]), numpy.array([]),
                                                  {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                                   "RandomForestClassifier": RandomForestClassifier(random_state=0,
                                                                                                    n_estimators=5)},
@@ -131,7 +134,6 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles():
 
 
 def test_plot_metric_growth_per_labeled_instances_given_random_state_int():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier": RandomForestClassifier(random_state=0,
@@ -149,7 +151,6 @@ def test_plot_metric_growth_per_labeled_instances_given_random_state_int():
 
 
 def test_plot_metric_growth_per_labeled_instances_given_random_state():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier": RandomForestClassifier(random_state=0,
@@ -167,7 +168,6 @@ def test_plot_metric_growth_per_labeled_instances_given_random_state():
 
 
 def test_plot_metric_growth_per_labeled_instances_exists_ax():
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     pyplot.figure()
     ax = pyplot.gca()
 
@@ -189,13 +189,130 @@ def test_plot_metric_growth_per_labeled_instances_exists_ax():
 
 
 def test_plot_metric_growth_per_labeled_instances_verbose(capsys):
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
     plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                              {"DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier": RandomForestClassifier(random_state=0,
                                                                                                n_estimators=5)},
                                              verbose=1)
     captured = capsys.readouterr().out
-    expected = "Fitting classifier DecisionTreeClassifier for 20 times\nFitting classifier RandomForestClassifier for 20 times\n"
+    expected = "Fitting classifier DecisionTreeClassifier for 20 times\nFitting classifier RandomForestClassifier " \
+               "for 20 times\n"
 
     assert expected == captured
+
+
+def test_visualize_accuracy_grouped_by_probability():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"])
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_exists_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], ax=ax)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_exists_ax.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_exists_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_with_breakdown():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], display_breakdown=True)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_with_breakdown.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_with_breakdown.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_custom_bins():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], bins=[0, 0.3, 0.5, 0.8, 1])
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_bins.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_bins.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_accuracy_grouped_by_probability_custom_threshold():
+    class_with_probabilities = pandas.read_csv(
+        Path(__file__).parents[0].absolute().joinpath("resources").joinpath("class_with_probabilities.csv"))
+    visualize_accuracy_grouped_by_probability(class_with_probabilities["loan_condition_cat"], 1,
+                                              class_with_probabilities["probabilities"], threshold=0.3)
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_threshold.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability_custom_threshold.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+@pytest.mark.skip
+def test_visualize_accuracy_grouped_by_probability_1():
+    loan_data = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313.csv"),
+                                encoding="latin1", parse_dates=["issue_d"], nrows=110000).drop("id", axis=1)
+    loan_data = loan_data.drop("application_type", axis=1)
+    loan_data = loan_data.sort_values("issue_d")
+    loan_data = pandas.get_dummies(loan_data)
+    train = loan_data.head(int(loan_data.shape[0] * 0.7)).sample(frac=1).reset_index(drop=True).drop("issue_d", axis=1)
+    test = loan_data.tail(int(loan_data.shape[0] * 0.3)).drop("issue_d", axis=1)
+
+    selected_features = ['emp_length_int', 'home_ownership_MORTGAGE', 'home_ownership_RENT',
+                         'income_category_Low', 'term_ 36 months', 'purpose_debt_consolidation',
+                         'purpose_small_business', 'interest_payments_High']
+    classifier = RandomForestClassifier(min_samples_leaf=int(train.shape[0] * 0.01), class_weight="balanced",
+                                        n_estimators=1000, random_state=0)
+    classifier.fit(train[selected_features], train["loan_condition_cat"])
+
+    probabilities = classifier.predict_proba(test[selected_features])
+    visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
+                                              display_breakdown=True)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_metrics").joinpath("test_visualize_accuracy_grouped_by_probability.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))

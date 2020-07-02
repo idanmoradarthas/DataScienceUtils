@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Callable
+from typing import Optional, Union, Callable
 
 import numpy
 import pandas
@@ -7,57 +7,52 @@ from matplotlib import axes, pyplot, dates
 from scipy.cluster import hierarchy
 
 
-def visualize_features(data: pandas.DataFrame, features: Optional[List[str]] = None, num_columns: int = 2,
-                       remove_na: bool = False, **kwargs) -> axes.Axes:
+def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None,
+                      **kwargs) -> axes.Axes:
     """
-    Receives a data frame and visualize the features values on graphs.
+    Visualize a feature series:
 
-    The method creates new ``matplotlib.pyplot.figure``.
+    * If the feature is float then the method plots the distribution plot.
+    * If the feature is datetime then the method plots a line plot of progression of amount thought time.
+    * If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
 
-    :param data: the data frame.
-    :param features: list of feature to visualize.
-    :param num_columns: number of columns in the grid.
+    :param series: the data series.
     :param remove_na: True to ignore NA values when plotting; False otherwise.
-    :param kwargs: Additional keyword arguments are passed to the function used to draw the plot on Axes.
+    :param ax: Axes in which to draw the plot, otherwise use the currently-active Axes.
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the plot drawn onto it.
     """
-    if not features:
-        features = data.columns
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
 
-    if len(features) <= num_columns:
-        nrows = 1
+    if remove_na:
+        feature_series = series.dropna()
     else:
-        nrows = int(len(features) / num_columns)
-        if len(features) % num_columns > 0:
-            nrows += 1
-    figure, subplots = pyplot.subplots(nrows=nrows, ncols=num_columns)
-    subplots = subplots.flatten()
+        feature_series = series
 
-    i = 0
+    if str(feature_series.dtype).startswith("float"):
+        seaborn.distplot(feature_series, ax=ax, hist_kws=kwargs)
+        labels = ax.get_xticks()
+    elif str(feature_series.dtype).startswith("datetime"):
+        feature_series.value_counts().plot(kind="line", ax=ax, **kwargs)
+        labels = ax.get_xticks()
+    else:
+        seaborn.countplot(_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
+        labels = ax.get_xticklabels()
 
-    for feature in features:
-        feature_series = data[feature]
-        frame_reduced = data
-        if remove_na:
-            feature_series = feature_series.dropna()
-            frame_reduced = data.dropna(subset=[feature])
-        if str(feature_series.dtype).startswith("float"):
-            plot = seaborn.distplot(feature_series, ax=subplots[i], **kwargs)
-        elif str(feature_series.dtype).startswith("datetime"):
-            plot = frame_reduced.groupby(feature).size().plot(ax=subplots[i], **kwargs)
-        else:
-            plot = seaborn.countplot(feature_series, ax=subplots[i], **kwargs)
-        plot.set_title(f"{feature} ({feature_series.dtype})")
-        plot.set_xlabel("")
+    if not ax.get_title():
+        ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
+        ax.set_xlabel("")
 
-        pyplot.setp(subplots[i].get_xticklabels(), rotation=45)
-        i += 1
+    ax.set_xticklabels(labels, rotation=45, horizontalalignment='right')
 
-    if i < len(subplots):
-        for j in range(i, len(subplots)):
-            figure.delaxes(subplots[j])
-    pyplot.subplots_adjust(hspace=0.5)
-    return subplots
+    if str(feature_series.dtype).startswith("datetime"):
+        ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+
+    return ax
 
 
 def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] = 'pearson',
@@ -153,7 +148,7 @@ def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Unio
     corr_condensed = hierarchy.distance.squareform(1 - corr)
     z = hierarchy.linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    hierarchy.dendrogram(z, labels=data.columns, orientation="left", ax=ax)
+    hierarchy.dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
     return ax
 
 
@@ -197,7 +192,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
                     label=group_feature_1, **kwargs)
             ax.set_xlabel(feature_1)
             ax.legend(title=feature_2)
-        elif str(data[feature_2].dtype) == "datetime64[ns]":
+        elif str(data[feature_2].dtype).startswith("datetime"):
             # first feature is categorical and the second is datetime
             dup_df[feature_2] = data[feature_2].apply(dates.date2num)
             chart = seaborn.violinplot(feature_2, feature_1, data=dup_df, ax=ax)
@@ -208,7 +203,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
             dup_df[feature_2] = data[feature_2]
             chart = seaborn.boxplot(feature_1, feature_2, data=dup_df, ax=ax, **kwargs)
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
-    elif str(data[feature_1].dtype) == "datetime64[ns]":
+    elif str(data[feature_1].dtype).startswith("datetime"):
         if str(data[feature_2].dtype) in ["object", "category", "bool"]:
             # first feature is datetime and the second is categorical
             dup_df[feature_1] = data[feature_1].apply(dates.date2num)
@@ -227,7 +222,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         dup_df[feature_1] = data[feature_1]
         chart = seaborn.boxplot(feature_2, feature_1, data=dup_df, ax=ax, **kwargs)
         chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
-    elif str(data[feature_2].dtype) == "datetime64[ns]":
+    elif str(data[feature_2].dtype).startswith("datetime"):
         # first feature is numeric and the second is datetime
         ax.plot(data[feature_2], data[feature_1], **kwargs)
         ax.set_xlabel(feature_2)

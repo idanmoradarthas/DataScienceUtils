@@ -1,21 +1,15 @@
 from pathlib import Path
 
 import matplotlib
-import pytest
 
 matplotlib.use('agg')
 import numpy
 import pandas
 from matplotlib import pyplot
-from sklearn import datasets
 
-from ds_utils.visualization_aids import visualize_features, visualize_correlations, \
-    plot_features_interaction, plot_correlation_dendrogram
+from ds_utils.visualization_aids import visualize_correlations, \
+    plot_features_interaction, plot_correlation_dendrogram, visualize_feature
 from tests.utils import compare_images_from_paths
-
-iris = datasets.load_iris()
-x = iris.data
-y = iris.target
 
 data_1M = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
 loan_data = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313.csv"),
@@ -26,52 +20,149 @@ Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_vi
     exist_ok=True)
 
 
-def test_visualize_features():
-    visualize_features(loan_data)
+def test_visualize_feature_float():
+    visualize_feature(loan_data["emp_length_int"])
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features.png")
-    pyplot.gcf().set_size_inches(20, 30)
+        "test_visualization_aids").joinpath("test_visualize_feature_float.png")
     pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features.png")
+        "test_visualization_aids").joinpath("test_visualize_feature_float.png")
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_visualize_features_list_of_features():
-    frame = pandas.DataFrame(x, columns=iris.feature_names)
-    visualize_features(frame, iris.feature_names[:2])
+def test_visualize_feature_float_exist_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    visualize_feature(loan_data["emp_length_int"], ax=ax)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features_list_of_features.png")
+        "test_visualization_aids").joinpath("test_visualize_feature_float_exist_ax.png")
+    pyplot.gcf().set_size_inches(10, 8)
     pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features_list_of_features.png")
+        "test_visualization_aids").joinpath("test_visualize_feature_float_exist_ax.png")
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_visualize_features_remove_na():
-    loan_data_dup = loan_data.sample(1000, random_state=0)
+def test_visualize_feature_datetime():
+    visualize_feature(loan_data["issue_d"])
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_datetime.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_datetime.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_int():
+    visualize_feature(loan_data["loan_condition_cat"])
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_int.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_int.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_object():
+    visualize_feature(loan_data["income_category"])
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_object.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_object.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_category():
+    visualize_feature(loan_data["home_ownership"].astype("category"))
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_category.png")
+    pyplot.gcf().set_size_inches(10, 8)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_category.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_category_more_than_10_categories():
+    visualize_feature(loan_data["purpose"].astype("category"))
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_category_more_than_10_categories.png")
+    pyplot.gcf().set_size_inches(11, 11)
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_category_more_than_10_categories.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_bool():
+    loan_dup = pandas.DataFrame()
+    loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: True if term == " 36 months" else False).astype(
+        "bool")
+    visualize_feature(loan_dup["term 36 months"])
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_bool.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_visualization_aids").joinpath("test_visualize_feature_bool.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_visualize_feature_remove_na():
+    loan_data_dup = pandas.DataFrame()
+    loan_data_dup["emp_length_int"] = loan_data["emp_length_int"]
     loan_data_dup = pandas.concat(
         [loan_data_dup,
-         pandas.DataFrame([[numpy.nan] * len(loan_data_dup.columns)] * 250, columns=loan_data_dup.columns)],
+         pandas.DataFrame([numpy.nan] * 250, columns=["emp_length_int"])],
         ignore_index=True).sample(frac=1, random_state=0)
 
-    visualize_features(loan_data_dup, remove_na=True)
+    assert loan_data_dup["emp_length_int"].isna().sum() == 250
+
+    visualize_feature(loan_data_dup["emp_length_int"], remove_na=True)
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features_remove_na.png")
-    pyplot.gcf().set_size_inches(20, 30)
+        "test_visualization_aids").joinpath("test_visualize_feature_remove_na.png")
     pyplot.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("test_visualize_features_remove_na.png")
+        "test_visualization_aids").joinpath("test_visualize_feature_remove_na.png")
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
@@ -203,29 +294,6 @@ def test_plot_relationship_between_features_both_categorical():
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-@pytest.mark.skip()
-def test_loop_plot_features_relationship_example():
-    figure, axes = pyplot.subplots(6, 2)
-    axes = axes.flatten()
-    figure.set_size_inches(16, 25)
-
-    feature_1 = "x1"
-    other_features = ["x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12"]
-
-    for i in range(0, len(other_features)):
-        axes[i].set_title(f"{feature_1} vs. {other_features[i]}")
-        plot_features_interaction(feature_1, other_features[i], data_1M, ax=axes[i])
-
-    figure.delaxes(axes[11])
-    figure.subplots_adjust(hspace=0.7)
-
-    result_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
-        "test_visualization_aids").joinpath("loop_plot_features_relationship_example.png")
-    pyplot.savefig(str(result_path))
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
 
 
 def test_plot_relationship_between_features_categorical_bool():

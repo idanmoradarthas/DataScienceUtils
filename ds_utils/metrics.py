@@ -1,4 +1,4 @@
-from typing import Union, List, Optional, Callable, Dict
+from typing import Union, List, Optional, Callable, Dict, Sequence
 
 import numpy
 import pandas
@@ -97,12 +97,6 @@ def _calc_precision_recall(fn, fp, tn, tp):
     return npv, ppv, tnr, tpr
 
 
-def _perform_data_partition_and_evaluation(X_train, y_train, X_test, y_test, classifier, metric):
-    classifier.fit(X_train, y_train)
-    y_pred = classifier.predict(X_test)
-    return metric(y_test, y_pred)
-
-
 def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: numpy.ndarray, X_test: numpy.ndarray,
                                              y_test: numpy.ndarray,
                                              classifiers_dict: Dict[str, sklearn.base.ClassifierMixin],
@@ -174,7 +168,8 @@ def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: nu
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
 
     :param kwargs: other keyword arguments
-                    All other keyword arguments are passed to ``ax.pcolormesh``.
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
 
     :return: Returns the Axes object with the plot drawn onto it.
     """
@@ -212,5 +207,81 @@ def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: nu
         ax.plot(n_samples, scores, label=classifier_name, **kwargs)
 
     ax.legend(loc="lower right", **kwargs)
+
+    return ax
+
+
+def _perform_data_partition_and_evaluation(X_train, y_train, X_test, y_test, classifier, metric):
+    if y_train.shape[1] == 1:
+        classifier.fit(X_train, y_train.values.ravel())
+    else:
+        classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
+    return metric(y_test, y_pred)
+
+
+def visualize_accuracy_grouped_by_probability(y_test: numpy.ndarray, labeled_class: Union[str, int],
+                                              probabilities: numpy.ndarray,
+                                              threshold: float = 0.5, display_breakdown: bool = False,
+                                              bins: Optional[Union[int, Sequence[float], pandas.IntervalIndex]] = None,
+                                              *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+    """
+    Receives test true labels and classifier probabilities predictions, divide and classify the results and finally
+    plots a stacked bar chart with the results.
+
+    :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
+    :param labeled_class: the class to enquire for.
+    :param probabilities: array, shape = [n_samples]. classifier probabilities for the labeled class.
+    :param threshold: the probability threshold for classifying the labeled class.
+    :param display_breakdown: if True the results will be displayed as "correct" and "incorrect"; otherwise
+                              as "true-positives", "true-negative", "false-positives" and "false-negative"
+    :param bins: int, sequence of scalars, or IntervalIndex
+
+                The criteria to bin by.
+
+                * int : Defines the number of equal-width bins in the range of x. The range of x is extended by .1% on each side to include the minimum and maximum values of x.
+                * sequence of scalars : Defines the bin edges allowing for non-uniform width. No extension of the range of x is done.
+                * IntervalIndex : Defines the exact bins to be used. Note that IntervalIndex for bins must be non-overlapping.
+
+                default: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
+
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
+
+    :return: Returns the Axes object with the plot drawn onto it.
+    """
+
+    if bins is None:
+        bins = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
+
+    predictions = (probabilities > threshold)
+    df_frame = pandas.DataFrame()
+    df_frame["Actual Class"] = numpy.vectorize(lambda x: True if x == labeled_class else False)(y_test)
+    df_frame["Probability"] = probabilities
+    df_frame["Classification"] = predictions
+
+    if display_breakdown:
+        df_frame["true-positives"] = (df_frame["Actual Class"] & df_frame["Classification"]).astype(int)
+        df_frame["true-negatives"] = (~df_frame["Actual Class"] & ~df_frame["Classification"]).astype(int)
+        df_frame["false-positives"] = (~df_frame["Actual Class"] & df_frame["Classification"]).astype(int)
+        df_frame["false-negatives"] = (df_frame["Actual Class"] & ~df_frame["Classification"]).astype(int)
+        display_columns = ["true-positives", "true-negatives", "false-positives", "false-negatives"]
+    else:
+        df_frame["correct"] = ((df_frame["Actual Class"] & df_frame["Classification"]) | (
+                ~df_frame["Actual Class"] & ~df_frame["Classification"])).astype(int)
+        df_frame["incorrect"] = ((~df_frame["Actual Class"] & df_frame["Classification"]) | (
+                df_frame["Actual Class"] & ~df_frame["Classification"])).astype(int)
+        display_columns = ["correct", "incorrect"]
+
+    df_frame["bins"] = pandas.cut(df_frame["Probability"], bins=bins)
+    df_frame.groupby("bins")[display_columns].sum().plot(kind="bar", stacked=True, ax=ax, **kwargs)
+
+    ax.set_xlabel("")
 
     return ax

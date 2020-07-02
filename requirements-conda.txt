@@ -1,4 +1,4 @@
-conda-build==3.9.2
+conda-build==3.18.11
 anaconda-client==1.7.2
 m2-patch==2.7.5
 conda-verify==3.4.2

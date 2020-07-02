@@ -37,9 +37,8 @@ def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optiona
         tree_name = "tree"
     output = StringIO()
     signature_vars = list()
-    for feature in required_features:
-        if (feature not in signature_vars) and (feature != 'undefined!'):
-            signature_vars.append(feature)
+    [signature_vars.append(feature) for feature in required_features if
+     (feature not in signature_vars) and (feature != 'undefined!')]
     output.write(
         f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
 
