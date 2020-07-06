@@ -29,18 +29,47 @@ package:
 ### Plot Confusion Matrix
 Computes and plot confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a classification.
 
+```python
+from ds_utils.metrics import plot_confusion_matrix
+
+
+
+plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
+```
+
 ![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
 
 ### Plot Metric Growth per Labeled Instances
 
 Receives a train and test sets, and plots given metric change in increasing amount of trained instances.
 
+```python
+from ds_utils.metrics import plot_metric_growth_per_labeled_instances
+
+
+
+plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
+                                             {"DecisionTreeClassifier":
+                                                DecisionTreeClassifier(random_state=0),
+                                              "RandomForestClassifier":
+                                                RandomForestClassifier(random_state=0, n_estimators=5)})
+```
+
 ![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
 
 ### Visualize Accuracy Grouped by Probability
 
 Receives test true labels and classifier probabilities predictions, divide and classify the results and finally
-plots a stacked bar chart with the results.
+plots a stacked bar chart with the results. [Original code](https://github.com/EthicalML/XAI)
+
+```python
+from ds_utils.metrics import visualize_accuracy_grouped_by_probability
+
+
+visualize_accuracy_grouped_by_probability(test["target"], 1, 
+                                          classifier.predict_proba(test[selected_features]),
+                                          display_breakdown=False)
+```
 
 Without breakdown:
 
@@ -59,6 +88,13 @@ Receives a feature and visualize its values on a graph:
 * If the feature is datetime then the method plots a line plot of progression of amount thought time.
 * If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
 
+```python
+from ds_utils.preprocess import visualize_feature
+
+
+
+visualize_features(X_train["feature"])
+```
 
 |Feature Type      |Plot|
 |------------------|----|
@@ -73,6 +109,14 @@ Receives a feature and visualize its values on a graph:
 Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation to 
 the target feature.
 
+```python
+from ds_utils.preprocess import get_correlated_features
+
+
+
+correlations = get_correlated_features(train, features, target)
+```
+
 |level_0               |level_1               |level_0_level_1_corr|level_0_target_corr|level_1_target_corr|
 |----------------------|----------------------|--------------------|-------------------|-------------------|
 |income_category_Low   |income_category_Medium| 1.0                | 0.1182165609358650|0.11821656093586504|
@@ -83,12 +127,28 @@ the target feature.
 Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
 [Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
 
+```python
+from ds_utils.preprocess import visualize_correlations
+
+
+
+visualize_correlations(data)
+```
+
 ![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
 
 ### Plot Correlation Dendrogram
 Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
 most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the 
-features are.
+features are. [Original code](https://github.com/EthicalML/XAI)
+
+```python
+from ds_utils.preprocess import plot_correlation_dendrogram
+
+
+
+plot_correlation_dendrogram(data)
+```
 
 ![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
 
@@ -99,6 +159,14 @@ Plots the joint distribution between two features:
 * If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
 * If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
 * If both features are numeric then the method plots scatter graph.
+
+```python
+from ds_utils.preprocess import plot_feature_relationship
+
+
+
+plot_feature_relationship("feature_1", "feature_2", data)
+```
 
 |               | Numeric | Categorical | Boolean | Datetime
 |---------------|---------|-------------|---------|---------|
@@ -183,6 +251,14 @@ And the following table will be the output for ``terms``:
 ### Draw Tree
 Receives a decision tree and return a plot graph of the tree for easy interpretation.
 
+```python
+from ds_utils.xai import draw_tree
+
+
+
+draw_tree(clf, feature_names, target_names)
+```
+
 ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_draw_tree.png)
 
 ### Generate Decision Paths
@@ -226,7 +302,6 @@ def iris_tree(petal width (cm), petal length (cm)):
                 return ("virginica", 0.9773)
 ```
 
-**see full example [here](https://datascienceutils.readthedocs.io/en/latest/xai.html#generate-decision-paths).**
 
 Excited?
 

@@ -36,7 +36,7 @@ We'll create a simple decision tree classifier and plot it::
     from matplotlib import pyplot
     from sklearn.tree import DecisionTreeClassifier
 
-    from ds_utils.visualization_aids import draw_tree
+    from ds_utils.xai import draw_tree
 
 
     # Create decision tree classifier object
@@ -66,7 +66,7 @@ We'll create a simple diagram and plot it::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import draw_dot_data
+    from ds_utils.xai import draw_dot_data
 
 
     dot_data = "digraph D{\n" \

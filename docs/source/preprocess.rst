@@ -9,7 +9,7 @@ Visualize Feature
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
 visualization with small latency time.
 
-.. autofunction:: preproces::visualize_feature
+.. autofunction:: preprocess::visualize_feature
 
 Code Example
 ============
@@ -22,7 +22,7 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import visualize_feature
+    from ds_utils.preprocess import visualize_feature
 
     loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
                                  parse_dates=["issue_d"])
@@ -84,7 +84,7 @@ This code example shows how a loop can be constructed in order to show all of fe
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import visualize_feature
+    from ds_utils.preprocess import visualize_feature
 
 
     loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
@@ -156,7 +156,7 @@ Visualize Correlations
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
 visualization with small latency time.
 
-.. autofunction:: preproces::visualize_correlations
+.. autofunction:: preprocess::visualize_correlations
 
 Code Example
 ============
@@ -168,7 +168,7 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import visualize_correlations
+    from ds_utils.preprocess import visualize_correlations
 
 
     data_1M = pandas.read_csv(path/to/dataset)
@@ -186,7 +186,7 @@ Plot Correlation Dendrogram
 ***************************
 This method was created due the lack of maintenance of the package `EthicalML / xai <https://github.com/EthicalML/XAI>`_.
 
-.. autofunction:: preproces::plot_correlation_dendrogram
+.. autofunction:: preprocess::plot_correlation_dendrogram
 
 Code Example
 ============
@@ -199,7 +199,7 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import plot_correlation_dendrogram
+    from ds_utils.preprocess import plot_correlation_dendrogram
 
 
     data_1M = pandas.read_csv(path/to/dataset)
@@ -218,7 +218,7 @@ Plot Features' Relationship
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
 visualization with small latency time.
 
-.. autofunction:: preproces::plot_features_relationship
+.. autofunction:: preprocess::plot_features_relationship
 
 Code Example
 ============
@@ -230,11 +230,11 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import plot_features_relationship
+    from ds_utils.preprocess import plot_feature_relationship
 
 
     data_1M = pandas.read_csv(path/to/dataset)
-    plot_features_relationship("x7", "x10", data_1M)
+    plot_feature_relationship("x7", "x10", data_1M)
     pyplot.show()
 
 For each different combination of features types a different plot will be shown:
@@ -307,7 +307,7 @@ others::
 
     from matplotlib import pyplot
 
-    from ds_utils.visualization_aids import plot_features_relationship
+    from ds_utils.preprocess import plot_features_relationship
 
 
     data_1M = pandas.read_csv(path/to/dataset)
