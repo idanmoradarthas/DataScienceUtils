@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.3] - 2020-07-06
+### Added
+
+### Changed
+- visualization_aids module was merged into the preprocess module.
+### Fixed
+- avoid FutureWarning due to sklearn version upgrade (Pass labels=[1, 0], pos_label=0, average=binary, sample_weight=None as keyword args. From version 0.25 passing these as positional arguments will result in an error).
+- minor changes
+
 ## [1.6.2] - 2020-07-02
 ### Added
 - visualization_aids::visualize_feature method that visualize one feature distribution.

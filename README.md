@@ -51,6 +51,23 @@ With breakdown:
 ![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
 
 ## Preprocess
+### Visualize Feature
+
+Receives a feature and visualize its values on a graph:
+
+* If the feature is float then the method plots the distribution plot.
+* If the feature is datetime then the method plots a line plot of progression of amount thought time.
+* If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
+
+
+|Feature Type      |Plot|
+|------------------|----|
+|Float             |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png)|
+|Integer           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png)|
+|Datetime          |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png)|
+|Category / Object |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png)|
+|Boolean           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png)|
+
 ### Get Correlated Features
 
 Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation to 
@@ -58,9 +75,37 @@ the target feature.
 
 |level_0               |level_1               |level_0_level_1_corr|level_0_target_corr|level_1_target_corr|
 |----------------------|----------------------|--------------------|-------------------|-------------------|
-|income_category_Low   |income_category_Medium|-0.9999999999999999 |-0.1182165609358650|0.11821656093586504|
-|term\_ 36 months      |term\_ 60 months      |-1.0                |-0.1182165609358650|0.11821656093586504|
-|interest_payments_High|interest_payments_Low |-1.0                |-0.1182165609358650|0.11821656093586504|
+|income_category_Low   |income_category_Medium| 1.0                | 0.1182165609358650|0.11821656093586504|
+|term\_ 36 months      |term\_ 60 months      | 1.0                | 0.1182165609358650|0.11821656093586504|
+|interest_payments_High|interest_payments_Low | 1.0                | 0.1182165609358650|0.11821656093586504|
+
+### Visualize Correlations
+Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
+[Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
+
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
+
+### Plot Correlation Dendrogram
+Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
+most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the 
+features are.
+
+![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
+
+### Plot Features' Relationship
+Plots the joint distribution between two features:
+* If both features are either categorical, boolean or object then the method plots the shared histogram.
+* If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
+* If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
+* If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
+* If both features are numeric then the method plots scatter graph.
+
+|               | Numeric | Categorical | Boolean | Datetime
+|---------------|---------|-------------|---------|---------|
+|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)| | | |
+|**Categorical**|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)| | |
+|**Boolean**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)| |
+|**Datetime**   |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
 
 ## Strings
 ### Append Tags to Frame
@@ -134,53 +179,6 @@ And the following table will be the output for ``terms``:
 |-----|---|---|----|----|----|-----|--------|------|
 |1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
 
-## Visualization Aids
-### Visualize Feature
-
-Receives a feature and visualize its values on a graph:
-
-* If the feature is float then the method plots the distribution plot.
-* If the feature is datetime then the method plots a line plot of progression of amount thought time.
-* If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
-
-
-|Feature Type      |Plot|
-|------------------|----|
-|Float             |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png)|
-|Integer           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png)|
-|Datetime          |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png)|
-|Category / Object |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png)|
-|Boolean           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png)|
-
-### Visualize Correlations
-Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
-[Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
-
-![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
-
-### Plot Correlation Dendrogram
-Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
-most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the 
-features are.
-
-![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
-
-### Plot Features' Relationship
-Plots the joint distribution between two features:
-* If both features are either categorical, boolean or object then the method plots the shared histogram.
-* If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
-* If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
-* If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
-* If both features are numeric then the method plots scatter graph.
-
-|               | Numeric | Categorical | Boolean | Datetime
-|---------------|---------|-------------|---------|---------|
-|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)| | | |
-|**Categorical**|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)| | |
-|**Boolean**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)| |
-|**Datetime**   |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
-
-
 ##XAI
 ### Draw Tree
 Receives a decision tree and return a plot graph of the tree for easy interpretation.
@@ -232,7 +230,7 @@ def iris_tree(petal width (cm), petal length (cm)):
 
 Excited?
 
-Read about all the modules here and see more methods and abilities (such as drawing a decision tree and more): 
+Read about all the modules here and see more abilities: 
 * [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
 * [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
 * [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.

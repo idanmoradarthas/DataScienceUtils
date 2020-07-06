@@ -1,5 +1,5 @@
 {% set name = "data-science-utils" %}
-  {% set version = "1.6.2" %}
+  {% set version = "1.6.3" %}
 
 package:
   name: "{{ name|lower }}"
