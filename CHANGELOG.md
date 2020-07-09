@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.3] - 2020-07-06
+## [1.6.3] - 2020-07-09
 ### Added
 - code examples to README.md
 ### Changed
