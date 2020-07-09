@@ -212,13 +212,13 @@ And the following image will be shown:
     :align: center
     :alt: Plot Correlation Dendrogram
 
-***************************
-Plot Features' Relationship
-***************************
+**************************
+Plot Features' Interaction
+**************************
 This method was created due a quick solution to long time calculation of Pandas Profiling. This method give a quick
 visualization with small latency time.
 
-.. autofunction:: preprocess::plot_features_relationship
+.. autofunction:: preprocess::plot_features_interaction
 
 Code Example
 ============
@@ -230,11 +230,11 @@ Let's see how to use the code::
 
     from matplotlib import pyplot
 
-    from ds_utils.preprocess import plot_feature_relationship
+    from ds_utils.preprocess import plot_features_interaction
 
 
     data_1M = pandas.read_csv(path/to/dataset)
-    plot_feature_relationship("x7", "x10", data_1M)
+    plot_features_interaction("x7", "x10", data_1M)
     pyplot.show()
 
 For each different combination of features types a different plot will be shown:

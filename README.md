@@ -152,7 +152,7 @@ plot_correlation_dendrogram(data)
 
 ![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
 
-### Plot Features' Relationship
+### Plot Features' Interaction
 Plots the joint distribution between two features:
 * If both features are either categorical, boolean or object then the method plots the shared histogram.
 * If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
@@ -161,11 +161,11 @@ Plots the joint distribution between two features:
 * If both features are numeric then the method plots scatter graph.
 
 ```python
-from ds_utils.preprocess import plot_feature_relationship
+from ds_utils.preprocess import plot_features_interaction
 
 
 
-plot_feature_relationship("feature_1", "feature_2", data)
+plot_features_interaction("feature_1", "feature_2", data)
 ```
 
 |               | Numeric | Categorical | Boolean | Datetime
