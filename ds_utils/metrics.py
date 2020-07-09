@@ -43,7 +43,7 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
 
-    cnf_matrix = confusion_matrix(y_test, y_pred, labels, sample_weight)
+    cnf_matrix = confusion_matrix(y_test, y_pred, labels=labels, sample_weight=sample_weight)
     if len(labels) == 2:
         tn, fp, fn, tp = cnf_matrix.ravel()
         npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
@@ -82,9 +82,10 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
     subplots[2].set_axis_off()
     subplots[2].text(0, 0.15, f"Accuracy: {accuracy_score(y_test, y_pred, sample_weight=sample_weight):.4f}")
     if len(labels) == 2:
-        f_score = f1_score(y_test, y_pred, labels, labels[1], "binary", sample_weight)
+        f_score = f1_score(y_test, y_pred, labels=labels, pos_label=labels[1], average="binary",
+                           sample_weight=sample_weight)
     else:
-        f_score = f1_score(y_test, y_pred, labels, average="micro", sample_weight=sample_weight)
+        f_score = f1_score(y_test, y_pred, labels=labels, average="micro", sample_weight=sample_weight)
     subplots[2].text(0, -0.5, f"F1 Score: {f_score:.4f}")
     return subplots
 
