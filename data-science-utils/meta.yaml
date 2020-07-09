@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://github.com/idanmoradarthas/DataScienceUtils/releases/download/{{ version }}/data_science_utils-{{ version }}.tar.gz"
-  sha256: af1d854afde74e281e9be9394ab9cdff75cf09c9ec69b61225a834986fd83f4a
+  sha256: 5a87bb00358853247783a80a3c7d6cef2f32a4df1fab2e0175b150ead72dd4a8
 
 build:
   number: 0
