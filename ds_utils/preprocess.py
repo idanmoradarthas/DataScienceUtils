@@ -78,7 +78,7 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
     :return: data frame with the correlations and correlation to the target feature.
     """
-    correlations = pandas.DataFrame(_calc_corrections(data_frame[features + [target_feature]], method, min_periods))
+    correlations = _calc_corrections(data_frame[features + [target_feature]], method, min_periods)
     target_corr = correlations[target_feature].transpose()
     features_corr = correlations.loc[features, features]
     corr_matrix = features_corr.where(numpy.triu(numpy.ones(features_corr.shape), k=1).astype(numpy.bool))
@@ -187,8 +187,7 @@ def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Unio
     return ax
 
 
-def _calc_corrections(data: pandas.DataFrame, method: Union[str, Callable],
-                      min_periods: Optional[int]) -> numpy.ndarray:
+def _calc_corrections(data, method, min_periods):
     return data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
 
 
