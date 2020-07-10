@@ -307,7 +307,7 @@ others::
 
     from matplotlib import pyplot
 
-    from ds_utils.preprocess import plot_features_relationship
+    from ds_utils.preprocess import plot_features_interaction
 
 
     data_1M = pandas.read_csv(path/to/dataset)
@@ -321,7 +321,7 @@ others::
 
     for i in range(0, len(other_features)):
         axes[i].set_title(f"{feature_1} vs. {other_features[i]}")
-        plot_features_relationship(feature_1, other_features[i], data_1M, ax=axes[i])
+        plot_features_interaction(feature_1, other_features[i], data_1M, ax=axes[i])
 
     figure.delaxes(axes[11])
     figure.subplots_adjust(hspace=0.7)
