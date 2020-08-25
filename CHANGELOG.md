@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.4] - 2020-08-20
+### Added
+- xai::plot_features_importance method that visualize into bar chart the feature importance.
+### Changed
+- deprecated xai::draw_tree. Use sklearn.tree.plot_tree instead.
+### Fixed
+- minor changes
+
 ## [1.6.3] - 2020-07-09
 ### Added
 - code examples to README.md

@@ -1,8 +1,5 @@
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use('agg')
 import numpy
 import pandas
 from matplotlib import pyplot

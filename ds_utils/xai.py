@@ -1,4 +1,5 @@
 import os
+import warnings
 from io import StringIO, BytesIO
 from typing import Optional, List
 
@@ -87,6 +88,7 @@ def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,
                    All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the plot drawn onto it.
     """
+    warnings.warn("This module is deprecated. Use sklearn.tree.plot_tree instead", DeprecationWarning, stacklevel=2)
     return draw_dot_data(export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
                                          special_characters=True, class_names=class_names), ax=ax, **kwargs)
 
@@ -112,4 +114,31 @@ def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) ->
     img = image.imread(sio, format="png")
     ax.imshow(img, **kwargs)
     ax.set_axis_off()
+    return ax
+
+
+def plot_features_importance(feature_names: List[str], feature_importance: List[float], *,
+                             ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+    """
+    plot feature importance as a bar chart.
+
+    :param feature_names: strings list of feature names
+    :param feature_importance: float list of feature importance
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
+    :return: Returns the Axes object with the plot drawn onto it.
+    """
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
+
+    names = numpy.array(feature_names)
+    importance = numpy.array(feature_importance)
+    non_zero_importance = numpy.nonzero(importance)
+
+    ax.bar(names[non_zero_importance], importance[non_zero_importance], **kwargs)
+    pyplot.xticks(rotation=90)
+
     return ax

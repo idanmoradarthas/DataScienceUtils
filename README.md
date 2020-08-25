@@ -247,10 +247,11 @@ And the following table will be the output for ``terms``:
 |-----|---|---|----|----|----|-----|--------|------|
 |1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
 
-##XAI
+## XAI
 ### Draw Tree
 Receives a decision tree and return a plot graph of the tree for easy interpretation.
 
+Deprecated since version 1.6.4: Use [sklearn.tree.plot_tree](https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html) instead
 ```python
 from ds_utils.xai import draw_tree
 
