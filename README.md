@@ -249,9 +249,8 @@ And the following table will be the output for ``terms``:
 
 ## Unsupervised
 ### Cluster Cardinality
-Cluster cardinality is the number of examples per cluster.
-
-Allow investigating clusters that are major outliers.
+Cluster cardinality is the number of examples per cluster. This method plots the number of points per cluster as a bar 
+chart.
 
 ```python
 import pandas
@@ -262,7 +261,7 @@ from ds_utils.unsupervised import plot_cluster_cardinality
 
 
 data = pandas.read_csv(path/to/dataset)
-estimator = KMeans(n_clusters=8)
+estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
 plot_cluster_cardinality(estimator.labels_)
@@ -270,6 +269,28 @@ plot_cluster_cardinality(estimator.labels_)
 pyplot.show()
 ```
 ![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_cardinality.png)
+
+### Plot Cluster Magnitude
+Cluster magnitude is the sum of distances from all examples to the centroid of the cluster. This method plots the 
+Total Point-to-Centroid Distance per cluster as a bar chart.
+
+```python
+import pandas
+from matplotlib import pyplot
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import euclidean
+
+from ds_utils.unsupervised import plot_cluster_magnitude
+
+data = pandas.read_csv(path/to/dataset)
+estimator = KMeans(n_clusters=8, random_state=42)
+estimator.fit(data)
+
+plot_cluster_magnitude(data, estimator.labels_, estimator.cluster_centers_, euclidean)
+
+pyplot.show()
+```
+![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png)
 
 ## XAI
 ### Generate Decision Paths

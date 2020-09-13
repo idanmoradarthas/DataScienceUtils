@@ -8,9 +8,9 @@ model.
 Mostly inspired by the Interpet Results of Cluster in Google's Machine Learning Crash Course. See more information
 `here <https://developers.google.com/machine-learning/clustering/interpret>`_
 
-*******************
-Cluster Cardinality
-*******************
+************************
+Plot Cluster Cardinality
+************************
 
 .. autofunction:: unsupervised::plot_cluster_cardinality
 
@@ -32,7 +32,7 @@ We'll create a simple K-Means algorithm with k=8 and plot how many point goes to
     from ds_utils.unsupervised import plot_cluster_cardinality
 
 
-    estimator = KMeans(n_clusters=8)
+    estimator = KMeans(n_clusters=8, random_state=42)
     estimator.fit(x)
 
     plot_cluster_cardinality(estimator.labels_)
@@ -44,3 +44,33 @@ And the following image will be shown:
 .. image:: ../../tests/baseline_images/test_unsupervised/test_cluster_cardinality.png
     :align: center
     :alt: Cluster Cardinality
+
+**********************
+Plot Cluster Magnitude
+**********************
+
+.. autofunction:: unsupervised::plot_cluster_magnitude
+
+Again we'll create a simple K-Means algorithm with k=8. This we'll plot the sum of distances from points to their
+centroid::
+
+    from matplotlib import pyplot
+    from sklearn.cluster import KMeans
+    from scipy.spatial.distance import euclidean
+
+    from ds_utils.unsupervised import plot_cluster_magnitude
+
+
+
+    estimator = KMeans(n_clusters=8, random_state=42)
+    estimator.fit(x)
+
+    plot_cluster_magnitude(x, estimator.labels_, estimator.cluster_centers_, euclidean)
+
+    pyplot.show()
+
+And the following image will be shown:
+
+.. image:: ../../tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png
+    :align: center
+    :alt: Plot Cluster Magnitude
