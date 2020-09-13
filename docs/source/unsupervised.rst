@@ -51,7 +51,7 @@ Plot Cluster Magnitude
 
 .. autofunction:: unsupervised::plot_cluster_magnitude
 
-Again we'll create a simple K-Means algorithm with k=8. This we'll plot the sum of distances from points to their
+Again we'll create a simple K-Means algorithm with k=8. This time we'll plot the sum of distances from points to their
 centroid::
 
     from matplotlib import pyplot
@@ -74,3 +74,32 @@ And the following image will be shown:
 .. image:: ../../tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png
     :align: center
     :alt: Plot Cluster Magnitude
+
+*************************
+Magnitude vs. Cardinality
+*************************
+
+.. autofunction:: unsupervised::plot_magnitude_vs_cardinality
+
+Now let's plot the Cardinality vs. the Magnitude::
+
+    from matplotlib import pyplot
+    from sklearn.cluster import KMeans
+    from scipy.spatial.distance import euclidean
+
+    from ds_utils.unsupervised import plot_magnitude_vs_cardinality
+
+
+
+    estimator = KMeans(n_clusters=8, random_state=42)
+    estimator.fit(x)
+
+    plot_magnitude_vs_cardinality(x, estimator.labels_, estimator.cluster_centers_, euclidean)
+
+    pyplot.show()
+
+And the following image will be shown:
+
+.. image:: ../../tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png
+    :align: center
+    :alt: Magnitude vs. Cardinality

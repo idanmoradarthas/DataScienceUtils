@@ -9,6 +9,7 @@ performance of an unsupervised model.
 - unsupervised::plot_cluster_cardinality method that plots the number of points per cluster as a bar chart.
 - unsupervised::plot_cluster_magnitude method that plots the the Total Point-to-Centroid Distance per cluster as a bar 
 chart.
+- unsupervised::plot_magnitude_vs_cardinality method plots the cardinality vs. magnitude as a scatter plot.
 ### Changed
 - deprecated xai::draw_tree. Use sklearn.tree.plot_tree instead.
 - requirements dependencies.

@@ -5,7 +5,7 @@ import pandas
 from matplotlib import pyplot
 from scipy.spatial.distance import euclidean
 
-from ds_utils.unsupervised import plot_cluster_cardinality, plot_cluster_magnitude
+from ds_utils.unsupervised import plot_cluster_cardinality, plot_cluster_magnitude, plot_magnitude_vs_cardinality
 from tests.utils import compare_images_from_paths
 
 iris_x = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_x_full.csv"))
@@ -87,6 +87,39 @@ def test_plot_cluster_magnitude_exist_ax():
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_unsupervised").joinpath("test_plot_cluster_magnitude_exist_ax.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_magnitude_vs_cardinality():
+    plot_magnitude_vs_cardinality(iris_x, labels, cluster_centers, euclidean)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_unsupervised").joinpath("test_plot_magnitude_vs_cardinality.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_unsupervised").joinpath("test_plot_magnitude_vs_cardinality.png")
+    pyplot.cla()
+    pyplot.close(pyplot.gcf())
+    compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_plot_magnitude_vs_cardinality_exist_ax():
+    pyplot.figure()
+    ax = pyplot.gca()
+
+    ax.set_title("My ax")
+
+    plot_magnitude_vs_cardinality(iris_x, labels, cluster_centers, euclidean, ax=ax)
+
+    result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
+        "test_unsupervised").joinpath("test_plot_magnitude_vs_cardinality_exist_ax.png")
+    pyplot.savefig(str(result_path))
+
+    baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
+        "test_unsupervised").joinpath("test_plot_magnitude_vs_cardinality_exist_ax.png")
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))

@@ -292,6 +292,28 @@ pyplot.show()
 ```
 ![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png)
 
+### Magnitude vs. Cardinality
+Higher cluster cardinality tends to result in a higher cluster magnitude, which intuitively makes sense. Clusters
+are anomalous when cardinality doesn't correlate with magnitude relative to the other clusters. Find anomalous 
+clusters by plotting magnitude against cardinality as a scatter plot.
+```python
+import pandas
+from matplotlib import pyplot
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import euclidean
+
+from ds_utils.unsupervised import plot_magnitude_vs_cardinality
+
+data = pandas.read_csv(path/to/dataset)
+estimator = KMeans(n_clusters=8, random_state=42)
+estimator.fit(data)
+
+plot_magnitude_vs_cardinality(data, estimator.labels_, estimator.cluster_centers_, euclidean)
+
+pyplot.show()
+```
+![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png)
+
 ## XAI
 ### Generate Decision Paths
 Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 
