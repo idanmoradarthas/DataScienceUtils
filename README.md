@@ -197,16 +197,16 @@ A dataset that looks like this:
 
 Using this code:
 ```python
-    import pandas
+import pandas
 
-    from ds_utils.strings import append_tags_to_frame
+from ds_utils.strings import append_tags_to_frame
 
 
-    x_train = pandas.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
-                                {"article_name": "2", "article_tags": "ds,ml"}])
-    x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
+x_train = pandas.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
+                             {"article_name": "2", "article_tags": "ds,ml"}])
+x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
-    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
+x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 ```
 
 will be parsed into this:
@@ -247,21 +247,31 @@ And the following table will be the output for ``terms``:
 |-----|---|---|----|----|----|-----|--------|------|
 |1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
 
-## XAI
-### Draw Tree
-Receives a decision tree and return a plot graph of the tree for easy interpretation.
+## Unsupervised
+### Cluster Cardinality
+Cluster cardinality is the number of examples per cluster.
 
-Deprecated since version 1.6.4: Use [sklearn.tree.plot_tree](https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html) instead
+Allow investigating clusters that are major outliers.
+
 ```python
-from ds_utils.xai import draw_tree
+import pandas
+from matplotlib import pyplot
+from sklearn.cluster import KMeans
+
+from ds_utils.unsupervised import plot_cluster_cardinality
 
 
+data = pandas.read_csv(path/to/dataset)
+estimator = KMeans(n_clusters=8)
+estimator.fit(data)
 
-draw_tree(clf, feature_names, target_names)
+plot_cluster_cardinality(estimator.labels_)
+
+pyplot.show()
 ```
+![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_cardinality.png)
 
-![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_draw_tree.png)
-
+## XAI
 ### Generate Decision Paths
 Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 
 [Original code](https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree)
@@ -303,6 +313,31 @@ def iris_tree(petal width (cm), petal length (cm)):
                 return ("virginica", 0.9773)
 ```
 
+## Plot Features` Importance
+
+plot feature importance as a bar chart.
+
+```python
+import pandas
+
+from matplotlib import pyplot
+from sklearn.tree import DecisionTreeClassifier
+
+from ds_utils.xai import plot_features_importance
+
+
+data = pandas.read_csv(path/to/dataset)
+target = data["target"]
+features = data.columns.to_list()
+features.remove("target")
+
+clf = DecisionTreeClassifier(random_state=42)
+clf.fit(data[features], target)
+plot_features_importance(features, clf.feature_importances_)
+
+pyplot.show()
+```
+![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance.png)
 
 Excited?
 
@@ -310,6 +345,7 @@ Read about all the modules here and see more abilities:
 * [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
 * [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
 * [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.
+* [Unsupervised](https://datascienceutils.readthedocs.io/en/latest/unsupervised.html) - The module od unsupervised contains methods that calculate and/or visualize evaluation performance of an unsupervised model.
 * [XAI](https://datascienceutils.readthedocs.io/en/latest/xai.html) - The module of xai contains methods that help explain a model decisions.
 
 ## Contributing

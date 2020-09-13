@@ -1,11 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.4] - 2020-08-20
+## [1.7] - 2020-09-13
 ### Added
 - xai::plot_features_importance method that visualize into bar chart the feature importance.
+- a new module named `unsupervised` was added. The module contains methods that calculate and/or visualize evaluation 
+performance of an unsupervised model.
+- unsupervised::plot_cluster_cardinality method that plots the number of points per cluster as a bar chart.
 ### Changed
 - deprecated xai::draw_tree. Use sklearn.tree.plot_tree instead.
+- requirements dependencies.
 ### Fixed
 - minor changes
 

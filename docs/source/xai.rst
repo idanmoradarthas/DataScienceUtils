@@ -158,6 +158,7 @@ Let's see how to use the code::
 
     import pandas
 
+    from matplotlib import pyplot
     from sklearn.preprocessing import OneHotEncoder
     from sklearn.tree import DecisionTreeClassifier
 
@@ -181,6 +182,7 @@ Let's see how to use the code::
     clf.fit(data_1M[features], target)
     plot_features_importance(features, clf.feature_importances_)
 
+    pyplot.show()
 
 And the following image will be shown:
 
