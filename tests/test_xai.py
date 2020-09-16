@@ -12,6 +12,9 @@ iris_x = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpat
 iris_y = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_y_full.csv"))
 data_1M = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
 
+Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_xai").mkdir(exist_ok=True)
+
 
 def test_print_decision_paths():
     # Create decision tree classifier object

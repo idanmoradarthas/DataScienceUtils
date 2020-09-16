@@ -26,6 +26,9 @@ cluster_centers = numpy.asarray([
     [4.704545454545455030e+00, 3.122727272727272574e+00, 1.413636363636363136e+00, 2.000000000000001776e-01],
     [6.568181818181818343e+00, 3.086363636363636420e+00, 5.536363636363637042e+00, 2.163636363636363580e+00]])
 
+Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_unsupervised").mkdir(exist_ok=True)
+
 
 def test_cluster_cardinality():
     plot_cluster_cardinality(numpy.asarray(labels))

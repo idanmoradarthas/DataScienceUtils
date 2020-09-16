@@ -19,6 +19,9 @@ x_test = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resource
 y_train = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_y_train.csv"))
 y_test = pandas.read_csv(Path(__file__).parents[0].absolute().joinpath("resources").joinpath("iris_y_test.csv"))
 
+Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
+Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+
 
 def test_print_confusion_matrix_binary():
     custom_y_test = "1 1 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 0 1 0 1 0 0 1 1 1 1 1 0 0 0 1 0 1 0 1 0 0 0 0 1 1 1 1 0 1 1 " \
@@ -30,8 +33,6 @@ def test_print_confusion_matrix_binary():
                           numpy.fromstring(custom_y_pred, dtype=int, sep=' '),
                           [1, 0])
 
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix_binary.png")
     pyplot.savefig(str(result_path))
@@ -52,8 +53,7 @@ def test_print_confusion_matrix():
     plot_confusion_matrix(numpy.fromstring(custom_y_test, dtype=int, sep=' '),
                           numpy.fromstring(y_pred, dtype=int, sep=' '),
                           [0, 1, 2])
-    Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-    Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
+
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").joinpath(
         "test_print_confusion_matrix.png")
     pyplot.savefig(str(result_path))
