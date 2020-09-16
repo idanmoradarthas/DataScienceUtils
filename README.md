@@ -314,6 +314,30 @@ pyplot.show()
 ```
 ![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png)
 
+### Optimum Number of Clusters
+k-means requires you to decide the number of clusters ``k`` beforehand. This method runs the KMean algorithm and 
+increases the cluster number at each try. The Total magnitude or sum of distance is used as loss.
+
+Right now the method only works with ``sklearn.cluster.KMeans``.
+
+```python
+import pandas
+
+from matplotlib import pyplot
+from scipy.spatial.distance import euclidean
+
+from ds_utils.unsupervised import plot_loss_vs_cluster_number
+
+
+
+data = pandas.read_csv(path/to/dataset)
+
+plot_loss_vs_cluster_number(data, 3, 20, euclidean)
+
+pyplot.show()
+```
+![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
+
 ## XAI
 ### Generate Decision Paths
 Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 

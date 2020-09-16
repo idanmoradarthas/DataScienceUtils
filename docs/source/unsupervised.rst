@@ -103,3 +103,28 @@ And the following image will be shown:
 .. image:: ../../tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png
     :align: center
     :alt: Magnitude vs. Cardinality
+
+**************************
+Optimum Number of Clusters
+**************************
+
+.. autofunction:: unsupervised::plot_loss_vs_cluster_number
+
+Final plot we ca use is Loss vs Cluster Number::
+
+    from matplotlib import pyplot
+    from scipy.spatial.distance import euclidean
+
+    from ds_utils.unsupervised import plot_loss_vs_cluster_number
+
+
+
+    plot_loss_vs_cluster_number(x, 3, 20, euclidean)
+
+    pyplot.show()
+
+And the following image will be shown:
+
+.. image:: ../../tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png
+    :align: center
+    :alt: Optimum Number of Clusters

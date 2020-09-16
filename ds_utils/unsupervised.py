@@ -1,8 +1,9 @@
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
 
 import numpy
 import pandas
 from matplotlib import axes, pyplot, lines
+from sklearn.cluster import KMeans
 
 
 def plot_cluster_cardinality(labels: numpy.ndarray, *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
@@ -47,8 +48,9 @@ def plot_cluster_magnitude(X: numpy.ndarray, labels: numpy.ndarray, cluster_cent
     :param labels: Labels of each point.
     :param cluster_centers: Coordinates of cluster centers.
     :param distance_function: The function used to calculate the distance between an instance to its cluster center.
-    The function receives two ndarrays, one the instance and the second is the center and return a float number
-    representing the distance between them.
+            The function receives two ndarrays, one the instance and the second is the center and return a float number
+            representing the distance between them.
+
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
     :param kwargs: other keyword arguments
 
@@ -90,8 +92,8 @@ def plot_magnitude_vs_cardinality(X: numpy.ndarray, labels: numpy.ndarray, clust
     :param labels: Labels of each point.
     :param cluster_centers: Coordinates of cluster centers.
     :param distance_function: The function used to calculate the distance between an instance to its cluster center.
-    The function receives two ndarrays, one the instance and the second is the center and return a float number
-    representing the distance between them.
+            The function receives two ndarrays, one the instance and the second is the center and return a float number
+            representing the distance between them.
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
     :param kwargs: other keyword arguments
 
@@ -109,8 +111,7 @@ def plot_magnitude_vs_cardinality(X: numpy.ndarray, labels: numpy.ndarray, clust
     merged = cardinality.merge(magnitude, left_index=True, right_index=True)
 
     merged.plot("Cardinality", "Magnitude", kind="scatter", ax=ax, **kwargs)
-    for k, v in merged.iterrows():
-        ax.annotate(k, v)
+    [ax.annotate(index, point) for index, point in merged.iterrows()]
 
     line = lines.Line2D([0, 1], [0, 1])
     transform = ax.transAxes
@@ -120,5 +121,58 @@ def plot_magnitude_vs_cardinality(X: numpy.ndarray, labels: numpy.ndarray, clust
     pyplot.xticks(rotation=0)
     ax.set_xlabel("Cardinality")
     ax.set_ylabel("Magnitude")
+
+    return ax
+
+
+def plot_loss_vs_cluster_number(X: numpy.ndarray, k_min: int, k_max: int,
+                                distance_function: Callable[[numpy.ndarray, numpy.ndarray], float], *,
+                                algorithm_parameters: Dict[str, Any] = None, ax: Optional[axes.Axes] = None,
+                                **kwargs) -> axes.Axes:
+    """
+    k-means requires you to decide the number of clusters ``k`` beforehand. This method runs the KMean algorithm and
+    increases the cluster number at each try. The Total magnitude or sum of distance is used as loss.
+
+    Right now the method only works with ``sklearn.cluster.KMeans``.
+
+    :param X: Training instances.
+    :param k_min: The minimum cluster number.
+    :param k_max: The maximum cluster number.
+    :param distance_function: The function used to calculate the distance between an instance to its cluster center.
+            The function receives two ndarrays, one the instance and the second is the center and return a float number
+            representing the distance between them.
+    :param algorithm_parameters: parameters to use for the algorithm. If None, deafult parameters of ``KMeans`` will
+            be used.
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
+    :param kwargs: other keyword arguments
+
+                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
+    :return: Returns the Axes object with the plot drawn onto it.
+    """
+    if algorithm_parameters is None:
+        algorithm_parameters = KMeans().get_params()
+
+    if "n_clusters" in algorithm_parameters:
+        del algorithm_parameters["n_clusters"]
+
+    if ax is None:
+        pyplot.figure()
+        ax = pyplot.gca()
+
+    result = []
+
+    for k in range(k_min, k_max + 1):
+        estimator = KMeans(n_clusters=k)
+        estimator.set_params(**algorithm_parameters)
+        estimator.fit(X)
+        magnitude = pandas.DataFrame(
+            _extract_magnitude(X, estimator.labels_, estimator.cluster_centers_, distance_function))
+        result.append({"k": k, "magnitude": magnitude["distance"].sum()})
+
+    pandas.DataFrame(result).plot("k", "magnitude", kind="scatter", ax=ax, **kwargs)
+    pyplot.xticks(range(max(0, k_min - 1), k_max + 2), rotation=0)
+    ax.set_xlabel("Number of clusters")
+    ax.set_ylabel("Total Point-to-Centroid Distance")
+    ax.set_title("Loss vs Clusters Used")
 
     return ax
