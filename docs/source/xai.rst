@@ -16,6 +16,9 @@ For more information see `here <https://graphviz.gitlab.io/download>`_.
 *********
 Draw Tree
 *********
+.. deprecated:: 1.6.4
+    Use `sklearn.tree.plot_tree <https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html>`_ instead
+
 .. autofunction:: xai::draw_tree
 
 .. highlight:: python
@@ -137,3 +140,52 @@ The following text will be printed::
                     # return class virginica with probability 0.9773
                     return ("virginica", 0.9773)
 
+
+*************************
+Plot Features` Importance
+*************************
+
+.. autofunction:: xai::plot_features_importance
+
+Code Example
+============
+
+.. highlight:: python
+
+For this example I created a dummy data set. You can find the data at the resources directory in the packages tests folder.
+
+Let's see how to use the code::
+
+    import pandas
+
+    from matplotlib import pyplot
+    from sklearn.preprocessing import OneHotEncoder
+    from sklearn.tree import DecisionTreeClassifier
+
+    from ds_utils.xai import plot_features_importance
+
+
+    data_1M = pandas.read_csv(path/to/dataset)
+    target = data_1M["x12"]
+    categorical_features = ["x7", "x10"]
+    for i in range(0, len(categorical_features)):
+        enc = OneHotEncoder(sparse=False, handle_unknown="ignore")
+        enc_out = enc.fit_transform(data_1M[[categorical_features[i]]])
+        for j in range(0, len(enc.categories_[0])):
+            data_1M[categorical_features[i] + "_" + enc.categories_[0][j]] = enc_out[:, j]
+    features = data_1M.columns.to_list()
+    features.remove("x12")
+    features.remove("x7")
+    features.remove("x10")
+
+    clf = DecisionTreeClassifier(random_state=42)
+    clf.fit(data_1M[features], target)
+    plot_features_importance(features, clf.feature_importances_)
+
+    pyplot.show()
+
+And the following image will be shown:
+
+.. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance.png
+    :align: center
+    :alt: Plot Features Importance

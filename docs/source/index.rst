@@ -36,6 +36,7 @@ Data Science Utils license is `MIT License <https://opensource.org/licenses/MIT>
    metrics
    preprocess
    strings
+   unsupervised
    xai
 
 ******************
