@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.7] - 2020-09-14
+## [1.7] - 2020-09-16
 ### Added
 - xai::plot_features_importance method that visualize into bar chart the feature importance.
 - a new module named `unsupervised` was added. The module contains methods that calculate and/or visualize evaluation 
