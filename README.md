@@ -93,7 +93,7 @@ from ds_utils.preprocess import visualize_feature
 
 
 
-visualize_features(X_train["feature"])
+visualize_feature(X_train["feature"])
 ```
 
 |Feature Type      |Plot|
