@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy
 import pandas
+import pytest
 from matplotlib import pyplot
 
 from ds_utils.preprocess import visualize_correlations, \
@@ -488,4 +489,18 @@ def test_get_correlated_features():
                                             columns=['level_0', 'level_1', 'level_0_level_1_corr',
                                                      'level_0_target_corr',
                                                      'level_1_target_corr'])
+    pandas.testing.assert_frame_equal(correlation_expected, correlation)
+
+
+def test_get_correlated_features_bug():
+    data_frame = pandas.read_csv(
+        Path(__file__).parents[0].joinpath("resources").joinpath("clothing_classification_train.csv"))
+    with pytest.warns(UserWarning):
+        correlation = get_correlated_features(data_frame,
+                                              ["Clothing ID", "Age", "Title", "Review Text", "Rating",
+                                               "Recommended IND",
+                                               "Positive Feedback Count", "Division Name", "Department Name"],
+                                              "Class Name")
+    correlation_expected = pandas.DataFrame(
+        columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
     pandas.testing.assert_frame_equal(correlation_expected, correlation)

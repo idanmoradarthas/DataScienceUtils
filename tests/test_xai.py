@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pandas
+import pytest
 from matplotlib import pyplot
 from sklearn.tree import DecisionTreeClassifier
 
@@ -150,6 +151,7 @@ def test_print_decision_paths_no_class_names():
     assert result == expected
 
 
+@pytest.mark.skip()
 def test_draw_tree():
     # Create decision tree classifier object
     clf = DecisionTreeClassifier(random_state=0)
@@ -170,6 +172,7 @@ def test_draw_tree():
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
+@pytest.mark.skip()
 def test_draw_tree_exists_ax():
     # Create decision tree classifier object
     clf = DecisionTreeClassifier(random_state=0)
@@ -194,6 +197,18 @@ def test_draw_tree_exists_ax():
     pyplot.cla()
     pyplot.close(pyplot.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_draw_tree_deprecated():
+    with pytest.warns(DeprecationWarning):
+        # Create decision tree classifier object
+        clf = DecisionTreeClassifier(random_state=0)
+
+        # Train model
+        clf.fit(iris_x, iris_y)
+
+        draw_tree(clf, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+                  ['setosa', 'versicolor', 'virginica'])
 
 
 def test_draw_dot_data():

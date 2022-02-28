@@ -3,7 +3,7 @@ Installation
 ############
 .. highlight:: bash
 
-Data Science Utils is compatible with Python 3.6 or later. The simplest way to install Data Science Utils and its
+Data Science Utils is compatible with Python 3.8 or later. The simplest way to install Data Science Utils and its
 dependencies is from PyPI with pip, Python's preferred package installer::
 
     pip install data-science-utils
