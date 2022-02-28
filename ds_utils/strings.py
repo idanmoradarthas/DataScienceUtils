@@ -41,12 +41,12 @@ def append_tags_to_frame(X_train: pandas.DataFrame, X_test: pandas.DataFrame, fi
                                  min_df=min_df, max_features=max_features)
     x_train_count_matrix = vectorizer.fit_transform(X_train[field_name].dropna())
     x_train_tags = pandas.DataFrame(x_train_count_matrix.toarray(),
-                                    columns=[prefix + tag_name for tag_name in vectorizer.get_feature_names()])
+                                    columns=[prefix + tag_name for tag_name in vectorizer.get_feature_names_out()])
     x_train_tags.index = X_train.index
 
     x_test_count_matrix = vectorizer.transform(X_test[field_name].dropna())
     x_test_tags = pandas.DataFrame(x_test_count_matrix.toarray(),
-                                   columns=[prefix + tag_name for tag_name in vectorizer.get_feature_names()])
+                                   columns=[prefix + tag_name for tag_name in vectorizer.get_feature_names_out()])
     x_test_tags.index = X_test.index
 
     x_train_reduced = X_train.drop(columns=[field_name])
@@ -78,10 +78,10 @@ def extract_significant_terms_from_subset(data_frame: pandas.DataFrame, subset_d
     :author: `Eran Hirsch <https://github.com/eranhirs>`_
     """
     count_matrix = vectorizer.fit_transform(data_frame[field_name].dropna())
-    matrix_df = pandas.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names())
+    matrix_df = pandas.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names_out())
 
     subset_X = vectorizer.transform(subset_data_frame[field_name].dropna())
-    subset_matrix_df = pandas.DataFrame(subset_X.toarray(), columns=vectorizer.get_feature_names())
+    subset_matrix_df = pandas.DataFrame(subset_X.toarray(), columns=vectorizer.get_feature_names_out())
 
     subset_freq = subset_matrix_df.sum()
     superset_freq = matrix_df.sum()

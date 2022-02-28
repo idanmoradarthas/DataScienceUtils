@@ -48,7 +48,7 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
         tn, fp, fn, tp = cnf_matrix.ravel()
         npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
 
-        table = numpy.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, numpy.NaN]], dtype=numpy.float)
+        table = numpy.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, numpy.NaN]], dtype=numpy.float64)
         df = pandas.DataFrame(table, columns=[f"{labels[0]} - Predicted", f"{labels[1]} - Predicted", "Recall"],
                               index=[f"{labels[0]} - Actual", f"{labels[1]} - Actual", "Precision"])
     else:
@@ -60,8 +60,8 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
         df = pandas.DataFrame(cnf_matrix, columns=[f"{label} - Predicted" for label in labels],
                               index=[f"{label} - Actual" for label in labels])
         df["Recall"] = tpr
-        df = df.append(
-            pandas.DataFrame([ppv], columns=[f"{label} - Predicted" for label in labels], index=["Precision"]),
+        df = pandas.concat(
+            [df, pandas.DataFrame([ppv], columns=[f"{label} - Predicted" for label in labels], index=["Precision"])],
             sort=False)
 
     figure, subplots = pyplot.subplots(nrows=3, ncols=1, gridspec_kw={'height_ratios': [1, 8, 1]})

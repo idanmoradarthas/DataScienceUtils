@@ -8,10 +8,7 @@ import pydotplus
 from matplotlib import axes, pyplot, image
 from sklearn.tree import _tree as sklearn_tree, export_graphviz
 
-try:
-    from sklearn.tree import BaseDecisionTree
-except ImportError:
-    from sklearn.tree.tree import BaseDecisionTree
+from sklearn.tree import BaseDecisionTree
 
 
 def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optional[List[str]] = None,

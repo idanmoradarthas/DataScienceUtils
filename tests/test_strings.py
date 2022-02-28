@@ -28,6 +28,6 @@ def test_significant_terms():
 
     expected = pandas.Series(
         [1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.5, 0.25, 0.0],
-        index=['third', 'one', 'and', 'this', 'the', 'is', 'first', 'document', 'second'])
+        index=['and', 'one', 'third', 'is', 'the', 'this', 'first', 'document', 'second'])
 
     pandas.testing.assert_series_equal(expected, terms)

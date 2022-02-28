@@ -1,9 +1,10 @@
+import warnings
 from typing import Optional, Union, Callable, List
 
 import numpy
 import pandas
 import seaborn
-from matplotlib import axes, pyplot, dates
+from matplotlib import axes, pyplot, dates, ticker
 from scipy.cluster import hierarchy
 
 
@@ -34,19 +35,21 @@ def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Opt
         feature_series = series
 
     if str(feature_series.dtype).startswith("float"):
-        seaborn.distplot(feature_series, ax=ax, hist_kws=kwargs)
+        seaborn.histplot(feature_series, ax=ax, kde=True, **kwargs)
         labels = ax.get_xticks()
     elif str(feature_series.dtype).startswith("datetime"):
         feature_series.value_counts().plot(kind="line", ax=ax, **kwargs)
         labels = ax.get_xticks()
     else:
-        seaborn.countplot(_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
+        seaborn.countplot(x=_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
         labels = ax.get_xticklabels()
 
     if not ax.get_title():
         ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
         ax.set_xlabel("")
 
+    ticks_loc = ax.get_xticks().tolist()
+    ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     ax.set_xticklabels(labels, rotation=45, horizontalalignment='right')
 
     if str(feature_series.dtype).startswith("datetime"):
@@ -81,13 +84,18 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     correlations = _calc_corrections(data_frame[features + [target_feature]], method, min_periods)
     target_corr = correlations[target_feature].transpose()
     features_corr = correlations.loc[features, features]
-    corr_matrix = features_corr.where(numpy.triu(numpy.ones(features_corr.shape), k=1).astype(numpy.bool))
+    corr_matrix = features_corr.where(numpy.triu(numpy.ones(features_corr.shape), k=1).astype(numpy.bool_))
     corr_matrix = corr_matrix[(~numpy.isnan(corr_matrix))].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
-    corr_matrix["level_0_target_corr"] = target_corr[corr_matrix["level_0"]].values.tolist()[0]
-    corr_matrix["level_1_target_corr"] = target_corr[corr_matrix["level_1"]].values.tolist()[0]
-    corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index(drop=True)
-    return corr_matrix
+    if corr_matrix.shape[0] > 0:
+        corr_matrix["level_0_target_corr"] = target_corr[corr_matrix["level_0"]].values.tolist()[0]
+        corr_matrix["level_1_target_corr"] = target_corr[corr_matrix["level_1"]].values.tolist()[0]
+        corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index(drop=True)
+        return corr_matrix
+    else:
+        warnings.warn(f"Correlation threshold {threshold} was too high. An empty frame was returned", UserWarning)
+        return pandas.DataFrame(
+            columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
 
 
 def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] = 'pearson',
@@ -119,7 +127,7 @@ def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] 
         ax = pyplot.gca()
 
     corr = _calc_corrections(data, method, min_periods)
-    mask = numpy.triu(numpy.ones_like(corr, dtype=numpy.bool))
+    mask = numpy.triu(numpy.ones_like(corr, dtype=numpy.bool_))
     seaborn.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
 
@@ -229,20 +237,24 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         elif str(data[feature_2].dtype).startswith("datetime"):
             # first feature is categorical and the second is datetime
             dup_df[feature_2] = data[feature_2].apply(dates.date2num)
-            chart = seaborn.violinplot(feature_2, feature_1, data=dup_df, ax=ax)
+            chart = seaborn.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
+            ticks_loc = chart.get_xticks().tolist()
+            chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
             ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
         else:
             # first feature is categorical and the second is numeric
             dup_df[feature_2] = data[feature_2]
-            chart = seaborn.boxplot(feature_1, feature_2, data=dup_df, ax=ax, **kwargs)
+            chart = seaborn.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
     elif str(data[feature_1].dtype).startswith("datetime"):
         if str(data[feature_2].dtype) in ["object", "category", "bool"]:
             # first feature is datetime and the second is categorical
             dup_df[feature_1] = data[feature_1].apply(dates.date2num)
             dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-            chart = seaborn.violinplot(feature_1, feature_2, data=dup_df, ax=ax)
+            chart = seaborn.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
+            ticks_loc = chart.get_xticks().tolist()
+            chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
             ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
         else:
@@ -254,7 +266,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         # first feature is numeric and the second is categorical
         dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
         dup_df[feature_1] = data[feature_1]
-        chart = seaborn.boxplot(feature_2, feature_1, data=dup_df, ax=ax, **kwargs)
+        chart = seaborn.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
         chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
     elif str(data[feature_2].dtype).startswith("datetime"):
         # first feature is numeric and the second is datetime
@@ -262,7 +274,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         ax.set_xlabel(feature_2)
         ax.set_ylabel(feature_1)
     else:
-        # both feature are numeric
+        # both features are numeric
         ax.scatter(data[feature_1], data[feature_2], **kwargs)
         ax.set_xlabel(feature_1)
         ax.set_ylabel(feature_2)
