@@ -1,5 +1,5 @@
 {% set name = "data-science-utils" %}
-  {% set version = "1.7" %}
+  {% set version = "1.7.1" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://github.com/idanmoradarthas/DataScienceUtils/releases/download/{{ version }}/data_science_utils-{{ version }}.tar.gz"
-  sha256: 0d60ef37af0253317dddd96cf6b19e70a0fff59c53c083407daa2e4d693b0dc0
+  sha256: ae46411d506e4cb5c8637e490aa3017719d8196801faa2bfa3e1e54446c37f73
 
 build:
   number: 0
@@ -15,26 +15,26 @@ build:
 
 requirements:
   host:
-    - joblib >=0.12
-    - matplotlib >2.02
-    - numpy >=1.3
-    - pandas >=0.23.0
+    - python
     - pip
-    - pydotplus >=2.0.2
-    - python
-    - scikit-learn >=0.19.0
-    - scipy >=1.0.0
-    - seaborn >=0.8.0
+    - numpy>=1.3
+    - scipy>=1.0.0
+    - pandas>=0.23.0
+    - matplotlib>2.02
+    - seaborn>=0.8.0
+    - scikit-learn>=1.0.0
+    - pydotplus>=2.0.2
+    - joblib>=0.12
   run:
-    - joblib >=0.12
-    - matplotlib >2.02
-    - numpy >=1.3
-    - pandas >=0.23.0
-    - pydotplus >=2.0.2
     - python
-    - scikit-learn >=0.19.0
-    - scipy >=1.0.0
-    - seaborn >=0.8.0
+    - numpy>=1.3
+    - scipy>=1.0.0
+    - pandas>=0.23.0
+    - matplotlib>2.02
+    - seaborn>=0.8.0
+    - scikit-learn>=1.0.0
+    - pydotplus>=2.0.2
+    - joblib>=0.12
 
 test:
   imports:
