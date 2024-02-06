@@ -16,11 +16,11 @@ Code Examples
 =============
 In following examples we are going to use the iris dataset from scikit-learn. so firstly let's import it::
 
-    import numpy
+    import numpy as np
     from sklearn import datasets
 
     IRIS = datasets.load_iris()
-    RANDOM_STATE = numpy.random.RandomState(0)
+    RANDOM_STATE = np.random.RandomState(0)
 
 Next we'll add a small function to add noise::
 
@@ -33,7 +33,7 @@ Binary Classification
 
 So We'll use the only first two classes in the iris dataset, build a SVM classifier and evaluate it::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.model_selection import train_test_split
     from sklearn import svm
 
@@ -57,7 +57,7 @@ So We'll use the only first two classes in the iris dataset, build a SVM classif
 
     plot_confusion_matrix(y_test, y_pred, [1, 0])
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -70,7 +70,7 @@ Multi-Label Classification
 
 This time we'll train on all the classes and plot an evaluation::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.model_selection import train_test_split
     from sklearn.multiclass import OneVsRestClassifier
     from sklearn import svm
@@ -92,7 +92,7 @@ This time we'll train on all the classes and plot an evaluation::
     y_pred = classifier.predict(x_test)
 
     plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -111,7 +111,7 @@ Code Example
 In this example we'll divide the data into train and test sets, decide on which classifiers we want to measure and plot
 the results::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
     from sklearn.tree import DecisionTreeClassifier
@@ -128,7 +128,7 @@ the results::
                                                 DecisionTreeClassifier(random_state=0),
                                               "RandomForestClassifier":
                                                 RandomForestClassifier(random_state=0, n_estimators=5)})
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -150,7 +150,7 @@ The example uses a small sample from of a dataset from
 
 Let's see how to use the code::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.ensemble import RandomForestClassifier
 
 
@@ -179,7 +179,7 @@ Let's see how to use the code::
     visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
                                               display_breakdown=False)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -191,7 +191,7 @@ If we chose to display the breakdown::
 
     visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
                                               display_breakdown=True)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 

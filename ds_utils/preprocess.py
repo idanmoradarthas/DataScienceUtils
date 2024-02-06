@@ -1,14 +1,15 @@
 import warnings
 from typing import Optional, Union, Callable, List
 
-import numpy
-import pandas
-import seaborn
-from matplotlib import axes, pyplot, dates, ticker
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib import axes, dates, ticker
+from matplotlib import pyplot as plt
 from scipy.cluster import hierarchy
 
 
-def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None,
+def visualize_feature(series: pd.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None,
                       **kwargs) -> axes.Axes:
     """
     Visualize a feature series:
@@ -26,8 +27,8 @@ def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Opt
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     if remove_na:
         feature_series = series.dropna()
@@ -35,13 +36,13 @@ def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Opt
         feature_series = series
 
     if str(feature_series.dtype).startswith("float"):
-        seaborn.histplot(feature_series, ax=ax, kde=True, **kwargs)
+        sns.histplot(feature_series, ax=ax, kde=True, **kwargs)
         labels = ax.get_xticks()
     elif str(feature_series.dtype).startswith("datetime"):
         feature_series.value_counts().plot(kind="line", ax=ax, **kwargs)
         labels = ax.get_xticks()
     else:
-        seaborn.countplot(x=_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
+        sns.countplot(x=_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
         labels = ax.get_xticklabels()
 
     if not ax.get_title():
@@ -58,9 +59,9 @@ def visualize_feature(series: pandas.Series, remove_na: bool = False, *, ax: Opt
     return ax
 
 
-def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], target_feature: str,
+def get_correlated_features(data_frame: pd.DataFrame, features: List[str], target_feature: str,
                             threshold: float = 0.95, method: Union[str, Callable] = 'pearson',
-                            min_periods: Optional[int] = 1) -> pandas.DataFrame:
+                            min_periods: Optional[int] = 1) -> pd.DataFrame:
     """
     Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation
     to the target feature.
@@ -72,20 +73,19 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
     :param method: {‘pearson’, ‘kendall’, ‘spearman’} or callable
 
                    Method of correlation:
-
                    * pearson : standard correlation coefficient
                    * kendall : Kendall Tau correlation coefficient
                    * spearman : Spearman rank correlation
                    * callable: callable with input two 1d ndarrays and returning a float. Note that the returned matrix from corr will have 1 along the diagonals and will be symmetric regardless of the callable’s behavior.
 
-    :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
+    :param min_periods: Minimum number of observations required per a pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
     :return: data frame with the correlations and correlation to the target feature.
     """
     correlations = _calc_corrections(data_frame[features + [target_feature]], method, min_periods)
     target_corr = correlations[target_feature].transpose()
     features_corr = correlations.loc[features, features]
-    corr_matrix = features_corr.where(numpy.triu(numpy.ones(features_corr.shape), k=1).astype(numpy.bool_))
-    corr_matrix = corr_matrix[(~numpy.isnan(corr_matrix))].stack().reset_index()
+    corr_matrix = features_corr.where(np.triu(np.ones(features_corr.shape), k=1).astype(np.bool_))
+    corr_matrix = corr_matrix[(~np.isnan(corr_matrix))].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
     if corr_matrix.shape[0] > 0:
         corr_matrix["level_0_target_corr"] = target_corr[corr_matrix["level_0"]].values.tolist()[0]
@@ -94,11 +94,11 @@ def get_correlated_features(data_frame: pandas.DataFrame, features: List[str], t
         return corr_matrix
     else:
         warnings.warn(f"Correlation threshold {threshold} was too high. An empty frame was returned", UserWarning)
-        return pandas.DataFrame(
+        return pd.DataFrame(
             columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
 
 
-def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] = 'pearson',
+def visualize_correlations(data: pd.DataFrame, method: Union[str, Callable] = 'pearson',
                            min_periods: Optional[int] = 1, *, ax: Optional[axes.Axes] = None,
                            **kwargs) -> axes.Axes:
     """
@@ -115,7 +115,7 @@ def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] 
                    * spearman : Spearman rank correlation
                    * callable: callable with input two 1d ndarrays and returning a float. Note that the returned matrix from corr will have 1 along the diagonals and will be symmetric regardless of the callable’s behavior.
 
-    :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
+    :param min_periods: Minimum number of observations required per a pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
     :param ax: Axes in which to draw the plot, otherwise use the currently-active Axes.
     :param kwargs: other keyword arguments
 
@@ -123,16 +123,16 @@ def visualize_correlations(data: pandas.DataFrame, method: Union[str, Callable] 
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     corr = _calc_corrections(data, method, min_periods)
-    mask = numpy.triu(numpy.ones_like(corr, dtype=numpy.bool_))
-    seaborn.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
+    mask = np.triu(np.ones_like(corr, dtype=np.bool_))
+    sns.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
 
 
-def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Union[str, Callable] = 'pearson',
+def plot_correlation_dendrogram(data: pd.DataFrame, correlation_method: Union[str, Callable] = 'pearson',
                                 min_periods: Optional[int] = 1,
                                 cluster_distance_method: Union[str, Callable] = "average", *,
                                 ax: Optional[axes.Axes] = None,
@@ -151,7 +151,7 @@ def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Unio
                    * spearman : Spearman rank correlation
                    * callable: callable with input two 1d ndarrays and returning a float. Note that the returned matrix from corr will have 1 along the diagonals and will be symmetric regardless of the callable’s behavior.
 
-    :param min_periods: Minimum number of observations required per pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
+    :param min_periods: Minimum number of observations required per a pair of columns to have a valid result. Currently only available for Pearson and Spearman correlation.
     :param cluster_distance_method: The following are methods for calculating the distance between the newly formed cluster.
 
             Methods of linkage:
@@ -183,15 +183,15 @@ def plot_correlation_dendrogram(data: pandas.DataFrame, correlation_method: Unio
     """
 
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     corr = _calc_corrections(data, correlation_method, min_periods)
     # reverse the distance
     corr_condensed = hierarchy.distance.squareform(1 - corr)
     z = hierarchy.linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    hierarchy.dendrogram(z, labels=numpy.asarray(data.columns.tolist()), orientation="left", ax=ax)
+    hierarchy.dendrogram(z, labels=np.asarray(data.columns.tolist()), orientation="left", ax=ax)
     return ax
 
 
@@ -199,7 +199,7 @@ def _calc_corrections(data, method, min_periods):
     return data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
 
 
-def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataFrame, *,
+def plot_features_interaction(feature_1: str, feature_2: str, data: pd.DataFrame, *,
                               ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Plots the joint distribution between two features:
@@ -220,10 +220,10 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
-    dup_df = pandas.DataFrame()
+    dup_df = pd.DataFrame()
     if str(data[feature_1].dtype) in ["object", "category", "bool"]:
         dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
         if str(data[feature_2].dtype) in ["object", "category", "bool"]:
@@ -237,7 +237,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         elif str(data[feature_2].dtype).startswith("datetime"):
             # first feature is categorical and the second is datetime
             dup_df[feature_2] = data[feature_2].apply(dates.date2num)
-            chart = seaborn.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
+            chart = sns.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
             ticks_loc = chart.get_xticks().tolist()
             chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
@@ -245,14 +245,14 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         else:
             # first feature is categorical and the second is numeric
             dup_df[feature_2] = data[feature_2]
-            chart = seaborn.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
+            chart = sns.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
     elif str(data[feature_1].dtype).startswith("datetime"):
         if str(data[feature_2].dtype) in ["object", "category", "bool"]:
             # first feature is datetime and the second is categorical
             dup_df[feature_1] = data[feature_1].apply(dates.date2num)
             dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-            chart = seaborn.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
+            chart = sns.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
             ticks_loc = chart.get_xticks().tolist()
             chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
@@ -266,7 +266,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
         # first feature is numeric and the second is categorical
         dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
         dup_df[feature_1] = data[feature_1]
-        chart = seaborn.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
+        chart = sns.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
         chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
     elif str(data[feature_2].dtype).startswith("datetime"):
         # first feature is numeric and the second is datetime
@@ -282,7 +282,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pandas.DataF
     return ax
 
 
-def _copy_series_or_keep_top_10(series: pandas.Series) -> pandas.Series:
+def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
     if str(series.dtype) == "bool":
         # avoiding RuntimeWarning from numpy (Converting input from bool to <class 'numpy.uint8'> for compatibility.)
         return series.apply(lambda val: "True" if val else "False")
@@ -292,6 +292,6 @@ def _copy_series_or_keep_top_10(series: pandas.Series) -> pandas.Series:
     return series
 
 
-@pyplot.FuncFormatter
+@plt.FuncFormatter
 def _convert_numbers_to_dates(x, pos):
     return dates.num2date(x).strftime('%Y-%m-%d %H:%M')

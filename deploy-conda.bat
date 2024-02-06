@@ -3,15 +3,12 @@
 :: run this line of code if you don't have a skeleton directory (./data-science-utils).
 :: conda skeleton pypi data-science-utils --python-version 3.6
 
-FOR %G IN (3.8 3.9) DO(
-conda-build --python %G data-science-utils
-)
+conda-build --python 3.11 data-science-utils
 conda build purge
 
 :: copy directory win-64 from C:\Anaconda3\envs\DataScienceUtils\conda-bld to outputdir directory
 
-conda convert -f --platform all outputdir\win-64\data-science-utils-1.7.1-py38_0.tar.bz2 -o outputdir\
-conda convert -f --platform all outputdir\win-64\data-science-utils-1.7.1-py39_0.tar.bz2 -o outputdir\
+conda convert -f --platform all outputdir\win-64\data-science-utils-1.7.2-py39_0.tar.bz2 -o outputdir\
 
 anaconda login
 

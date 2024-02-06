@@ -1,18 +1,19 @@
 from typing import Union, List, Optional, Callable, Dict, Sequence
 
-import numpy
-import pandas
-import seaborn
+import numpy as np
+import pandas as pd
+import seaborn as sns
 import sklearn
 from joblib import Parallel, delayed
-from matplotlib import pyplot, axes
+from matplotlib import axes
+from matplotlib import pyplot as plt
 from numpy.random.mtrand import RandomState
 from sklearn import clone
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 from sklearn.utils import shuffle
 
 
-def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: List[Union[str, int]],
+def plot_confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray, labels: List[Union[str, int]],
                           sample_weight: Optional[List[float]] = None, annot_kws=None, cbar=True, cbar_kws=None,
                           **kwargs) -> axes.Axes:
     """
@@ -48,23 +49,23 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
         tn, fp, fn, tp = cnf_matrix.ravel()
         npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
 
-        table = numpy.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, numpy.NaN]], dtype=numpy.float64)
-        df = pandas.DataFrame(table, columns=[f"{labels[0]} - Predicted", f"{labels[1]} - Predicted", "Recall"],
-                              index=[f"{labels[0]} - Actual", f"{labels[1]} - Actual", "Precision"])
+        table = np.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, np.NaN]], dtype=np.float64)
+        df = pd.DataFrame(table, columns=[f"{labels[0]} - Predicted", f"{labels[1]} - Predicted", "Recall"],
+                          index=[f"{labels[0]} - Actual", f"{labels[1]} - Actual", "Precision"])
     else:
-        fp = (cnf_matrix.sum(axis=0) - numpy.diag(cnf_matrix)).astype(float)
-        fn = (cnf_matrix.sum(axis=1) - numpy.diag(cnf_matrix)).astype(float)
-        tp = (numpy.diag(cnf_matrix)).astype(float)
+        fp = (cnf_matrix.sum(axis=0) - np.diag(cnf_matrix)).astype(float)
+        fn = (cnf_matrix.sum(axis=1) - np.diag(cnf_matrix)).astype(float)
+        tp = (np.diag(cnf_matrix)).astype(float)
         tn = (cnf_matrix.sum() - (fp + fn + tp)).astype(float)
         _, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
-        df = pandas.DataFrame(cnf_matrix, columns=[f"{label} - Predicted" for label in labels],
-                              index=[f"{label} - Actual" for label in labels])
+        df = pd.DataFrame(cnf_matrix, columns=[f"{label} - Predicted" for label in labels],
+                          index=[f"{label} - Actual" for label in labels])
         df["Recall"] = tpr
-        df = pandas.concat(
-            [df, pandas.DataFrame([ppv], columns=[f"{label} - Predicted" for label in labels], index=["Precision"])],
+        df = pd.concat(
+            [df, pd.DataFrame([ppv], columns=[f"{label} - Predicted" for label in labels], index=["Precision"])],
             sort=False)
 
-    figure, subplots = pyplot.subplots(nrows=3, ncols=1, gridspec_kw={'height_ratios': [1, 8, 1]})
+    figure, subplots = plt.subplots(nrows=3, ncols=1, gridspec_kw={'height_ratios': [1, 8, 1]})
     subplots = subplots.flatten()
 
     subplots[0].set_axis_off()
@@ -72,12 +73,12 @@ def plot_confusion_matrix(y_test: numpy.ndarray, y_pred: numpy.ndarray, labels: 
         subplots[0].text(0, 0.85, f"False Positive Rate: {1 - tnr:.4f}")
         subplots[0].text(0, 0.35, f"False Negative Rate: {1 - tpr:.4f}")
     else:
-        subplots[0].text(0, 0.85, f"False Positive Rate: {numpy.array2string(1 - tnr, precision=2, separator=',')}")
-        subplots[0].text(0, 0.35, f"False Negative Rate: {numpy.array2string(1 - tpr, precision=2, separator=',')}")
+        subplots[0].text(0, 0.85, f"False Positive Rate: {np.array2string(1 - tnr, precision=2, separator=',')}")
+        subplots[0].text(0, 0.35, f"False Negative Rate: {np.array2string(1 - tpr, precision=2, separator=',')}")
     subplots[0].text(0, -0.5, "Confusion Matrix:")
 
-    seaborn.heatmap(df, annot=True, fmt=".3f", ax=subplots[1], annot_kws=annot_kws, cbar=cbar, cbar_kws=cbar_kws,
-                    **kwargs)
+    sns.heatmap(df, annot=True, fmt=".3f", ax=subplots[1], annot_kws=annot_kws, cbar=cbar, cbar_kws=cbar_kws,
+                **kwargs)
 
     subplots[2].set_axis_off()
     subplots[2].text(0, 0.15, f"Accuracy: {accuracy_score(y_test, y_pred, sample_weight=sample_weight):.4f}")
@@ -98,13 +99,13 @@ def _calc_precision_recall(fn, fp, tn, tp):
     return npv, ppv, tnr, tpr
 
 
-def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: numpy.ndarray, X_test: numpy.ndarray,
-                                             y_test: numpy.ndarray,
+def plot_metric_growth_per_labeled_instances(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray,
+                                             y_test: np.ndarray,
                                              classifiers_dict: Dict[str, sklearn.base.ClassifierMixin],
                                              n_samples: Optional[List[int]] = None,
-                                             quantiles: Optional[List[float]] = numpy.linspace(0.05, 1, 20).tolist(),
-                                             metric: Callable[[numpy.ndarray,
-                                                               numpy.ndarray], float] = accuracy_score,
+                                             quantiles: Optional[List[float]] = np.linspace(0.05, 1, 20).tolist(),
+                                             metric: Callable[[np.ndarray,
+                                                               np.ndarray], float] = accuracy_score,
                                              random_state: Optional[Union[int, RandomState]] = None,
                                              n_jobs: Optional[int] = None, verbose: int = 0,
                                              pre_dispatch: Optional[Union[int, str]] = "2*n_jobs", *,
@@ -175,8 +176,8 @@ def plot_metric_growth_per_labeled_instances(X_train: numpy.ndarray, y_train: nu
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     if random_state is None:
         random_state = RandomState(seed=0)
@@ -221,10 +222,10 @@ def _perform_data_partition_and_evaluation(X_train, y_train, X_test, y_test, cla
     return metric(y_test, y_pred)
 
 
-def visualize_accuracy_grouped_by_probability(y_test: numpy.ndarray, labeled_class: Union[str, int],
-                                              probabilities: numpy.ndarray,
+def visualize_accuracy_grouped_by_probability(y_test: np.ndarray, labeled_class: Union[str, int],
+                                              probabilities: np.ndarray,
                                               threshold: float = 0.5, display_breakdown: bool = False,
-                                              bins: Optional[Union[int, Sequence[float], pandas.IntervalIndex]] = None,
+                                              bins: Optional[Union[int, Sequence[float], pd.IntervalIndex]] = None,
                                               *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Receives test true labels and classifier probabilities predictions, divide and classify the results and finally
@@ -258,12 +259,12 @@ def visualize_accuracy_grouped_by_probability(y_test: numpy.ndarray, labeled_cla
         bins = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     predictions = (probabilities > threshold)
-    df_frame = pandas.DataFrame()
-    df_frame["Actual Class"] = numpy.vectorize(lambda x: True if x == labeled_class else False)(y_test)
+    df_frame = pd.DataFrame()
+    df_frame["Actual Class"] = np.vectorize(lambda x: True if x == labeled_class else False)(y_test)
     df_frame["Probability"] = probabilities
     df_frame["Classification"] = predictions
 
@@ -280,7 +281,7 @@ def visualize_accuracy_grouped_by_probability(y_test: numpy.ndarray, labeled_cla
                 df_frame["Actual Class"] & ~df_frame["Classification"])).astype(int)
         display_columns = ["correct", "incorrect"]
 
-    df_frame["bins"] = pandas.cut(df_frame["Probability"], bins=bins)
+    df_frame["bins"] = pd.cut(df_frame["Probability"], bins=bins)
     df_frame.groupby("bins")[display_columns].sum().plot(kind="bar", stacked=True, ax=ax, **kwargs)
 
     ax.set_xlabel("")

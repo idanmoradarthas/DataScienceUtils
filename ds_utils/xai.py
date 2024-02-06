@@ -3,12 +3,12 @@ import warnings
 from io import StringIO, BytesIO
 from typing import Optional, List
 
-import numpy
+import numpy as np
 import pydotplus
-from matplotlib import axes, pyplot, image
-from sklearn.tree import _tree as sklearn_tree, export_graphviz
-
+from matplotlib import axes, image
+from matplotlib import pyplot as plt
 from sklearn.tree import BaseDecisionTree
+from sklearn.tree import _tree as sklearn_tree, export_graphviz
 
 
 def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optional[List[str]] = None,
@@ -19,8 +19,8 @@ def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optiona
     syntax). `Original code <https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree>`_
 
     :param classifier: decision tree.
-    :param feature_names: the features names.
-    :param class_names: the classes names or labels.
+    :param feature_names: the features' names.
+    :param class_names: the classes' names or labels.
     :param tree_name: the name of the tree (function signature).
     :param indent_char: the character used for indentation.
     :return: textual representation of the decision paths of the tree.
@@ -57,10 +57,10 @@ def _recurse(node, depth, tree, feature_name, class_names, output, indent_char):
         _recurse(tree.children_right[node], depth + 1, tree, feature_name, class_names, output, indent_char)
     else:
         values = tree.value[node][0]
-        index = int(numpy.argmax(values))
-        prob_array = values / numpy.sum(values)
-        if numpy.max(prob_array) >= 1:
-            prob_array = values / (numpy.sum(values) + 1)
+        index = int(np.argmax(values))
+        prob_array = values / np.sum(values)
+        if np.max(prob_array) >= 1:
+            prob_array = values / (np.sum(values) + 1)
         if class_names:
             class_name = class_names[index]
         else:
@@ -77,8 +77,8 @@ def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,
     Receives a decision tree and return a plot graph of the tree for easy interpretation.
 
     :param tree: decision tree.
-    :param feature_names: the features names.
-    :param class_names: the classes names or labels.
+    :param feature_names: the features' names.
+    :param class_names: the classes' names or labels.
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
     :param kwargs: other keyword arguments
 
@@ -102,8 +102,8 @@ def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) ->
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
     sio = BytesIO()
     graph = pydotplus.graph_from_dot_data(dot_data)
     sio.write(graph.create_png())
@@ -128,14 +128,14 @@ def plot_features_importance(feature_names: List[str], feature_importance: List[
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
-    names = numpy.array(feature_names)
-    importance = numpy.array(feature_importance)
-    non_zero_importance = numpy.nonzero(importance)
+    names = np.array(feature_names)
+    importance = np.array(feature_importance)
+    non_zero_importance = np.nonzero(importance)
 
     ax.bar(names[non_zero_importance], importance[non_zero_importance], **kwargs)
-    pyplot.xticks(rotation=90)
+    plt.xticks(rotation=90)
 
     return ax

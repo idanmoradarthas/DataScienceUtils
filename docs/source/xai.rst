@@ -36,7 +36,7 @@ In following examples we are going to use the iris dataset from scikit-learn. so
 
 We'll create a simple decision tree classifier and plot it::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.tree import DecisionTreeClassifier
 
     from ds_utils.xai import draw_tree
@@ -49,7 +49,7 @@ We'll create a simple decision tree classifier and plot it::
     clf.fit(x, y)
 
     draw_tree(clf, iris.feature_names, iris.target_names)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -67,7 +67,7 @@ Code Example
 ============
 We'll create a simple diagram and plot it::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.xai import draw_dot_data
 
@@ -84,7 +84,7 @@ We'll create a simple diagram and plot it::
                "}"
 
     draw_dot_data(dot_data)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -156,16 +156,16 @@ For this example I created a dummy data set. You can find the data at the resour
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.preprocessing import OneHotEncoder
     from sklearn.tree import DecisionTreeClassifier
 
     from ds_utils.xai import plot_features_importance
 
 
-    data_1M = pandas.read_csv(path/to/dataset)
+    data_1M = pd.read_csv(path/to/dataset)
     target = data_1M["x12"]
     categorical_features = ["x7", "x10"]
     for i in range(0, len(categorical_features)):
@@ -182,7 +182,7 @@ Let's see how to use the code::
     clf.fit(data_1M[features], target)
     plot_features_importance(features, clf.feature_importances_)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 

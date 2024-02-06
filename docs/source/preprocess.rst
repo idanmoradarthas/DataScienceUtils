@@ -18,20 +18,20 @@ The example uses a small sample from of a dataset from
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import visualize_feature
 
-    loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
+    loan_frame = pd.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
                                  parse_dates=["issue_d"])
     loan_frame = loan_frame.drop("id", axis=1)
 
 
     visualize_features(loan_frame["some feature"])
 
-    pyplot.show()
+    plt.show()
 
 For ech different type of feature a different graph will be generated:
 
@@ -80,14 +80,14 @@ Looping Over All the Features
 -----------------------------
 This code example shows how a loop can be constructed in order to show all of features::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import visualize_feature
 
 
-    loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
+    loan_frame = pd.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
                                  parse_dates=["issue_d"])
     loan_frame = loan_frame.drop("id", axis=1)
 
@@ -103,8 +103,8 @@ This code example shows how a loop can be constructed in order to show all of fe
         i += 1
 
     figure.delaxes(axes[9])
-    pyplot.subplots_adjust(hspace=0.5)
-    pyplot.show()
+    plt.subplots_adjust(hspace=0.5)
+    plt.show()
 
 And the following image will be shown:
 
@@ -127,11 +127,11 @@ The example uses a small sample from of a dataset from
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
     from ds_utils.preprocess import get_correlated_features
 
 
-    loan_frame = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=30)
+    loan_frame = pd.read_csv(path/to/dataset, encoding="latin1", nrows=30)
     target = "loan_condition_cat"
     features = train.columns.drop("loan_condition_cat", "issue_d", "application_type").tolist()
     correlations = get_correlated_features(pandas.get_dummies(loan_frame), features, target)
@@ -164,16 +164,16 @@ For this example I created a dummy data set. You can find the data at the resour
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import visualize_correlations
 
 
-    data_1M = pandas.read_csv(path/to/dataset)
+    data_1M = pd.read_csv(path/to/dataset)
     visualize_correlations(data_1M)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -195,16 +195,16 @@ For this example I created a dummy data set. You can find the data at the resour
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import plot_correlation_dendrogram
 
 
-    data_1M = pandas.read_csv(path/to/dataset)
+    data_1M = pd.read_csv(path/to/dataset)
     plot_correlation_dendrogram(data_1M)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -226,16 +226,16 @@ For this example I created a dummy data set. You can find the data at the resour
 
 Let's see how to use the code::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import plot_features_interaction
 
 
-    data_1M = pandas.read_csv(path/to/dataset)
+    data_1M = pd.read_csv(path/to/dataset)
     plot_features_interaction("x7", "x10", data_1M)
-    pyplot.show()
+    plt.show()
 
 For each different combination of features types a different plot will be shown:
 
@@ -303,14 +303,14 @@ Looping One Feature over The Others
 This code example shows how a loop can be constructed in order to show all of one feature relationship with all the
 others::
 
-    import pandas
+    import pandas as pd
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
 
     from ds_utils.preprocess import plot_features_interaction
 
 
-    data_1M = pandas.read_csv(path/to/dataset)
+    data_1M = pd.read_csv(path/to/dataset)
 
     figure, axes = pyplot.subplots(6, 2)
     axes = axes.flatten()
@@ -325,7 +325,7 @@ others::
 
     figure.delaxes(axes[11])
     figure.subplots_adjust(hspace=0.7)
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 

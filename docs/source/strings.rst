@@ -36,14 +36,14 @@ In this example we'll create our own simple dataset that looks like that:
 
 and parse it::
 
-    import pandas
+    import pandas as pd
 
     from ds_utils.strings import append_tags_to_frame
 
 
-    x_train = pandas.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
+    x_train = pd.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
                                 {"article_name": "2", "article_tags": "ds,ml"}])
-    x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
+    x_test = pd.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
     x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 
@@ -76,13 +76,13 @@ Code Example
 This method will help extract the significant terms that will differentiate between subset of documents from the full
 corpus. Let's create a simple corpus and extract significant terms from it::
 
-    import pandas
+    import pandas as pd
 
     from ds_utils.strings import extract_significant_terms_from_subset
 
     corpus = ['This is the first document.', 'This document is the second document.',
               'And this is the third one.', 'Is this the first document?']
-    data_frame = pandas.DataFrame(corpus, columns=["content"])
+    data_frame = pd.DataFrame(corpus, columns=["content"])
     # Let's differentiate between the last two documents from the full corpus
     subset_data_frame = data_frame[data_frame.index > 1]
     terms = extract_significant_terms_from_subset(data_frame, subset_data_frame,
