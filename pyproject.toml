@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools==69.0.3", "wheel==0.41.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+authors = [
+  { name="Idan Morad", email="idanmorad.arthas@gmail.com" },
+]
+name = "data_science_utils"
+dynamic = ["readme", "version"]
+description = "This project is an ensemble of methods which are frequently used in python Data Science projects."
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: tox",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/idanmoradarthas/DataScienceUtils"
+Documentation = "https://datascienceutils.readthedocs.io/en/latest/"
+Issues = "https://github.com/idanmoradarthas/DataScienceUtils/issues"
+Repository = "https://github.com/idanmoradarthas/DataScienceUtils.git"
+Changelog = "https://github.com/idanmoradarthas/DataScienceUtils/blob/master/CHANGELOG.md"
+
+[tool.peotry.dependencies]
+python = ">=3.9"
+file = "requirements.txt"
+
+[tool.setuptools]
+packages = ["ds_utils"]
+
+[tool.setuptools.dynamic]
+readme = {file = "README.md"}
+version = {attr = "ds_utils.__version__"}
