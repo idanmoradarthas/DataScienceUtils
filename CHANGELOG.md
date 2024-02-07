@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 2024-02-06
+### Changed
+- update packages and supported python version
+### Fixed
+- minor changes
+
 ## [1.7] - 2020-09-16
 ### Added
 - xai::plot_features_importance method that visualize into bar chart the feature importance.

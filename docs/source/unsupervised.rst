@@ -26,7 +26,7 @@ In following examples we are going to use the iris dataset from scikit-learn. so
 
 We'll create a simple K-Means algorithm with k=8 and plot how many point goes to each cluster::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
 
     from ds_utils.unsupervised import plot_cluster_cardinality
@@ -37,7 +37,7 @@ We'll create a simple K-Means algorithm with k=8 and plot how many point goes to
 
     plot_cluster_cardinality(estimator.labels_)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -54,7 +54,7 @@ Plot Cluster Magnitude
 Again we'll create a simple K-Means algorithm with k=8. This time we'll plot the sum of distances from points to their
 centroid::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
 
@@ -67,7 +67,7 @@ centroid::
 
     plot_cluster_magnitude(x, estimator.labels_, estimator.cluster_centers_, euclidean)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -83,7 +83,7 @@ Magnitude vs. Cardinality
 
 Now let's plot the Cardinality vs. the Magnitude::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
 
@@ -96,7 +96,7 @@ Now let's plot the Cardinality vs. the Magnitude::
 
     plot_magnitude_vs_cardinality(x, estimator.labels_, estimator.cluster_centers_, euclidean)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 
@@ -112,7 +112,7 @@ Optimum Number of Clusters
 
 Final plot we ca use is Loss vs Cluster Number::
 
-    from matplotlib import pyplot
+    from matplotlib import pyplot as plt
     from scipy.spatial.distance import euclidean
 
     from ds_utils.unsupervised import plot_loss_vs_cluster_number
@@ -121,7 +121,7 @@ Final plot we ca use is Loss vs Cluster Number::
 
     plot_loss_vs_cluster_number(x, 3, 20, euclidean)
 
-    pyplot.show()
+    plt.show()
 
 And the following image will be shown:
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import pytest
 from matplotlib import pyplot
 
@@ -9,9 +9,9 @@ from ds_utils.preprocess import visualize_correlations, \
     plot_features_interaction, plot_correlation_dendrogram, visualize_feature, get_correlated_features
 from tests.utils import compare_images_from_paths
 
-data_1M = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
-loan_data = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313.csv"),
-                            encoding="latin1", parse_dates=["issue_d"]).drop("id", axis=1)
+data_1M = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
+loan_data = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313.csv"),
+                        encoding="latin1", parse_dates=["issue_d"]).drop("id", axis=1)
 
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_visualization_aids").mkdir(
@@ -127,7 +127,7 @@ def test_visualize_feature_category_more_than_10_categories():
 
 
 def test_visualize_feature_bool():
-    loan_dup = pandas.DataFrame()
+    loan_dup = pd.DataFrame()
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: True if term == " 36 months" else False).astype(
         "bool")
     visualize_feature(loan_dup["term 36 months"])
@@ -144,11 +144,11 @@ def test_visualize_feature_bool():
 
 
 def test_visualize_feature_remove_na():
-    loan_data_dup = pandas.DataFrame()
+    loan_data_dup = pd.DataFrame()
     loan_data_dup["emp_length_int"] = loan_data["emp_length_int"]
-    loan_data_dup = pandas.concat(
+    loan_data_dup = pd.concat(
         [loan_data_dup,
-         pandas.DataFrame([numpy.nan] * 250, columns=["emp_length_int"])],
+         pd.DataFrame([np.nan] * 250, columns=["emp_length_int"])],
         ignore_index=True).sample(frac=1, random_state=0)
 
     assert loan_data_dup["emp_length_int"].isna().sum() == 250
@@ -309,7 +309,7 @@ def test_plot_relationship_between_features_categorical_bool():
 
 
 def test_plot_relationship_between_features_datetime_numeric():
-    daily_min_temperatures = pandas.read_csv(
+    daily_min_temperatures = pd.read_csv(
         Path(__file__).parents[0].joinpath("resources").joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
 
     plot_features_interaction("Date", "Temp", daily_min_temperatures)
@@ -327,7 +327,7 @@ def test_plot_relationship_between_features_datetime_numeric():
 
 
 def test_plot_relationship_between_features_datetime_numeric_2():
-    daily_min_temperatures = pandas.read_csv(
+    daily_min_temperatures = pd.read_csv(
         Path(__file__).parents[0].joinpath("resources").joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
 
     plot_features_interaction("Temp", "Date", daily_min_temperatures)
@@ -389,7 +389,7 @@ def test_plot_relationship_between_features_datetime_categorical_2():
 
 
 def test_plot_relationship_between_features_datetime_bool():
-    df = pandas.DataFrame()
+    df = pd.DataFrame()
     df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
     df["issue_d"] = loan_data["issue_d"]
     plot_features_interaction("issue_d", "loan_condition_cat", df)
@@ -407,7 +407,7 @@ def test_plot_relationship_between_features_datetime_bool():
 
 
 def test_plot_relationship_between_features_datetime_bool_2():
-    df = pandas.DataFrame()
+    df = pd.DataFrame()
     df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
     df["issue_d"] = loan_data["issue_d"]
     plot_features_interaction("loan_condition_cat", "issue_d", df)
@@ -472,28 +472,28 @@ def test_plot_correlation_dendrogram_exist_ax():
 
 
 def test_get_correlated_features():
-    data_frame = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313_small.csv"))
+    data_frame = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("loan_final313_small.csv"))
     correlation = get_correlated_features(data_frame, data_frame.columns.drop("loan_condition_cat").tolist(),
                                           "loan_condition_cat", 0.95)
-    correlation_expected = pandas.DataFrame([{'level_0': 'income_category_Low', 'level_1': 'income_category_Medium',
-                                              'level_0_level_1_corr': 1.0,
-                                              'level_0_target_corr': 0.11821656093586508,
-                                              'level_1_target_corr': 0.11821656093586504},
-                                             {'level_0': 'term_ 36 months', 'level_1': 'term_ 60 months',
-                                              'level_0_level_1_corr': 1.0,
-                                              'level_0_target_corr': 0.11821656093586508,
-                                              'level_1_target_corr': 0.11821656093586504},
-                                             {'level_0': 'interest_payments_High', 'level_1': 'interest_payments_Low',
-                                              'level_0_level_1_corr': 1.0, 'level_0_target_corr': 0.11821656093586508,
-                                              'level_1_target_corr': 0.11821656093586504}],
-                                            columns=['level_0', 'level_1', 'level_0_level_1_corr',
-                                                     'level_0_target_corr',
-                                                     'level_1_target_corr'])
-    pandas.testing.assert_frame_equal(correlation_expected, correlation)
+    correlation_expected = pd.DataFrame([{'level_0': 'income_category_Low', 'level_1': 'income_category_Medium',
+                                          'level_0_level_1_corr': 1.0,
+                                          'level_0_target_corr': 0.11821656093586508,
+                                          'level_1_target_corr': 0.11821656093586504},
+                                         {'level_0': 'term_ 36 months', 'level_1': 'term_ 60 months',
+                                          'level_0_level_1_corr': 1.0,
+                                          'level_0_target_corr': 0.11821656093586508,
+                                          'level_1_target_corr': 0.11821656093586504},
+                                         {'level_0': 'interest_payments_High', 'level_1': 'interest_payments_Low',
+                                          'level_0_level_1_corr': 1.0, 'level_0_target_corr': 0.11821656093586508,
+                                          'level_1_target_corr': 0.11821656093586504}],
+                                        columns=['level_0', 'level_1', 'level_0_level_1_corr',
+                                                 'level_0_target_corr',
+                                                 'level_1_target_corr'])
+    pd.testing.assert_frame_equal(correlation_expected, correlation)
 
 
 def test_get_correlated_features_bug():
-    data_frame = pandas.read_csv(
+    data_frame = pd.read_csv(
         Path(__file__).parents[0].joinpath("resources").joinpath("clothing_classification_train.csv"))
     with pytest.warns(UserWarning):
         correlation = get_correlated_features(data_frame,
@@ -501,6 +501,6 @@ def test_get_correlated_features_bug():
                                                "Recommended IND",
                                                "Positive Feedback Count", "Division Name", "Department Name"],
                                               "Class Name")
-    correlation_expected = pandas.DataFrame(
+    correlation_expected = pd.DataFrame(
         columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
-    pandas.testing.assert_frame_equal(correlation_expected, correlation)
+    pd.testing.assert_frame_equal(correlation_expected, correlation)

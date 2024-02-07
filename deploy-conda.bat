@@ -3,7 +3,7 @@
 :: run this line of code if you don't have a skeleton directory (./data-science-utils).
 :: conda skeleton pypi data-science-utils --python-version 3.6
 
-FOR %G IN (3.8 3.9) DO(
+FOR %G IN (3.9 3.10 3.11 3.12) DO(
 conda-build --python %G data-science-utils
 )
 conda build purge

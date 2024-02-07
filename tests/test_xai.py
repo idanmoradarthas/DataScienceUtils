@@ -1,17 +1,17 @@
 import os
 from pathlib import Path
 
-import pandas
+import pandas as pd
 import pytest
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import generate_decision_paths, draw_tree, draw_dot_data, plot_features_importance
 from tests.utils import compare_images_from_paths
 
-iris_x = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_x_full.csv"))
-iris_y = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_y_full.csv"))
-data_1M = pandas.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
+iris_x = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_x_full.csv"))
+iris_y = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_y_full.csv"))
+data_1M = pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("data.1M.zip"), compression='zip')
 
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_xai").mkdir(exist_ok=True)
@@ -163,12 +163,12 @@ def test_draw_tree():
               ['setosa', 'versicolor', 'virginica'])
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree.png")
-    pyplot.savefig(str(result_path))
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -180,8 +180,8 @@ def test_draw_tree_exists_ax():
     # Train model
     clf.fit(iris_x, iris_y)
 
-    pyplot.figure()
-    ax = pyplot.gca()
+    plt.figure()
+    ax = plt.gca()
 
     ax.set_title("My ax")
 
@@ -190,12 +190,12 @@ def test_draw_tree_exists_ax():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
-    pyplot.savefig(str(result_path))
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_tree_exists_ax.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -227,12 +227,12 @@ def test_draw_dot_data():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data.png")
-    pyplot.savefig(str(result_path))
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -248,8 +248,8 @@ def test_draw_dot_data_exist_ax():
                "\n" \
                "}"
 
-    pyplot.figure()
-    ax = pyplot.gca()
+    plt.figure()
+    ax = plt.gca()
 
     ax.set_title("My ax")
 
@@ -257,12 +257,12 @@ def test_draw_dot_data_exist_ax():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
-    pyplot.savefig(str(result_path))
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_visualization_aids").joinpath("test_draw_dot_data_exist_ax.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -289,19 +289,19 @@ def test_plot_features_importance():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_xai").joinpath("test_plot_features_importance.png")
-    pyplot.gcf().set_size_inches(17, 10)
-    pyplot.savefig(str(result_path))
+    plt.gcf().set_size_inches(17, 10)
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_xai").joinpath("test_plot_features_importance.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
 def test_plot_features_importance_exists_ax():
-    pyplot.figure()
-    ax = pyplot.gca()
+    plt.figure()
+    ax = plt.gca()
 
     ax.set_title("My ax")
     importance = [0.047304175084187376, 0.011129476233187116, 0.01289095487553893, 0.015528563988219685,
@@ -326,11 +326,11 @@ def test_plot_features_importance_exists_ax():
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_xai").joinpath("test_plot_features_importance_exists_ax.png")
-    pyplot.gcf().set_size_inches(17, 10)
-    pyplot.savefig(str(result_path))
+    plt.gcf().set_size_inches(17, 10)
+    plt.savefig(str(result_path))
 
     baseline_path = Path(__file__).parents[0].absolute().joinpath("baseline_images").joinpath(
         "test_xai").joinpath("test_plot_features_importance_exists_ax.png")
-    pyplot.cla()
-    pyplot.close(pyplot.gcf())
+    plt.cla()
+    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))

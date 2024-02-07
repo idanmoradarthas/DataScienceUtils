@@ -1,12 +1,13 @@
 from typing import Optional, Callable, Dict, Any
 
-import numpy
-import pandas
-from matplotlib import axes, pyplot, lines
+import numpy as np
+import pandas as pd
+from matplotlib import axes, lines
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 
 
-def plot_cluster_cardinality(labels: numpy.ndarray, *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+def plot_cluster_cardinality(labels: np.ndarray, *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Cluster cardinality is the number of examples per cluster. This method plots the number of points per cluster as a
     bar chart.
@@ -19,12 +20,12 @@ def plot_cluster_cardinality(labels: numpy.ndarray, *, ax: Optional[axes.Axes] =
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     cardinality = _extract_cardinality(labels)
-    cardinality.plot(kind="bar", ax=ax, **kwargs)
-    pyplot.xticks(rotation=0)
+    cardinality["count"].plot(kind="bar", ax=ax, **kwargs)
+    plt.xticks(rotation=0)
     ax.set_xlabel("Cluster Label")
     ax.set_ylabel("Points in Cluster")
 
@@ -32,13 +33,13 @@ def plot_cluster_cardinality(labels: numpy.ndarray, *, ax: Optional[axes.Axes] =
 
 
 def _extract_cardinality(labels):
-    labels_df = pandas.DataFrame(numpy.transpose(labels), columns=["labels"])
-    cardinality = labels_df["labels"].value_counts().sort_index()
+    labels_df = pd.DataFrame(np.transpose(labels), columns=["labels"])
+    cardinality = labels_df["labels"].value_counts().sort_index().reset_index()
     return cardinality
 
 
-def plot_cluster_magnitude(X: numpy.ndarray, labels: numpy.ndarray, cluster_centers: numpy.ndarray,
-                           distance_function: Callable[[numpy.ndarray, numpy.ndarray], float], *,
+def plot_cluster_magnitude(X: np.ndarray, labels: np.ndarray, cluster_centers: np.ndarray,
+                           distance_function: Callable[[np.ndarray, np.ndarray], float], *,
                            ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Cluster magnitude is the sum of distances from all examples to the centroid of the cluster.
@@ -59,12 +60,12 @@ def plot_cluster_magnitude(X: numpy.ndarray, labels: numpy.ndarray, cluster_cent
     """
 
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     magnitude = _extract_magnitude(X, labels, cluster_centers, distance_function)
     magnitude.sort_index().plot(kind="bar", ax=ax, **kwargs)
-    pyplot.xticks(rotation=0)
+    plt.xticks(rotation=0)
     ax.set_xlabel("Cluster Label")
     ax.set_ylabel("Total Point-to-Centroid Distance")
 
@@ -72,7 +73,7 @@ def plot_cluster_magnitude(X: numpy.ndarray, labels: numpy.ndarray, cluster_cent
 
 
 def _extract_magnitude(X, labels, cluster_centers, distance_function):
-    data = pandas.DataFrame.from_records(numpy.expand_dims(X, axis=1), columns=["point"])
+    data = pd.DataFrame.from_records(np.expand_dims(X, axis=1), columns=["point"])
     data["label"] = labels
     data["center"] = data["label"].apply(lambda label: cluster_centers[label])
     data["distance"] = data.apply(lambda row: distance_function(row["point"], row["center"]), axis=1)
@@ -80,8 +81,8 @@ def _extract_magnitude(X, labels, cluster_centers, distance_function):
     return magnitude
 
 
-def plot_magnitude_vs_cardinality(X: numpy.ndarray, labels: numpy.ndarray, cluster_centers: numpy.ndarray,
-                                  distance_function: Callable[[numpy.ndarray, numpy.ndarray], float], *,
+def plot_magnitude_vs_cardinality(X: np.ndarray, labels: np.ndarray, cluster_centers: np.ndarray,
+                                  distance_function: Callable[[np.ndarray, np.ndarray], float], *,
                                   ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
     """
     Higher cluster cardinality tends to result in a higher cluster magnitude, which intuitively makes sense. Clusters
@@ -101,32 +102,32 @@ def plot_magnitude_vs_cardinality(X: numpy.ndarray, labels: numpy.ndarray, clust
     :return: Returns the Axes object with the plot drawn onto it.
     """
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
-    cardinality = pandas.DataFrame(_extract_cardinality(labels))
+    cardinality = pd.DataFrame(_extract_cardinality(labels))
     cardinality = cardinality.rename(columns={"labels": "Cardinality"})
-    magnitude = pandas.DataFrame(_extract_magnitude(X, labels, cluster_centers, distance_function))
+    magnitude = pd.DataFrame(_extract_magnitude(X, labels, cluster_centers, distance_function))
     magnitude = magnitude.rename(columns={"distance": "Magnitude"})
     merged = cardinality.merge(magnitude, left_index=True, right_index=True)
 
     merged.plot("Cardinality", "Magnitude", kind="scatter", ax=ax, **kwargs)
-    [ax.annotate(index, point) for index, point in merged.iterrows()]
+    [ax.annotate(index, [point["Cardinality"], point["Magnitude"]]) for index, point in merged.iterrows()]
 
     line = lines.Line2D([0, 1], [0, 1])
     transform = ax.transAxes
     line.set_transform(transform)
     ax.add_line(line)
 
-    pyplot.xticks(rotation=0)
+    plt.xticks(rotation=0)
     ax.set_xlabel("Cardinality")
     ax.set_ylabel("Magnitude")
 
     return ax
 
 
-def plot_loss_vs_cluster_number(X: numpy.ndarray, k_min: int, k_max: int,
-                                distance_function: Callable[[numpy.ndarray, numpy.ndarray], float], *,
+def plot_loss_vs_cluster_number(X: np.ndarray, k_min: int, k_max: int,
+                                distance_function: Callable[[np.ndarray, np.ndarray], float], *,
                                 algorithm_parameters: Dict[str, Any] = None, ax: Optional[axes.Axes] = None,
                                 **kwargs) -> axes.Axes:
     """
@@ -156,8 +157,8 @@ def plot_loss_vs_cluster_number(X: numpy.ndarray, k_min: int, k_max: int,
         del algorithm_parameters["n_clusters"]
 
     if ax is None:
-        pyplot.figure()
-        ax = pyplot.gca()
+        plt.figure()
+        ax = plt.gca()
 
     result = []
 
@@ -165,12 +166,12 @@ def plot_loss_vs_cluster_number(X: numpy.ndarray, k_min: int, k_max: int,
         estimator = KMeans(n_clusters=k)
         estimator.set_params(**algorithm_parameters)
         estimator.fit(X)
-        magnitude = pandas.DataFrame(
+        magnitude = pd.DataFrame(
             _extract_magnitude(X, estimator.labels_, estimator.cluster_centers_, distance_function))
         result.append({"k": k, "magnitude": magnitude["distance"].sum()})
 
-    pandas.DataFrame(result).plot("k", "magnitude", kind="scatter", ax=ax, **kwargs)
-    pyplot.xticks(range(max(0, k_min - 1), k_max + 2), rotation=0)
+    pd.DataFrame(result).plot("k", "magnitude", kind="scatter", ax=ax, **kwargs)
+    plt.xticks(range(max(0, k_min - 1), k_max + 2), rotation=0)
     ax.set_xlabel("Number of clusters")
     ax.set_ylabel("Total Point-to-Centroid Distance")
     ax.set_title("Loss vs Clusters Used")

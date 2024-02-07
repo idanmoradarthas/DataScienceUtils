@@ -197,14 +197,14 @@ A dataset that looks like this:
 
 Using this code:
 ```python
-import pandas
+import pandas as pd
 
 from ds_utils.strings import append_tags_to_frame
 
 
-x_train = pandas.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
+x_train = pd.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
                              {"article_name": "2", "article_tags": "ds,ml"}])
-x_test = pandas.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
+x_test = pd.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
 x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 ```
@@ -228,13 +228,13 @@ will be parsed into this:
 Returns interesting or unusual occurrences of terms in a subset. Based on the [elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
 
 ```python
-import pandas
+import pandas as pd
 
 from ds_utils.strings import extract_significant_terms_from_subset
 
 corpus = ['This is the first document.', 'This document is the second document.',
           'And this is the third one.', 'Is this the first document?']
-data_frame = pandas.DataFrame(corpus, columns=["content"])
+data_frame = pd.DataFrame(corpus, columns=["content"])
 # Let's differentiate between the last two documents from the full corpus
 subset_data_frame = data_frame[data_frame.index > 1]
 terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
@@ -253,20 +253,20 @@ Cluster cardinality is the number of examples per cluster. This method plots the
 chart.
 
 ```python
-import pandas
-from matplotlib import pyplot
+import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 
 from ds_utils.unsupervised import plot_cluster_cardinality
 
 
-data = pandas.read_csv(path/to/dataset)
+data = pd.read_csv(path/to/dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
 plot_cluster_cardinality(estimator.labels_)
 
-pyplot.show()
+plt.show()
 ```
 ![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_cardinality.png)
 
@@ -275,20 +275,20 @@ Cluster magnitude is the sum of distances from all examples to the centroid of t
 Total Point-to-Centroid Distance per cluster as a bar chart.
 
 ```python
-import pandas
-from matplotlib import pyplot
+import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
 
 from ds_utils.unsupervised import plot_cluster_magnitude
 
-data = pandas.read_csv(path/to/dataset)
+data = pd.read_csv(path/to/dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
 plot_cluster_magnitude(data, estimator.labels_, estimator.cluster_centers_, euclidean)
 
-pyplot.show()
+plt.show()
 ```
 ![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png)
 
@@ -297,20 +297,20 @@ Higher cluster cardinality tends to result in a higher cluster magnitude, which 
 are anomalous when cardinality doesn't correlate with magnitude relative to the other clusters. Find anomalous 
 clusters by plotting magnitude against cardinality as a scatter plot.
 ```python
-import pandas
-from matplotlib import pyplot
+import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
 
 from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 
-data = pandas.read_csv(path/to/dataset)
+data = pd.read_csv(path/to/dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
 plot_magnitude_vs_cardinality(data, estimator.labels_, estimator.cluster_centers_, euclidean)
 
-pyplot.show()
+plt.show()
 ```
 ![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png)
 
@@ -321,20 +321,20 @@ increases the cluster number at each try. The Total magnitude or sum of distance
 Right now the method only works with ``sklearn.cluster.KMeans``.
 
 ```python
-import pandas
+import pandas as pd
 
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
 
 from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
 
 
-data = pandas.read_csv(path/to/dataset)
+data = pd.read_csv(path/to/dataset)
 
 plot_loss_vs_cluster_number(data, 3, 20, euclidean)
 
-pyplot.show()
+plt.show()
 ```
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
@@ -385,15 +385,15 @@ def iris_tree(petal width (cm), petal length (cm)):
 plot feature importance as a bar chart.
 
 ```python
-import pandas
+import pandas as pd
 
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import plot_features_importance
 
 
-data = pandas.read_csv(path/to/dataset)
+data = pd.read_csv(path/to/dataset)
 target = data["target"]
 features = data.columns.to_list()
 features.remove("target")
@@ -402,7 +402,7 @@ clf = DecisionTreeClassifier(random_state=42)
 clf.fit(data[features], target)
 plot_features_importance(features, clf.feature_importances_)
 
-pyplot.show()
+plt.show()
 ```
 ![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance.png)
 
