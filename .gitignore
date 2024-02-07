@@ -110,3 +110,4 @@ Temporary Items
 .apdisk
 /tests/result_images/
 /outputdir/
+.pypirc
