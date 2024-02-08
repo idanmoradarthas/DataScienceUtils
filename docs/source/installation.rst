@@ -17,7 +17,7 @@ Alternatively you can install from source by cloning the repo and running::
 
     git clone https://github.com/idanmoradarthas/DataScienceUtils.git
     cd DataScienceUtils
-    python setup.py install
+    pip install .
 
 Or install using pip from source::
 
