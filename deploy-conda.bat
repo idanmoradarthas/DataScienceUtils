@@ -20,7 +20,7 @@ for %%v in (39 310 311) do (
     call conda convert -f --platform all outputdir\win-64\data-science-utils-%version%-py%%v_0.tar.bz2 -o outputdir\
 )
 
- anaconda login
+anaconda login
 
 for %%v in (39 310 311) do (
     for %%i in (linux-32 linux-64 linux-aarch64 linux-armv6l linux-armv7l linux-ppc64le osx-64 win-32 win-64) do (
