@@ -3,24 +3,27 @@
 :: run this line of code if you don't have a skeleton directory (./data-science-utils).
 :: conda skeleton pypi data-science-utils --python-version 3.6
 
-FOR %G IN (3.9 3.10 3.11 3.12) DO(
-conda-build --python %G data-science-utils
+for /F "tokens=2 delims== " %%i in ('findstr /R "__version__[^=]*=" ds_utils\__init__.py') do (
+    set version=%%i
 )
-conda build purge
 
-:: copy directory win-64 from C:\Anaconda3\envs\DataScienceUtils\conda-bld to outputdir directory
+set version=%version:"=%
 
-conda convert -f --platform all outputdir\win-64\data-science-utils-1.7.1-py38_0.tar.bz2 -o outputdir\
-conda convert -f --platform all outputdir\win-64\data-science-utils-1.7.1-py39_0.tar.bz2 -o outputdir\
+if not exist .\outputdir mkdir .\outputdir
 
-anaconda login
+for %%v in (3.9 3.10 3.11) do (
+    call conda build --python %%v data-science-utils --numpy 1.26.3 --output-folder outputdir\
+)
+call conda build purge
 
-anaconda upload outputdir/linux-32/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-32/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/linux-64/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-64/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/linux-aarch64/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-aarch64/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/linux-armv6l/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-armv6l/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/linux-armv7l/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-armv7l/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/linux-ppc64le/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/linux-ppc64le/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/osx-64/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/osx-64/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/win-32/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/win-32/data-science-utils-1.7.1-py39_0.tar.bz2
-anaconda upload outputdir/win-64/data-science-utils-1.7.1-py38_0.tar.bz2 outputdir/win-64/data-science-utils-1.7.1-py39_0.tar.bz2
+for %%v in (39 310 311) do (
+    call conda convert -f --platform all outputdir\win-64\data-science-utils-%version%-py%%v_0.tar.bz2 -o outputdir\
+)
+
+ anaconda login
+
+for %%v in (39 310 311) do (
+    for %%i in (linux-32 linux-64 linux-aarch64 linux-armv6l linux-armv7l linux-ppc64le osx-64 win-32 win-64) do (
+        call anaconda upload outputdir/%%i/data-science-utils-%version%-py%%v_0.tar.bz2
+    )
+)
