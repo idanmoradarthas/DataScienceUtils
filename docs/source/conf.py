@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath("../../ds_utils"))
-import ds_utils
+from ...ds_utils import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -23,7 +23,7 @@ copyright = f'{datetime.date.today().year}, Idan Morad'
 author = 'Idan Morad'
 
 # The full version, including alpha/beta/rc tags
-release = ds_utils.__version__
+release = __version__
 
 # -- General configuration ---------------------------------------------------
 
