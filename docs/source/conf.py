@@ -6,6 +6,7 @@
 import datetime
 import os
 import sys
+from pathlib import Path
 
 # -- Path setup --------------------------------------------------------------
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -14,7 +15,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath("../../ds_utils"))
-from ...ds_utils import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -23,7 +23,7 @@ copyright = f'{datetime.date.today().year}, Idan Morad'
 author = 'Idan Morad'
 
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = Path(__file__).parents[2].joinpath("ds_utils", "__init__.py").read_text().split("=")[1].strip()
 
 # -- General configuration ---------------------------------------------------
 
