@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.7.2] - 2024-02-06
+## [1.7.3] - 2024-02-06
 ### Changed
 - update packages and supported python version
 ### Fixed

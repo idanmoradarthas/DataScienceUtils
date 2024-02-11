@@ -25,4 +25,4 @@ Or install using pip from source::
 
 If you're using Anaconda, you can install using conda::
 
-    conda install -c idanmorad data-science-utils
+    conda install idanmorad::data-science-utils

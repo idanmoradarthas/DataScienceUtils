@@ -449,11 +449,11 @@ git clone https://github.com/idanmoradarthas/DataScienceUtils.git
 cd DataScienceUtils
 pip install .
 ```
-Or install using pip from source:
+Or installation using pip from source:
 ```bash
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
 If you're using Anaconda, you can install using conda:
 ```bash
-conda install -c idanmorad data-science-utils
+conda install idanmorad::data-science-utils
 ```
