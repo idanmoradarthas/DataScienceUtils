@@ -7,9 +7,10 @@ authors = [
   { name="Idan Morad", email="idanmorad.arthas@gmail.com" },
 ]
 name = "data_science_utils"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 description = "This project is an ensemble of methods which are frequently used in python Data Science projects."
 license = {file = "LICENSE"}
+requires-python = ">=3.9"
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -32,12 +33,9 @@ Issues = "https://github.com/idanmoradarthas/DataScienceUtils/issues"
 Repository = "https://github.com/idanmoradarthas/DataScienceUtils.git"
 Changelog = "https://github.com/idanmoradarthas/DataScienceUtils/blob/master/CHANGELOG.md"
 
-[tool.peotry.dependencies]
-python = ">=3.9"
-file = "requirements.txt"
-
 [tool.setuptools]
 packages = ["ds_utils"]
 
 [tool.setuptools.dynamic]
 version = {attr = "ds_utils.__version__"}
+dependencies = {file = ["requirements.txt"]}
