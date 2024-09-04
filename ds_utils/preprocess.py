@@ -49,7 +49,10 @@ def visualize_feature(series: pd.Series, remove_na: bool = False, *, ax: Optiona
         ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
         ax.set_xlabel("")
 
-    ticks_loc = ax.get_xticks().tolist()
+    ticks_loc = ax.get_xticks()
+    if isinstance(ticks_loc, np.ndarray):
+        ticks_loc = ticks_loc.tolist()
+
     ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     ax.set_xticklabels(labels, rotation=45, horizontalalignment='right')
 

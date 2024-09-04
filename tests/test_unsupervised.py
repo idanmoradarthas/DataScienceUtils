@@ -164,7 +164,7 @@ def test_plot_loss_vs_cluster_number_exist_ax():
 
 def test_plot_loss_vs_cluster_number_given_parameters():
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean,
-                                algorithm_parameters={"random_state": 42, "algorithm": "full"})
+                                algorithm_parameters={"random_state": 42, "algorithm": "lloyd"})
 
     result_path = Path(__file__).parents[0].absolute().joinpath("result_images").joinpath(
         "test_unsupervised").joinpath("test_plot_loss_vs_cluster_number_given_parameters.png")
