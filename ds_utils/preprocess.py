@@ -49,7 +49,7 @@ def visualize_feature(series: pd.Series, remove_na: bool = False, *, ax: Optiona
         ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
         ax.set_xlabel("")
 
-    ticks_loc = ax.get_xticks().tolist()
+    ticks_loc = ax.get_xticks()
     ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     ax.set_xticklabels(labels, rotation=45, horizontalalignment='right')
 
@@ -238,7 +238,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pd.DataFrame
             # first feature is categorical and the second is datetime
             dup_df[feature_2] = data[feature_2].apply(dates.date2num)
             chart = sns.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
-            ticks_loc = chart.get_xticks().tolist()
+            ticks_loc = chart.get_xticks()
             chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
             ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
@@ -253,7 +253,7 @@ def plot_features_interaction(feature_1: str, feature_2: str, data: pd.DataFrame
             dup_df[feature_1] = data[feature_1].apply(dates.date2num)
             dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
             chart = sns.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
-            ticks_loc = chart.get_xticks().tolist()
+            ticks_loc = chart.get_xticks()
             chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
             chart.set_xticklabels(chart.get_xticklabels(), rotation=45, horizontalalignment='right')
             ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
