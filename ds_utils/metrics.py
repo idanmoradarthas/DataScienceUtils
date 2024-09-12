@@ -49,7 +49,7 @@ def plot_confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray, labels: List[U
         tn, fp, fn, tp = cnf_matrix.ravel()
         npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
 
-        table = np.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, np.NaN]], dtype=np.float64)
+        table = np.array([[tn, fp, tnr], [fn, tp, tpr], [npv, ppv, np.nan]], dtype=np.float64)
         df = pd.DataFrame(table, columns=[f"{labels[0]} - Predicted", f"{labels[1]} - Predicted", "Recall"],
                           index=[f"{labels[0]} - Actual", f"{labels[1]} - Actual", "Precision"])
     else:

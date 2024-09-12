@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.4] - 2024-09-12
+### Changed
+- Updated Matplotlib version to accommodate the change of xticks now returning a list of a numpy's ndarry.
+### Fixed
+- Tests
+- minor changes
+
 ## [1.7.3] - 2024-02-06
 ### Changed
 - update packages and supported python version

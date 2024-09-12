@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools==69.0.3", "wheel==0.41.2"]
+requires = ["setuptools==72.1.0", "wheel==0.43.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib"]
