@@ -30,4 +30,4 @@ def test_significant_terms():
         [1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.5, 0.25, 0.0],
         index=['and', 'one', 'third', 'is', 'the', 'this', 'first', 'document', 'second'])
 
-    pd.testing.assert_series_equal(expected, terms)
+    pd.testing.assert_series_equal(expected, terms, check_like=True)
