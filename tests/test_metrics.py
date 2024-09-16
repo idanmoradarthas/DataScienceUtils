@@ -8,8 +8,10 @@ from numpy.random.mtrand import RandomState
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-from ds_utils.metrics import plot_confusion_matrix, plot_metric_growth_per_labeled_instances, \
-    visualize_accuracy_grouped_by_probability
+from ds_utils.metrics import (
+    plot_confusion_matrix,
+    plot_metric_growth_per_labeled_instances,
+    visualize_accuracy_grouped_by_probability)
 from tests.utils import compare_images_from_paths
 
 

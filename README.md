@@ -96,13 +96,13 @@ from ds_utils.preprocess import visualize_feature
 visualize_feature(X_train["feature"])
 ```
 
-|Feature Type      |Plot|
-|------------------|----|
-|Float             |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png)|
-|Integer           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png)|
-|Datetime          |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png)|
-|Category / Object |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png)|
-|Boolean           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png)|
+| Feature Type      | Plot                                                                                                                                                                              |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Float             | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[float].png)                            |
+| Integer           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[int].png)                              |
+| Datetime          | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[datetime].png)                         |
+| Category / Object | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[category_more_than_10_categories].png) |
+| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_bool.png)                              |
 
 ### Get Correlated Features
 
@@ -135,7 +135,7 @@ from ds_utils.preprocess import visualize_correlations
 visualize_correlations(data)
 ```
 
-![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations[default].png)
 
 ### Plot Correlation Dendrogram
 Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
@@ -150,7 +150,7 @@ from ds_utils.preprocess import plot_correlation_dendrogram
 plot_correlation_dendrogram(data)
 ```
 
-![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
+![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram[default].png)
 
 ### Plot Features' Interaction
 Plots the joint distribution between two features:
@@ -168,12 +168,12 @@ from ds_utils.preprocess import plot_features_interaction
 plot_features_interaction("feature_1", "feature_2", data)
 ```
 
-|               | Numeric | Categorical | Boolean | Datetime
-|---------------|---------|-------------|---------|---------|
-|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)| | | |
-|**Categorical**|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)| | |
-|**Boolean**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)| |
-|**Datetime**   |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
+|                 | Numeric                                                                                                                                                                               | Categorical                                                                                                                                                                            | Boolean                                                                                                                                                                                 | Datetime                                                                                                                                                                            
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Numeric**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_numeric].png)        |                                                                                                                                                                                        |                                                                                                                                                                                         |                                                                                                                                                                                     |
+| **Categorical** | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_categorical].png)     |                                                                                                                                                                                         |                                                                                                                                                                                     |
+| **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_boolean].png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[categorical_bool].png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_bool].png)             |                                                                                                                                                                                     |
+| **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_numeric].png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool[default].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_datetime].png) |
 
 ## Strings
 ### Append Tags to Frame
