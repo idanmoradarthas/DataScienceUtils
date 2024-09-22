@@ -10,9 +10,10 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
@@ -23,10 +24,17 @@ jobs:
           cache: pip
       - name: Install tox
         run: pip install tox
-      - name: Install graphviz binaries for ${{ runner.os }} (${{ runner.arch }})
+      - name: Install graphviz binaries for Linux (${{ runner.arch }})
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get -y install graphviz
+      - name: Install graphviz binaries for Windows (${{ runner.arch }})
+        if: runner.os == 'Windows'
+        run: choco install graphviz
+      - name: Install graphviz binaries for macOS (${{ runner.arch }})
+        if: runner.os == 'macOS'
+        run: brew install graphviz
       - name: Run tox (install test dependencies)
         # Run tox using the version of Python in `PATH`
         run: tox -e py
