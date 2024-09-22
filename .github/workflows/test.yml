@@ -18,8 +18,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install tox and any other packages
+      - name: Install tox
         run: pip install tox
-      - name: Run tox
+      - name: Install graphviz binaries for ${{ runner.os }} (${{ runner.arch }})
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install graphviz
+      - name: Run tox (install test dependencies)
         # Run tox using the version of Python in `PATH`
         run: tox -e py
