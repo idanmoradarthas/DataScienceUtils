@@ -44,6 +44,13 @@ def baseline_path(request):
     return Path(__file__).parent.joinpath("baseline_images", "test_metrics", f"{request.node.name}.png")
 
 
+@pytest.fixture(autouse=True)
+def setup_teardown():
+    yield
+    plt.cla()
+    plt.close(plt.gcf())
+
+
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
 
@@ -74,8 +81,7 @@ def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels, result_path
     assert accuracy == np.mean(y_test == y_pred)
 
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -114,8 +120,7 @@ def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, test_c
     assert ax.get_ylabel() == "Metric score"
 
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -139,8 +144,7 @@ def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifie
     plt.savefig(str(result_path))
 
     assert ax.get_title() == "My ax"
-    plt.cla()
-    plt.close(fig)
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -182,8 +186,7 @@ def test_visualize_accuracy_grouped_by_probability(display_breakdown, bins, thre
 
     plt.gcf().set_size_inches(10, 8)
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -202,6 +205,4 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     plt.gcf().set_size_inches(10, 8)
     plt.savefig(str(result_path))
 
-    plt.cla()
-    plt.close(fig)
     compare_images_from_paths(str(baseline_path), str(result_path))

@@ -43,6 +43,13 @@ def daily_min_temperatures():
     return pd.read_csv(RESOURCES_PATH.joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
 
 
+@pytest.fixture(autouse=True)
+def setup_teardown():
+    yield
+    plt.cla()
+    plt.close(plt.gcf())
+
+
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_preprocess").mkdir(
     exist_ok=True)
@@ -66,8 +73,7 @@ def test_visualize_feature(loan_data, feature, test_case, baseline_path, result_
         plt.gcf().set_size_inches(11, 11)
 
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -80,8 +86,6 @@ def test_visualize_feature_float_exist_ax(loan_data, baseline_path, result_path)
     plt.gcf().set_size_inches(10, 8)
     plt.savefig(str(result_path))
 
-    plt.cla()
-    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -91,8 +95,7 @@ def test_visualize_feature_bool(loan_data, baseline_path, result_path):
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: term == " 36 months").astype("bool")
     visualize_feature(loan_dup["term 36 months"])
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -105,8 +108,7 @@ def test_visualize_feature_remove_na(loan_data, baseline_path, result_path):
 
     visualize_feature(loan_data_dup["emp_length_int"], remove_na=True)
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -122,8 +124,7 @@ def test_visualize_correlations(data_1m, use_existing_ax, baseline_path, result_
 
     plt.gcf().set_size_inches(14, 9)
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -161,8 +162,7 @@ def test_plot_relationship_between_features(feature1, feature2, data_fixture, te
         plt.gcf().set_size_inches(10, 11.5)
 
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -179,8 +179,7 @@ def test_plot_relationship_between_features_datetime_bool(loan_data, test_case, 
 
     plt.gcf().set_size_inches(10, 11.5)
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -191,8 +190,6 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m, basel
     plot_features_interaction("x4", "x5", data_1m, ax=ax)
     plt.savefig(str(result_path))
 
-    plt.cla()
-    plt.close(plt.gcf())
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
@@ -207,8 +204,7 @@ def test_plot_correlation_dendrogram(data_1m, use_existing_ax, baseline_path, re
         plot_correlation_dendrogram(data_1m)
 
     plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
+
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
