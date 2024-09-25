@@ -6,6 +6,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 
 def _tokenize(text_tags: str) -> List[str]:
+    if pd.isna(text_tags):
+        return []
     tags = text_tags.split(",")
     tags = [re.sub(r"[^a-zA-Z0-9_$-]", "", x) for x in tags]
     tags = [x.strip() for x in tags]
@@ -39,12 +41,19 @@ def append_tags_to_frame(
                       preprocessing and n-grams generation steps. Default splits by ",", and
                       retains alphanumeric characters with special characters "_", "$", and "-".
     :return: The train and test DataFrames with tags appended.
+    :raise KeyError: if the one of the frames is missing columns.
     """
     vectorizer = CountVectorizer(binary=True, tokenizer=tokenizer, encoding="utf-8", lowercase=lowercase,
                                  min_df=min_df, max_features=max_features)
 
-    x_train_count_matrix = vectorizer.fit_transform(X_train[field_name].dropna())
-    x_test_count_matrix = vectorizer.transform(X_test[field_name].dropna())
+    if X_train.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    x_train_filled = X_train[field_name].fillna("")
+    x_test_filled = X_test[field_name].fillna("")
+
+    x_train_count_matrix = vectorizer.fit_transform(x_train_filled)
+    x_test_count_matrix = vectorizer.transform(x_test_filled)
 
     feature_names = [prefix + tag_name for tag_name in vectorizer.get_feature_names_out()]
 
@@ -83,6 +92,9 @@ def extract_significant_terms_from_subset(
 
     :author: Eran Hirsch (https://github.com/eranhirs)
     """
+    if data_frame.empty:
+        return pd.Series()
+
     count_matrix = vectorizer.fit_transform(data_frame[field_name].dropna())
     matrix_df = pd.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names_out())
 
