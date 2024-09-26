@@ -84,6 +84,11 @@ def test_cluster_cardinality_exist_ax(iris_data, result_path, baseline_path):
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
+def test_cluster_cardinality_empty_labels():
+    with pytest.raises(ValueError, match="Labels array is empty."):
+        plot_cluster_cardinality(np.array([]))
+
+
 def test_plot_cluster_magnitude(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path, baseline_path):
     iris_x, labels, cluster_centers = iris_data
 
@@ -104,6 +109,24 @@ def test_plot_cluster_magnitude_exist_ax(iris_data, distance_wrapper_plot_magnit
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+def test_cluster_magnitude_inconsistent_shapes(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="X and labels must have the same length."):
+        plot_cluster_magnitude(iris_x.values[:-1], labels, cluster_centers, mocker.Mock())
+
+
+def test_cluster_magnitude_invalid_distance_function(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="Invalid distance_function provided."):
+        plot_cluster_magnitude(iris_x.values, labels, cluster_centers, mocker.Mock(side_effect=TypeError))
+
+
+def test_cluster_magnitude_invalid_cluster_number_vs_labels(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="Number of cluster centers must match the number of unique labels."):
+        plot_cluster_magnitude(np.array([1]), np.array([1]), cluster_centers, mocker.Mock())
 
 
 def test_plot_magnitude_vs_cardinality(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
@@ -129,6 +152,24 @@ def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, distance_wrapper_plot
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
+def test_plot_magnitude_vs_cardinality_inconsistent_shapes(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="X and labels must have the same length."):
+        plot_magnitude_vs_cardinality(iris_x.values[:-1], labels, cluster_centers, mocker.Mock())
+
+
+def test_magnitude_vs_cardinality_inconsistent_centers(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="Number of cluster centers must match the number of unique labels."):
+        plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers[:-1], mocker.Mock())
+
+
+def test_magnitude_vs_cardinality_invalid_distance_function(mocker, iris_data):
+    iris_x, labels, cluster_centers = iris_data
+    with pytest.raises(ValueError, match="Invalid distance_function provided."):
+        plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers, mocker.Mock(side_effect=TypeError))
+
+
 def test_plot_loss_vs_cluster_number(iris_data, result_path, baseline_path):
     iris_x, _, _ = iris_data
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean)
@@ -151,33 +192,10 @@ def test_plot_loss_vs_cluster_number_exist_ax(iris_data, result_path, baseline_p
 def test_plot_loss_vs_cluster_number_given_parameters(iris_data, result_path, baseline_path):
     iris_x, _, _ = iris_data
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean,
-                                algorithm_parameters={"random_state": 42, "algorithm": "lloyd"})
+                                algorithm_parameters={"random_state": 42, "algorithm": "lloyd", "n_clusters": 3})
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
-
-
-def test_cluster_cardinality_empty_labels():
-    with pytest.raises(ValueError, match="Labels array is empty."):
-        plot_cluster_cardinality(np.array([]))
-
-
-def test_cluster_magnitude_inconsistent_shapes(mocker, iris_data):
-    iris_x, labels, cluster_centers = iris_data
-    with pytest.raises(ValueError, match="X and labels must have the same length."):
-        plot_cluster_magnitude(iris_x.values[:-1], labels, cluster_centers, mocker.Mock())
-
-
-def test_cluster_magnitude_invalid_distance_function(mocker, iris_data):
-    iris_x, labels, cluster_centers = iris_data
-    with pytest.raises(ValueError, match="Invalid distance_function provided."):
-        plot_cluster_magnitude(iris_x.values, labels, cluster_centers, mocker.Mock(side_effect=TypeError))
-
-
-def test_magnitude_vs_cardinality_inconsistent_centers(mocker, iris_data):
-    iris_x, labels, cluster_centers = iris_data
-    with pytest.raises(ValueError, match="Number of cluster centers must match the number of unique labels."):
-        plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers[:-1], mocker.Mock())
 
 
 def test_loss_vs_cluster_number_invalid_k_range(mocker, iris_data):
