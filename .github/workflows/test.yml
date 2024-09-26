@@ -3,7 +3,7 @@ name: Test
 on:
   push:
   pull_request:
-    types: [opened, reopened]
+    types: [ opened, reopened ]
 
 permissions:
   contents: read
@@ -13,8 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ "3.9", "3.10", "3.11", "3.12" ]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install tox
-        run: pip install tox
+      - name: Install tox and coveralls
+        run: pip install tox coveralls
       - name: Install graphviz binaries for Linux (${{ runner.arch }})
         if: runner.os == 'Linux'
         run: |
@@ -38,3 +38,19 @@ jobs:
       - name: Run tox (install test dependencies)
         # Run tox using the version of Python in `PATH`
         run: tox -e py
+      - name: Upload coverage to Coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_FLAG_NAME: ${{ matrix.os }}-python-${{ matrix.python-version }}
+          COVERALLS_PARALLEL: true
+        run: coveralls --service=github
+
+  coveralls:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Finish Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
