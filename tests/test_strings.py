@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.sparse import csr_array
 from sklearn.feature_extraction.text import CountVectorizer
 
 from ds_utils.strings import append_tags_to_frame, extract_significant_terms_from_subset
@@ -127,12 +128,20 @@ def test_significant_terms_empty_dataframe():
     assert terms.empty
 
 
-def test_significant_terms_custom_vectorizer():
+def test_significant_terms_custom_vectorizer(mocker):
     corpus = ['This is the first document.', 'This document is the second document.']
     data_frame = pd.DataFrame(corpus, columns=["content"])
     subset_data_frame = data_frame.iloc[1:]
 
-    custom_vectorizer = CountVectorizer(stop_words='english', max_features=2)
+    custom_vectorizer = mocker.Mock(spec=CountVectorizer)
+    fit_transform_result = mocker.Mock(spec=csr_array)
+    fit_transform_result.toarray.return_value = np.array([[1, 0], [2, 1]])
+    custom_vectorizer.fit_transform.return_value = fit_transform_result
+    custom_vectorizer.get_feature_names_out.return_value = np.array(['document', 'second'])
+    transform_result = mocker.Mock(spec=csr_array)
+    transform_result.toarray.return_value = np.array([[2, 1]])
+    custom_vectorizer.transform.return_value = transform_result
+
     terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, "content",
                                                   vectorizer=custom_vectorizer)
 

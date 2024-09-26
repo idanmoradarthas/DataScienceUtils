@@ -37,6 +37,21 @@ def iris_data():
 
 
 @pytest.fixture
+def distance_wrapper_plot_magnitude_vs_cardinality(mocker):
+    with Path(__file__).parents[0].joinpath("resources").joinpath(
+            "euclidean_distances_plot_magnitude_vs_cardinality.txt").open("r") as file:
+        loaded_distances = [float(line.strip()) for line in file]
+
+    mock_distance = mocker.Mock(side_effect=loaded_distances)
+
+    # Wrap the mock function to handle numpy arrays
+    def wrapper(a, b):
+        return mock_distance(tuple(a), tuple(b))
+
+    return wrapper
+
+
+@pytest.fixture
 def result_path(request):
     return Path(__file__).parent.joinpath("result_images", "test_unsupervised", f"{request.node.name}.png")
 
@@ -69,39 +84,46 @@ def test_cluster_cardinality_exist_ax(iris_data, result_path, baseline_path):
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_plot_cluster_magnitude(iris_data, result_path, baseline_path):
+def test_plot_cluster_magnitude(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path, baseline_path):
     iris_x, labels, cluster_centers = iris_data
-    plot_cluster_magnitude(iris_x.values, labels, cluster_centers, euclidean)
+
+    plot_cluster_magnitude(iris_x.values, labels, cluster_centers, distance_wrapper_plot_magnitude_vs_cardinality)
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_plot_cluster_magnitude_exist_ax(iris_data, result_path, baseline_path):
+def test_plot_cluster_magnitude_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
+                                         baseline_path):
     _, ax = plt.subplots()
     ax.set_title("My ax")
 
     iris_x, labels, cluster_centers = iris_data
-    plot_cluster_magnitude(iris_x.values, labels, cluster_centers, euclidean, ax=ax)
+    plot_cluster_magnitude(iris_x.values, labels, cluster_centers, distance_wrapper_plot_magnitude_vs_cardinality,
+                           ax=ax)
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_plot_magnitude_vs_cardinality(iris_data, result_path, baseline_path):
+def test_plot_magnitude_vs_cardinality(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
+                                       baseline_path):
     iris_x, labels, cluster_centers = iris_data
-    plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers, euclidean)
+    plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers,
+                                  distance_wrapper_plot_magnitude_vs_cardinality)
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, result_path, baseline_path):
+def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
+                                                baseline_path):
     _, ax = plt.subplots()
     ax.set_title("My ax")
 
     iris_x, labels, cluster_centers = iris_data
-    plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers, euclidean, ax=ax)
+    plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers,
+                                  distance_wrapper_plot_magnitude_vs_cardinality, ax=ax)
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
@@ -140,10 +162,10 @@ def test_cluster_cardinality_empty_labels():
         plot_cluster_cardinality(np.array([]))
 
 
-def test_cluster_magnitude_inconsistent_shapes(iris_data):
+def test_cluster_magnitude_inconsistent_shapes(mocker, iris_data):
     iris_x, labels, cluster_centers = iris_data
     with pytest.raises(ValueError, match="X and labels must have the same length."):
-        plot_cluster_magnitude(iris_x.values[:-1], labels, cluster_centers, euclidean)
+        plot_cluster_magnitude(iris_x.values[:-1], labels, cluster_centers, mocker.Mock())
 
 
 def test_cluster_magnitude_invalid_distance_function(mocker, iris_data):
@@ -152,19 +174,20 @@ def test_cluster_magnitude_invalid_distance_function(mocker, iris_data):
         plot_cluster_magnitude(iris_x.values, labels, cluster_centers, mocker.Mock(side_effect=TypeError))
 
 
-def test_magnitude_vs_cardinality_inconsistent_centers(iris_data):
+def test_magnitude_vs_cardinality_inconsistent_centers(mocker, iris_data):
     iris_x, labels, cluster_centers = iris_data
     with pytest.raises(ValueError, match="Number of cluster centers must match the number of unique labels."):
-        plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers[:-1], euclidean)
+        plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers[:-1], mocker.Mock())
 
 
-def test_loss_vs_cluster_number_invalid_k_range(iris_data):
+def test_loss_vs_cluster_number_invalid_k_range(mocker, iris_data):
     iris_x, _, _ = iris_data
     with pytest.raises(ValueError, match="k_min must be less than or equal to k_max."):
-        plot_loss_vs_cluster_number(iris_x.values, 10, 5, euclidean)
+        plot_loss_vs_cluster_number(iris_x.values, 10, 5, mocker.Mock())
 
 
-def test_loss_vs_cluster_number_invalid_algorithm_parameters(iris_data):
+def test_loss_vs_cluster_number_invalid_algorithm_parameters(mocker, iris_data):
     iris_x, _, _ = iris_data
     with pytest.raises(ValueError, match="No valid results were obtained. Check your input data and parameters."):
-        plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean, algorithm_parameters={"invalid_param": "value"})
+        plot_loss_vs_cluster_number(iris_x.values, 3, 20, mocker.Mock(),
+                                    algorithm_parameters={"invalid_param": "value"})

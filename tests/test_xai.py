@@ -1,10 +1,9 @@
 import os
 from pathlib import Path
 
-import pandas as pd
+import numpy as np
 import pytest
 from matplotlib import pyplot as plt
-from sklearn.tree import DecisionTreeClassifier
 
 from ds_utils.xai import (
     generate_decision_paths,
@@ -16,13 +15,53 @@ from tests.utils import compare_images_from_paths
 
 
 @pytest.fixture()
-def iris_x():
-    return pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_x_full.csv"))
+def decision_tree_generate_decision_paths(mocker):
+    mock_tree = mocker.Mock()
+    mock_tree.tree_.feature = np.array([3, -2, 3, 2, -2, -2, 2, -2, -2])
+    mock_tree.tree_.threshold = np.array([0.80000001, -2., 1.75, 4.95000005, -2., -2., 4.85000014, -2., -2.])
+    mock_tree.tree_.children_left = np.array([1, -1, 3, 4, -1, -1, 7, -1, -1])
+    mock_tree.tree_.children_right = np.array([2, -1, 6, 5, -1, -1, 8, -1, -1])
+    mock_tree.tree_.value = np.array(
+        [[[0.33333333, 0.33333333, 0.33333333]], [[1., 0., 0.]], [[0., 0.5, 0.5]], [[0., 0.90740741, 0.09259259]],
+         [[0., 0.97916667, 0.02083333]], [[0., 0.33333333, 0.66666667]], [[0., 0.02173913, 0.97826087]],
+         [[0., 0.33333333, 0.66666667]], [[0., 0., 1.]]])
+    mock_tree.n_features_in_ = 4
+    return mock_tree
 
 
 @pytest.fixture()
-def iris_y():
-    return pd.read_csv(Path(__file__).parents[0].joinpath("resources").joinpath("iris_y_full.csv"))
+def decision_tree_draw_tree(mocker):
+    mock = mocker.Mock()
+    mock.tree_.node_count = 17
+    mock.tree_.children_left = np.array([1, -1, 3, 4, 5, -1, -1, 8, -1, 10, -1, -1, 13, 14, -1, -1, -1])
+    mock.tree_.children_right = np.array([2, -1, 12, 7, 6, -1, -1, 9, -1, 11, -1, -1, 16, 15, -1, -1, -1])
+    mock.tree_.feature = np.array([3, -2, 3, 2, 3, -2, -2, 3, -2, 2, -2, -2, 2, 1, -2, -2, -2])
+    mock.tree_.threshold = np.array(
+        [0.80000001, -2., 1.75, 4.95000005, 1.65000004, -2., -2., 1.55000001, -2., 5.45000005, -2., -2., 4.85000014,
+         3.10000002, -2., -2., -2.])
+    mock.tree_.value = np.array(
+        [[[0.33333333, 0.33333333, 0.33333333]], [[1., 0., 0.]], [[0., 0.5, 0.5]], [[0., 0.90740741, 0.09259259]],
+         [[0., 0.97916667, 0.02083333]], [[0., 1., 0.]], [[0., 0., 1.]], [[0., 0.33333333, 0.66666667]], [[0., 0., 1.]],
+         [[0., 0.66666667, 0.33333333]], [[0., 1., 0.]], [[0., 0., 1.]], [[0., 0.02173913, 0.97826087]],
+         [[0., 0.33333333, 0.66666667]], [[0., 0., 1.]], [[0., 1., 0.]], [[0., 0., 1.]]])
+    mock.tree_.impurity = np.array(
+        [0.66666667, 0., 0.5, 0.16803841, 0.04079861, 0., 0., 0.44444444, 0., 0.44444444, 0., 0., 0.04253308,
+         0.44444444, 0., 0., 0.])
+    mock.tree_.n_node_samples = np.array([150, 50, 100, 54, 48, 47, 1, 6, 3, 3, 2, 1, 46, 3, 2, 1, 43])
+    mock.tree_.n_classes = np.array([3])
+    mock.tree_.weighted_n_node_samples = np.array(
+        [150., 50., 100., 54., 48., 47., 1., 6., 3., 3., 2., 1., 46., 3., 2., 1., 43.])
+
+    mock.classes_ = np.array([0, 1, 2])
+    mock.n_classes_ = 3
+    mock.n_features_in_ = 4
+    mock.n_outputs_ = 1
+    mock.max_depth = None
+
+    mock.get_depth.return_value = 5
+    mock.get_n_leaves.return_value = 9
+
+    return mock
 
 
 @pytest.fixture()
@@ -69,15 +108,9 @@ Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_xa
     ("iris_tree", "def iris_tree(petal width (cm), petal length (cm)):"),
     (None, "def tree(petal width (cm), petal length (cm)):")
 ], ids=["default", "no_tree_name"])
-def test_print_decision_paths(tree_name, expected_name, iris_x, iris_y):
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(iris_x, iris_y)
-
+def test_print_decision_paths(tree_name, expected_name, decision_tree_generate_decision_paths):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
-        result = generate_decision_paths(clf,
+        result = generate_decision_paths(decision_tree_generate_decision_paths,
                                          ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
                                           'petal width (cm)'],
                                          ['setosa', 'versicolor', 'virginica'], tree_name, "  ")
@@ -107,14 +140,10 @@ def test_print_decision_paths(tree_name, expected_name, iris_x, iris_y):
     assert result == expected
 
 
-def test_print_decision_paths_no_feature_names(iris_x, iris_y):
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(iris_x, iris_y)
+def test_print_decision_paths_no_feature_names(decision_tree_generate_decision_paths):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
-        result = generate_decision_paths(clf, None, ['setosa', 'versicolor', 'virginica'], "iris_tree", "  ")
+        result = generate_decision_paths(decision_tree_generate_decision_paths, None,
+                                         ['setosa', 'versicolor', 'virginica'], "iris_tree", "  ")
 
     expected = 'def iris_tree(feature_3, feature_2):' + os.linesep + \
                '  if feature_3 <= 0.8000:' + os.linesep + \
@@ -139,14 +168,9 @@ def test_print_decision_paths_no_feature_names(iris_x, iris_y):
     assert result == expected
 
 
-def test_print_decision_paths_no_class_names(iris_x, iris_y):
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(iris_x, iris_y)
+def test_print_decision_paths_no_class_names(decision_tree_generate_decision_paths):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
-        result = generate_decision_paths(clf,
+        result = generate_decision_paths(decision_tree_generate_decision_paths,
                                          ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
                                           'petal width (cm)'],
                                          None, "iris_tree", "  ")
@@ -174,14 +198,10 @@ def test_print_decision_paths_no_class_names(iris_x, iris_y):
     assert result == expected
 
 
-def test_draw_tree(iris_x, iris_y, baseline_path, result_path):
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(iris_x, iris_y)
+def test_draw_tree(decision_tree_draw_tree, baseline_path, result_path):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
-        draw_tree(clf, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+        draw_tree(decision_tree_draw_tree,
+                  ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
                   ['setosa', 'versicolor', 'virginica'])
 
     plt.savefig(str(result_path))
@@ -190,17 +210,12 @@ def test_draw_tree(iris_x, iris_y, baseline_path, result_path):
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-def test_draw_tree_exists_ax(iris_x, iris_y, baseline_path, result_path):
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(iris_x, iris_y)
-
+def test_draw_tree_exists_ax(decision_tree_draw_tree, baseline_path, result_path):
     _, ax = plt.subplots()
     ax.set_title("My ax")
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
-        draw_tree(clf, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
+        draw_tree(decision_tree_draw_tree,
+                  ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
                   ['setosa', 'versicolor', 'virginica'], ax=ax)
 
     plt.savefig(str(result_path))
