@@ -78,7 +78,7 @@ def test_visualize_feature(loan_data, feature, test_case, baseline_path, result_
 
 
 def test_visualize_feature_float_exist_ax(loan_data, baseline_path, result_path):
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     ax.set_title("My ax")
 
     visualize_feature(loan_data["emp_length_int"], ax=ax)

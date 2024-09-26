@@ -339,47 +339,6 @@ plt.show()
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
 ## XAI
-### Generate Decision Paths
-Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 
-[Original code](https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree)
-
-```python
-from sklearn.tree import DecisionTreeClassifier
-
-from ds_utils.xai import generate_decision_paths
-    
-
-# Create decision tree classifier object
-clf = DecisionTreeClassifier(max_depth=3)
-
-# Train model
-clf.fit(x, y)
-print(generate_decision_paths(clf, feature_names, target_names.tolist(), 
-                              "iris_tree"))
-```
-The following text will be printed:
-```
-def iris_tree(petal width (cm), petal length (cm)):
-    if petal width (cm) <= 0.8000:
-        # return class setosa with probability 0.9804
-        return ("setosa", 0.9804)
-    else:  # if petal width (cm) > 0.8000
-        if petal width (cm) <= 1.7500:
-            if petal length (cm) <= 4.9500:
-                # return class versicolor with probability 0.9792
-                return ("versicolor", 0.9792)
-            else:  # if petal length (cm) > 4.9500
-                # return class virginica with probability 0.6667
-                return ("virginica", 0.6667)
-        else:  # if petal width (cm) > 1.7500
-            if petal length (cm) <= 4.8500:
-                # return class virginica with probability 0.6667
-                return ("virginica", 0.6667)
-            else:  # if petal length (cm) > 4.8500
-                # return class virginica with probability 0.9773
-                return ("virginica", 0.9773)
-```
-
 ## Plot Features` Importance
 
 plot feature importance as a bar chart.

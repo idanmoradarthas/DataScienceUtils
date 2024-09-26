@@ -2,8 +2,7 @@ from typing import Optional, Callable, Dict, Any
 
 import numpy as np
 import pandas as pd
-from matplotlib import axes, lines
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, axes, lines
 from sklearn.cluster import KMeans
 
 

@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from joblib import Parallel, delayed
-from matplotlib import axes
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, axes
 from numpy.random.mtrand import RandomState
 from sklearn.base import ClassifierMixin, clone
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score

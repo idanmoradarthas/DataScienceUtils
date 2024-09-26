@@ -4,8 +4,7 @@ from typing import Optional, Union, Callable, List
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import axes, dates, ticker
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, axes, dates, ticker
 from scipy.cluster import hierarchy
 
 
