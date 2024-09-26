@@ -6,8 +6,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 
 def _tokenize(text_tags: str) -> List[str]:
-    if pd.isna(text_tags):
-        return []
     tags = text_tags.split(",")
     tags = [re.sub(r"[^a-zA-Z0-9_$-]", "", x) for x in tags]
     tags = [x.strip() for x in tags]
