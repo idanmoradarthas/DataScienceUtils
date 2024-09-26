@@ -39,7 +39,7 @@ Float
 -----
 A distribution plot is shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[float].png
     :align: center
     :alt: Visualize Feature Float
 
@@ -47,7 +47,7 @@ Datetime Series
 ---------------
 A line plot is shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[datetime].png
     :align: center
     :alt: Visualize Feature Datetime Series
 
@@ -60,19 +60,19 @@ Categorical / Object:
 If the categorical / object feature has more than 10 unique values, then the 10 most common values are shown and
 the other are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[category_more_than_10_categories].png
     :align: center
     :alt: Visualize Feature Categorical
 
 Boolean:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_bool.png
     :align: center
     :alt: Visualize Feature Boolean
 
 Integer:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[int].png
     :align: center
     :alt: Visualize Feature Integer
 
@@ -108,7 +108,7 @@ This code example shows how a loop can be constructed in order to show all of fe
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_features.png
+.. image:: images/loop_visualize_feature_example.png
     :align: center
     :alt: Features Visualization
 
@@ -177,7 +177,7 @@ Let's see how to use the code::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_visualize_correlations.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_correlations[default].png
     :align: center
     :alt: Features Correlations
 
@@ -208,7 +208,7 @@ Let's see how to use the code::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram[default].png
     :align: center
     :alt: Plot Correlation Dendrogram
 
@@ -243,7 +243,7 @@ Both Features are Numeric
 -------------------------
 A scatter plot of the shared distribution is shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_numeric].png
     :align: center
     :alt: Both Features are Numeric
 
@@ -254,13 +254,13 @@ plot is shown. In the plot it can be seen for each unique value of the category 
 numeric feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown and
 the other are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_categorical].png
     :align: center
     :alt: Numeric and Categorical
 
 Here is an example for boolean feature plot:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_boolean].png
     :align: center
     :alt: Numeric and Boolean
 
@@ -269,7 +269,7 @@ Both Features are Categorical
 A shared histogram will be shown. If one or both features have  more than 10 unique values, then the 10 most common
 values are shown and the other are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_categorical].png
     :align: center
     :alt: Both Features are Categorical
 
@@ -277,7 +277,7 @@ One Feature is Datetime Series and the Other is Numeric or Datetime Series
 ---------------------------------------------------------------------------
 A line plot where the datetime series is at x axis is shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_numeric].png
     :align: center
     :alt: One Feature is Datetime Series and the other is Numeric or Datetime Series
 
@@ -288,13 +288,13 @@ violin plot is shown. Violin plot is a combination of boxplot and kernel density
 has more than 10 unique values, then the 10 most common values are shown and the other are labeled "Other Values". The
 datetime series will be at x axis:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_categorical].png
     :align: center
     :alt: Datetime Series and Categorical
 
 Here is an example for boolean feature plot:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool[default].png
     :align: center
     :alt: Datetime Series and Boolean
 
@@ -329,6 +329,6 @@ others::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/loop_plot_features_relationship_example.png
+.. image:: images/loop_plot_features_relationship_example.png
     :align: center
     :alt: Looping One Feature over The Others

@@ -37,7 +37,7 @@ from ds_utils.metrics import plot_confusion_matrix
 plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 ```
 
-![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_print_confusion_matrix.png)
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_confusion_matrix[binary].png)
 
 ### Plot Metric Growth per Labeled Instances
 
@@ -55,7 +55,7 @@ plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
                                                 RandomForestClassifier(random_state=0, n_estimators=5)})
 ```
 
-![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
+![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances[with_n_samples].png)
 
 ### Visualize Accuracy Grouped by Probability
 
@@ -73,11 +73,11 @@ visualize_accuracy_grouped_by_probability(test["target"], 1,
 
 Without breakdown:
 
-![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability.png)
+![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[default].png)
 
 With breakdown:
 
-![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
+![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[with_breakdown].png)
 
 ## Preprocess
 ### Visualize Feature
@@ -96,13 +96,13 @@ from ds_utils.preprocess import visualize_feature
 visualize_feature(X_train["feature"])
 ```
 
-|Feature Type      |Plot|
-|------------------|----|
-|Float             |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_float.png)|
-|Integer           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_int.png)|
-|Datetime          |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_datetime.png)|
-|Category / Object |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_category_more_than_10_categories.png)|
-|Boolean           |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_feature_bool.png)|
+| Feature Type      | Plot                                                                                                                                                                              |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Float             | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[float].png)                            |
+| Integer           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[int].png)                              |
+| Datetime          | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[datetime].png)                         |
+| Category / Object | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature[category_more_than_10_categories].png) |
+| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_bool.png)                              |
 
 ### Get Correlated Features
 
@@ -135,7 +135,7 @@ from ds_utils.preprocess import visualize_correlations
 visualize_correlations(data)
 ```
 
-![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_visualize_correlations.png)
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations[default].png)
 
 ### Plot Correlation Dendrogram
 Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
@@ -150,7 +150,7 @@ from ds_utils.preprocess import plot_correlation_dendrogram
 plot_correlation_dendrogram(data)
 ```
 
-![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_correlation_dendrogram.png)
+![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram[default].png)
 
 ### Plot Features' Interaction
 Plots the joint distribution between two features:
@@ -168,12 +168,12 @@ from ds_utils.preprocess import plot_features_interaction
 plot_features_interaction("feature_1", "feature_2", data)
 ```
 
-|               | Numeric | Categorical | Boolean | Datetime
-|---------------|---------|-------------|---------|---------|
-|**Numeric**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_numeric.png)| | | |
-|**Categorical**|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_categorical.png)| | |
-|**Boolean**    |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_numeric_boolean.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_categorical_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_both_bool.png)| |
-|**Datetime**   |![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_numeric.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_categorical.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_bool.png)|![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_visualization_aids/test_plot_relationship_between_features_datetime_datetime.png)|
+|                 | Numeric                                                                                                                                                                               | Categorical                                                                                                                                                                            | Boolean                                                                                                                                                                                 | Datetime                                                                                                                                                                            
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Numeric**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_numeric].png)        |                                                                                                                                                                                        |                                                                                                                                                                                         |                                                                                                                                                                                     |
+| **Categorical** | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_categorical].png)     |                                                                                                                                                                                         |                                                                                                                                                                                     |
+| **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_boolean].png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[categorical_bool].png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_bool].png)             |                                                                                                                                                                                     |
+| **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_numeric].png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool[default].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_datetime].png) |
 
 ## Strings
 ### Append Tags to Frame
@@ -339,47 +339,6 @@ plt.show()
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
 ## XAI
-### Generate Decision Paths
-Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python syntax). 
-[Original code](https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree)
-
-```python
-from sklearn.tree import DecisionTreeClassifier
-
-from ds_utils.xai import generate_decision_paths
-    
-
-# Create decision tree classifier object
-clf = DecisionTreeClassifier(max_depth=3)
-
-# Train model
-clf.fit(x, y)
-print(generate_decision_paths(clf, feature_names, target_names.tolist(), 
-                              "iris_tree"))
-```
-The following text will be printed:
-```
-def iris_tree(petal width (cm), petal length (cm)):
-    if petal width (cm) <= 0.8000:
-        # return class setosa with probability 0.9804
-        return ("setosa", 0.9804)
-    else:  # if petal width (cm) > 0.8000
-        if petal width (cm) <= 1.7500:
-            if petal length (cm) <= 4.9500:
-                # return class versicolor with probability 0.9792
-                return ("versicolor", 0.9792)
-            else:  # if petal length (cm) > 4.9500
-                # return class virginica with probability 0.6667
-                return ("virginica", 0.6667)
-        else:  # if petal width (cm) > 1.7500
-            if petal length (cm) <= 4.8500:
-                # return class virginica with probability 0.6667
-                return ("virginica", 0.6667)
-            else:  # if petal length (cm) > 4.8500
-                # return class virginica with probability 0.9773
-                return ("virginica", 0.9773)
-```
-
 ## Plot Features` Importance
 
 plot feature importance as a bar chart.

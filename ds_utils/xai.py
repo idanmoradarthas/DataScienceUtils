@@ -5,48 +5,20 @@ from typing import Optional, List
 
 import numpy as np
 import pydotplus
-from matplotlib import axes, image
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, axes, image
 from sklearn.tree import BaseDecisionTree
 from sklearn.tree import _tree as sklearn_tree, export_graphviz
 
 
-def generate_decision_paths(classifier: BaseDecisionTree, feature_names: Optional[List[str]] = None,
-                            class_names: Optional[List[str]] = None, tree_name: Optional[str] = None,
-                            indent_char: str = "\t") -> str:
-    """
-    Receives a decision tree and return the underlying decision-rules (or 'decision paths') as text (valid python
-    syntax). `Original code <https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree>`_
-
-    :param classifier: decision tree.
-    :param feature_names: the features' names.
-    :param class_names: the classes' names or labels.
-    :param tree_name: the name of the tree (function signature).
-    :param indent_char: the character used for indentation.
-    :return: textual representation of the decision paths of the tree.
-    """
-    tree = classifier.tree_
-    if feature_names:
-        required_features = [feature_names[i] if i != sklearn_tree.TREE_UNDEFINED else "undefined!" for i in
-                             tree.feature]
-    else:
-        required_features = [f"feature_{i}" if i != sklearn_tree.TREE_UNDEFINED else "undefined!" for i in tree.feature]
-    if not tree_name:
-        tree_name = "tree"
-    output = StringIO()
-    signature_vars = list()
-    [signature_vars.append(feature) for feature in required_features if
-     (feature not in signature_vars) and (feature != 'undefined!')]
-    output.write(
-        f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
-
-    _recurse(0, 1, tree, required_features, class_names, output, indent_char)
-    ans = output.getvalue()
-    output.close()
-    return ans
-
-
-def _recurse(node, depth, tree, feature_name, class_names, output, indent_char):
+def _recurse(
+        node: int,
+        depth: int,
+        tree: sklearn_tree.Tree,
+        feature_name: List[str],
+        class_names: Optional[List[str]],
+        output: StringIO,
+        indent_char: str
+):
     indent = indent_char * depth
     if tree.feature[node] != sklearn_tree.TREE_UNDEFINED:
         name = feature_name[node]
@@ -61,75 +33,129 @@ def _recurse(node, depth, tree, feature_name, class_names, output, indent_char):
         prob_array = values / np.sum(values)
         if np.max(prob_array) >= 1:
             prob_array = values / (np.sum(values) + 1)
-        if class_names:
-            class_name = class_names[index]
-        else:
-            class_name = f"class_{index}"
+        class_name = class_names[index] if class_names else f"class_{index}"
         output.write(
             f"{indent}# return class {class_name} with probability {prob_array[index]:.4f}{os.linesep}")
         output.write(f"{indent}return (\"{class_name}\", {prob_array[index]:.4f}){os.linesep}")
 
 
-def draw_tree(tree: BaseDecisionTree, feature_names: Optional[List[str]] = None,
-              class_names: Optional[List[str]] = None, *, ax: Optional[axes.Axes] = None,
-              **kwargs) -> axes.Axes:
+def generate_decision_paths(
+        classifier: BaseDecisionTree,
+        feature_names: Optional[List[str]] = None,
+        class_names: Optional[List[str]] = None,
+        tree_name: Optional[str] = None,
+        indent_char: str = "\t"
+) -> str:
     """
-    Receives a decision tree and return a plot graph of the tree for easy interpretation.
+    Generate decision rules (or 'decision paths') as text (valid Python syntax) from a decision tree.
+    `Original code <https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree>`_
 
-    :param tree: decision tree.
-    :param feature_names: the features' names.
-    :param class_names: the classes' names or labels.
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
+    :param classifier: Decision tree classifier
+    :param feature_names: List of feature names
+    :param class_names: List of class names or labels
+    :param tree_name: Name of the tree (function signature)
+    :param indent_char: Character used for indentation
+    :return: Textual representation of the decision paths of the tree
+    """
+    warnings.warn("This module is deprecated. sklearn.tree.export_text instead", DeprecationWarning, stacklevel=2)
 
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
+    tree = classifier.tree_
+    feature_names = feature_names or [f"feature_{i}" for i in range(classifier.n_features_in_)]
+    required_features = [feature_names[i] if i != sklearn_tree.TREE_UNDEFINED else "undefined!" for i in tree.feature]
+    tree_name = tree_name or "tree"
+
+    output = StringIO()
+    signature_vars = list(dict.fromkeys(f for f in required_features if f != 'undefined!'))
+    output.write(f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
+
+    _recurse(0, 1, tree, required_features, class_names, output, indent_char)
+
+    result = output.getvalue()
+    output.close()
+    return result
+
+
+def draw_tree(
+        tree: BaseDecisionTree,
+        feature_names: Optional[List[str]] = None,
+        class_names: Optional[List[str]] = None,
+        *,
+        ax: Optional[axes.Axes] = None,
+        **kwargs
+) -> axes.Axes:
+    """
+    Plot a graph of the decision tree for easy interpretation.
+
+    :param tree: Decision tree
+    :param feature_names: List of feature names
+    :param class_names: List of class names or labels
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes
+    :param kwargs: Additional keyword arguments passed to matplotlib.axes.Axes.imshow()
+    :return: Axes object with the plot drawn onto it
     """
     warnings.warn("This module is deprecated. Use sklearn.tree.plot_tree instead", DeprecationWarning, stacklevel=2)
-    return draw_dot_data(export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
-                                         special_characters=True, class_names=class_names), ax=ax, **kwargs)
+    dot_data = export_graphviz(tree, feature_names=feature_names, out_file=None, filled=True, rounded=True,
+                               special_characters=True, class_names=class_names)
+    return draw_dot_data(dot_data, ax=ax, **kwargs)
 
 
-def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+def draw_dot_data(
+        dot_data: str,
+        *,
+        ax: Optional[axes.Axes] = None,
+        **kwargs
+) -> axes.Axes:
     """
-    Receives a Graphiz's Dot language string and return a plot graph of the data.
+    Plot a graph from Graphviz's Dot language string.
 
-    :param dot_data: Graphiz's Dot language string.
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
-
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
+    :param dot_data: Graphviz's Dot language string. Use sklearn.tree.export_graphviz to generate the dot data string.
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes
+    :param kwargs: Additional keyword arguments passed to matplotlib.axes.Axes.imshow()
+    :return: Axes object with the plot drawn onto it
+    :raises ValueError: If the dot_data is empty or invalid
     """
+    if not dot_data:
+        raise ValueError("dot_data must not be empty")
+
     if ax is None:
-        plt.figure()
-        ax = plt.gca()
-    sio = BytesIO()
-    graph = pydotplus.graph_from_dot_data(dot_data)
-    sio.write(graph.create_png())
-    sio.seek(0)
-    img = image.imread(sio, format="png")
-    ax.imshow(img, **kwargs)
-    ax.set_axis_off()
+        _, ax = plt.subplots()
+
+    try:
+        sio = BytesIO()
+        graph = pydotplus.graph_from_dot_data(dot_data)
+        sio.write(graph.create_png())
+        sio.seek(0)
+        img = image.imread(sio, format="png")
+        ax.imshow(img, **kwargs)
+        ax.set_axis_off()
+    except Exception as e:
+        raise ValueError(f"Failed to create graph from dot data: {str(e)}")
+
     return ax
 
 
-def plot_features_importance(feature_names: List[str], feature_importance: List[float], *,
-                             ax: Optional[axes.Axes] = None, **kwargs) -> axes.Axes:
+def plot_features_importance(
+        feature_names: List[str],
+        feature_importance: List[float],
+        *,
+        ax: Optional[axes.Axes] = None,
+        **kwargs
+) -> axes.Axes:
     """
-    plot feature importance as a bar chart.
+    Plot feature importance as a bar chart.
 
-    :param feature_names: strings list of feature names
-    :param feature_importance: float list of feature importance
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
-
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
+    :param feature_names: List of feature names
+    :param feature_importance: List of feature importance values
+    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes
+    :param kwargs: Additional keyword arguments passed to matplotlib.axes.Axes.bar()
+    :return: Axes object with the plot drawn onto it
+    :raises ValueError: If feature_names and feature_importance have different lengths
     """
+    if len(feature_names) != len(feature_importance):
+        raise ValueError("feature_names and feature_importance must have the same length")
+
     if ax is None:
-        plt.figure()
-        ax = plt.gca()
+        _, ax = plt.subplots()
 
     names = np.array(feature_names)
     importance = np.array(feature_importance)

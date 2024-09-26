@@ -3,9 +3,17 @@ XAI
 ###
 The module of xai contains methods that help explain a model decisions.
 
-In order for this module to work properly, Graphiz must be installed. In linux based operating systems use::
+In order for this module to work properly, Graphiz must be installed. In Linux based operating systems use::
 
     sudo apt-get install graphviz
+
+In Windows based operating systems use::
+
+    choco install graphviz
+
+In macOS operating systems use::
+
+    brew install graphviz
 
 Or using conda::
 
@@ -53,7 +61,7 @@ We'll create a simple decision tree classifier and plot it::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_draw_tree.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_tree.png
     :align: center
     :alt: Decision Tree Visualization
 
@@ -88,7 +96,7 @@ We'll create a simple diagram and plot it::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_visualization_aids/test_draw_dot_data.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data.png
     :align: center
     :alt: Diagram Visualization
 
@@ -96,6 +104,8 @@ And the following image will be shown:
 ***********************
 Generate Decision Paths
 ***********************
+.. deprecated:: 1.7.4
+    Use `sklearn.tree.export_text <https://scikit-learn.org/stable/modules/generated/sklearn.tree.export_text.html>`_ instead
 
 .. autofunction:: xai::generate_decision_paths
 
