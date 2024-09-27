@@ -79,6 +79,7 @@ def test_cluster_cardinality_exist_ax(iris_data, result_path, baseline_path):
 
     _, labels, _ = iris_data
     plot_cluster_cardinality(np.asarray(labels), ax=ax)
+    assert ax.get_title() == "My ax"
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
@@ -106,6 +107,7 @@ def test_plot_cluster_magnitude_exist_ax(iris_data, distance_wrapper_plot_magnit
     iris_x, labels, cluster_centers = iris_data
     plot_cluster_magnitude(iris_x.values, labels, cluster_centers, distance_wrapper_plot_magnitude_vs_cardinality,
                            ax=ax)
+    assert ax.get_title() == "My ax"
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))
@@ -147,6 +149,7 @@ def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, distance_wrapper_plot
     iris_x, labels, cluster_centers = iris_data
     plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers,
                                   distance_wrapper_plot_magnitude_vs_cardinality, ax=ax)
+    assert ax.get_title() == "My ax"
 
     plt.savefig(str(result_path))
     compare_images_from_paths(str(baseline_path), str(result_path))

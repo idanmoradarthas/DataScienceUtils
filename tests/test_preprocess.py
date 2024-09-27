@@ -83,6 +83,7 @@ def test_visualize_feature_float_exist_ax(loan_data, baseline_path, result_path)
 
     visualize_feature(loan_data["emp_length_int"], ax=ax)
 
+    assert ax.get_title() == "My ax"
     plt.gcf().set_size_inches(10, 8)
     plt.savefig(str(result_path))
 
@@ -119,6 +120,7 @@ def test_visualize_correlations(data_1m, use_existing_ax, baseline_path, result_
         fig, ax = plt.subplots()
         ax.set_title("My ax")
         visualize_correlations(data_1m, ax=ax)
+        assert ax.get_title() == "My ax"
     else:
         visualize_correlations(data_1m)
 
@@ -188,6 +190,7 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m, basel
     ax.set_title("My ax")
 
     plot_features_interaction("x4", "x5", data_1m, ax=ax)
+    assert ax.get_title() == "My ax"
     plt.savefig(str(result_path))
 
     compare_images_from_paths(str(baseline_path), str(result_path))
@@ -200,6 +203,7 @@ def test_plot_correlation_dendrogram(data_1m, use_existing_ax, baseline_path, re
         _, ax = plt.subplots()
         ax.set_title("My ax")
         plot_correlation_dendrogram(data_1m, ax=ax)
+        assert ax.get_title() == "My ax"
     else:
         plot_correlation_dendrogram(data_1m)
 
