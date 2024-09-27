@@ -1,5 +1,17 @@
 [run]
 omit =
-    tests\*
-    .tox\*
+    tests/*
+    .tox/*
     setup.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    raise NotImplementedError
+    pass
+    if __name__ == .__main__.:
+
+[html]
+directory = coverage_html_report
