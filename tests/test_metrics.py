@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -11,7 +12,9 @@ from sklearn.tree import DecisionTreeClassifier
 from ds_utils.metrics import (
     plot_confusion_matrix,
     plot_metric_growth_per_labeled_instances,
-    visualize_accuracy_grouped_by_probability)
+    visualize_accuracy_grouped_by_probability,
+    plot_roc_curve_with_thresholds_annotations
+)
 from tests.utils import compare_images_from_paths
 
 
@@ -32,6 +35,12 @@ def classifiers():
         "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
         "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
     }
+
+
+@pytest.fixture
+def plotly_models_dict():
+    with Path(__file__).parent.joinpath("resources", "plotly_models.json").open("r") as file:
+        return json.load(file)
 
 
 @pytest.fixture
@@ -206,3 +215,44 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     plt.savefig(str(result_path))
 
     compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"))
+@pytest.mark.parametrize("add_random_classifier_line",
+                         [True, False],
+                         ids=["default", "without_random_classifier"])
+def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_roc_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["roc_curve"]
+                return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+    def _mock_roc_auc_score(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
+
+    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+
+    fig = plot_roc_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=add_random_classifier_line
+    )
+    result_path = Path(__file__).parent.joinpath("result_images", "test_metrics",
+                                                 f"{request.node.originalname}_{request.node.callspec.id}.png")
+
+    fig.write_image(str(result_path))
+    img = plt.imread(result_path)
+    figure, ax = plt.subplots()
+    ax.imshow(img)
+    ax.axis("off")  # Hide the axes for a clean comparison
+
+    return figure
