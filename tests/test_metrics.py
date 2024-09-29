@@ -15,7 +15,7 @@ from ds_utils.metrics import (
     visualize_accuracy_grouped_by_probability,
     plot_roc_curve_with_thresholds_annotations
 )
-from tests.utils import compare_images_from_paths, save_result_figure
+from tests.utils import compare_images_from_paths
 
 
 @pytest.fixture
@@ -59,9 +59,6 @@ def setup_teardown():
     plt.cla()
     plt.close(plt.gcf())
 
-
-BASELINE_PATH = Path(__file__).parent / "baseline_images" / "test_metrics"
-RESULT_PATH = Path(__file__).parent / "result_images" / "test_metrics"
 
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
@@ -220,12 +217,10 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-@pytest.mark.skip
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_PATH, tolerance=15)
-@pytest.mark.parametrize("add_random_classifier_line",
-                         [True, False],
-                         ids=["default", "without_random_classifier"])
-def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line, plotly_models_dict):
+@pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
+def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifier_line, plotly_models_dict,
+                                                    baseline_path,
+                                                    result_path):
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
                                          if name != "y_true"}
@@ -250,6 +245,7 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
         classifiers_names_and_scores_dict,
         add_random_classifier_line=add_random_classifier_line
     )
-    figure = save_result_figure(fig, RESULT_PATH / f"{request.node.originalname}_{request.node.callspec.id}.png", True)
 
-    return figure
+    fig.write_image(str(result_path))
+
+    compare_images_from_paths(str(baseline_path), str(result_path))
