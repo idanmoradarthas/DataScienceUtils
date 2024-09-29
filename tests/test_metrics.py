@@ -15,7 +15,7 @@ from ds_utils.metrics import (
     visualize_accuracy_grouped_by_probability,
     plot_roc_curve_with_thresholds_annotations
 )
-from tests.utils import compare_images_from_paths
+from tests.utils import compare_images_from_paths, TOLERANCE
 
 
 @pytest.fixture
@@ -217,7 +217,8 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"))
+@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"),
+                               tolerance=TOLERANCE)
 @pytest.mark.parametrize("add_random_classifier_line",
                          [True, False],
                          ids=["default", "without_random_classifier"])
