@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import pytest
 from matplotlib import pyplot as plt
 from numpy.random.mtrand import RandomState
@@ -218,9 +219,7 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
 
 
 @pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
-def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifier_line, plotly_models_dict,
-                                                    baseline_path,
-                                                    result_path):
+def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifier_line, plotly_models_dict):
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
                                          if name != "y_true"}
@@ -252,6 +251,10 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifie
     # Due to the fact that kaleido package freezes the test suite in GitHub Actions I added assertions to try and test
     # whatever I can without writing the image
 
+    assert fig.layout.showlegend
+    assert fig.layout.xaxis.title.text == 'False Positive Rate'
+    assert fig.layout.yaxis.title.text == 'True Positive Rate'
+    assert not fig.layout.title.text
     assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
     # Check if the random classifier line is present when it should be
     random_classifier_traces = [trace for trace in fig.data if trace.name == "Random Classifier"]
@@ -263,3 +266,75 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifie
         for trace in fig.data:
             if trace.name != "Random Classifier":
                 assert "AUC =" in trace.name
+
+
+def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, plotly_models_dict):
+    fig = go.Figure()
+    fig.update_layout(title="Receiver Operating Characteristic (ROC) Curve")
+
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_roc_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["roc_curve"]
+                return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+    def _mock_roc_auc_score(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
+
+    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+
+    fig = plot_roc_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=True,
+        fig=fig
+    )
+
+    assert fig.layout.title.text == "Receiver Operating Characteristic (ROC) Curve"
+
+
+def test_plot_roc_curve_with_thresholds_annotations_shape_mismatch(plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"][:1])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+    with pytest.raises(ValueError,
+                       match=r"Shape mismatch: y_true \(1,\) and y_scores \(2239,\) for classifier Decision Tree"):
+        plot_roc_curve_with_thresholds_annotations(
+            y_true,
+            classifiers_names_and_scores_dict
+        )
+
+
+@pytest.mark.parametrize("error, message",
+                         [(ValueError, "Error calculating ROC curve for classifier Decision Tree:"),
+                          (ValueError, "Error calculating AUC score for classifier Decision Tree:")],
+                         ids=["roc_calc_fail", "auc_calc_fail"])
+def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, error, message, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+    if request.node.callspec.id == "roc_calc_fail":
+        mocker.patch("ds_utils.metrics.roc_curve", side_effect=ValueError)
+    elif request.node.callspec.id == "auc_calc_fail":
+        def _mock_roc_curve(y_true, y_score, **kwargs):
+            for classifier, scores in classifiers_names_and_scores_dict.items():
+                if np.array_equal(scores, y_score):
+                    data = plotly_models_dict[classifier]["roc_curve"]
+                    return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+        mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+        mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=ValueError)
+    with pytest.raises(error, match=message):
+        plot_roc_curve_with_thresholds_annotations(
+            y_true,
+            classifiers_names_and_scores_dict
+        )
