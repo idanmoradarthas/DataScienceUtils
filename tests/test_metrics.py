@@ -15,7 +15,7 @@ from ds_utils.metrics import (
     visualize_accuracy_grouped_by_probability,
     plot_roc_curve_with_thresholds_annotations
 )
-from tests.utils import compare_images_from_paths, TOLERANCE
+from tests.utils import compare_images_from_paths, save_result_figure
 
 
 @pytest.fixture
@@ -59,6 +59,9 @@ def setup_teardown():
     plt.cla()
     plt.close(plt.gcf())
 
+
+BASELINE_PATH = Path(__file__).parent / "baseline_images" / "test_metrics"
+RESULT_PATH = Path(__file__).parent / "result_images" / "test_metrics"
 
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
@@ -217,8 +220,7 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"),
-                               tolerance=TOLERANCE)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_PATH, tolerance=5)
 @pytest.mark.parametrize("add_random_classifier_line",
                          [True, False],
                          ids=["default", "without_random_classifier"])
@@ -247,13 +249,6 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
         classifiers_names_and_scores_dict,
         add_random_classifier_line=add_random_classifier_line
     )
-    result_path = Path(__file__).parent.joinpath("result_images", "test_metrics",
-                                                 f"{request.node.originalname}_{request.node.callspec.id}.png")
-
-    fig.write_image(str(result_path))
-    img = plt.imread(result_path)
-    figure, ax = plt.subplots()
-    ax.imshow(img)
-    ax.axis("off")  # Hide the axes for a clean comparison
+    figure = save_result_figure(fig, RESULT_PATH / f"{request.node.originalname}_{request.node.callspec.id}.png", True)
 
     return figure
