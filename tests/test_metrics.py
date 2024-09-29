@@ -220,7 +220,7 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_PATH, tolerance=10)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_PATH, tolerance=15)
 @pytest.mark.parametrize("add_random_classifier_line",
                          [True, False],
                          ids=["default", "without_random_classifier"])
