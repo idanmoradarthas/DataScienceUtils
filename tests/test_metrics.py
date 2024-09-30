@@ -100,16 +100,16 @@ def test_print_confusion_matrix_exception():
         plot_confusion_matrix(np.array([]), np.array([]), [])
 
 
-@pytest.mark.parametrize("test_case, n_samples, quantiles, random_state", [
-    ("no_n_samples", None, np.linspace(0.05, 1, 20).tolist(), None),
-    ("y_shape_n_outputs", None, np.linspace(0.05, 1, 20).tolist(), None),
-    ("with_n_samples", list(range(10, 100, 10)), None, None),
-    ("given_random_state_int", None, np.linspace(0.05, 1, 20).tolist(), 1),
-    ("given_random_state", None, np.linspace(0.05, 1, 20).tolist(), RandomState(5))
+@pytest.mark.parametrize("n_samples, quantiles, random_state", [
+    (None, np.linspace(0.05, 1, 20).tolist(), None),
+    (None, np.linspace(0.05, 1, 20).tolist(), None),
+    (list(range(10, 100, 10)), None, None),
+    (None, np.linspace(0.05, 1, 20).tolist(), 1),
+    (None, np.linspace(0.05, 1, 20).tolist(), RandomState(5))
 ], ids=["no_n_samples", "y_shape_n_outputs", "with_n_samples", "given_random_state_int", "given_random_state"])
-def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, test_case, n_samples, quantiles, random_state,
-                                                  result_path, baseline_path):
-    if test_case == "y_shape_n_outputs":
+def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, n_samples, quantiles, random_state,
+                                                  request, result_path, baseline_path):
+    if request.node.callspec.id == "y_shape_n_outputs":
         y_train = pd.get_dummies(pd.DataFrame(iris_data["y_train"]).astype(str))
         y_test = pd.get_dummies(pd.DataFrame(iris_data["y_test"]).astype(str))
     else:
