@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import pytest
 from matplotlib import pyplot as plt
 from numpy.random.mtrand import RandomState
@@ -11,7 +13,9 @@ from sklearn.tree import DecisionTreeClassifier
 from ds_utils.metrics import (
     plot_confusion_matrix,
     plot_metric_growth_per_labeled_instances,
-    visualize_accuracy_grouped_by_probability)
+    visualize_accuracy_grouped_by_probability,
+    plot_roc_curve_with_thresholds_annotations, plot_precision_recall_curve_with_thresholds_annotations
+)
 from tests.utils import compare_images_from_paths
 
 
@@ -32,6 +36,12 @@ def classifiers():
         "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
         "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
     }
+
+
+@pytest.fixture
+def plotly_models_dict():
+    with Path(__file__).parent.joinpath("resources", "plotly_models.json").open("r") as file:
+        return json.load(file)
 
 
 @pytest.fixture
@@ -90,16 +100,16 @@ def test_print_confusion_matrix_exception():
         plot_confusion_matrix(np.array([]), np.array([]), [])
 
 
-@pytest.mark.parametrize("test_case, n_samples, quantiles, random_state", [
-    ("no_n_samples", None, np.linspace(0.05, 1, 20).tolist(), None),
-    ("y_shape_n_outputs", None, np.linspace(0.05, 1, 20).tolist(), None),
-    ("with_n_samples", list(range(10, 100, 10)), None, None),
-    ("given_random_state_int", None, np.linspace(0.05, 1, 20).tolist(), 1),
-    ("given_random_state", None, np.linspace(0.05, 1, 20).tolist(), RandomState(5))
+@pytest.mark.parametrize("n_samples, quantiles, random_state", [
+    (None, np.linspace(0.05, 1, 20).tolist(), None),
+    (None, np.linspace(0.05, 1, 20).tolist(), None),
+    (list(range(10, 100, 10)), None, None),
+    (None, np.linspace(0.05, 1, 20).tolist(), 1),
+    (None, np.linspace(0.05, 1, 20).tolist(), RandomState(5))
 ], ids=["no_n_samples", "y_shape_n_outputs", "with_n_samples", "given_random_state_int", "given_random_state"])
-def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, test_case, n_samples, quantiles, random_state,
-                                                  result_path, baseline_path):
-    if test_case == "y_shape_n_outputs":
+def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, n_samples, quantiles, random_state,
+                                                  request, result_path, baseline_path):
+    if request.node.callspec.id == "y_shape_n_outputs":
         y_train = pd.get_dummies(pd.DataFrame(iris_data["y_train"]).astype(str))
         y_test = pd.get_dummies(pd.DataFrame(iris_data["y_test"]).astype(str))
     else:
@@ -206,3 +216,202 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
     plt.savefig(str(result_path))
 
     compare_images_from_paths(str(baseline_path), str(result_path))
+
+
+@pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
+def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifier_line, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_roc_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["roc_curve"]
+                return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+    def _mock_roc_auc_score(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
+
+    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+
+    fig = plot_roc_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=add_random_classifier_line
+    )
+
+    # fig.write_image(str(result_path))
+    #
+    # compare_images_from_paths(str(baseline_path), str(result_path))
+    # Due to the fact that kaleido package freezes the test suite in GitHub Actions I added assertions to try and test
+    # whatever I can without writing the image
+    # See issue: https://github.com/plotly/Kaleido/issues/205
+
+    assert fig.layout.showlegend
+    assert fig.layout.xaxis.title.text == 'False Positive Rate'
+    assert fig.layout.yaxis.title.text == 'True Positive Rate'
+    assert not fig.layout.title.text
+    assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
+    # Check if the random classifier line is present when it should be
+    random_classifier_traces = [trace for trace in fig.data if trace.name == "Random Classifier"]
+    assert len(random_classifier_traces) == (1 if add_random_classifier_line else 0)
+    # Check if all classifiers are present in the plot
+    for classifier_name in classifiers_names_and_scores_dict.keys():
+        assert any(classifier_name in trace.name for trace in fig.data)
+        # Check if AUC scores are present in the legend
+        for trace in fig.data:
+            if trace.name != "Random Classifier":
+                assert "AUC =" in trace.name
+
+
+def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, plotly_models_dict):
+    fig = go.Figure()
+    fig.update_layout(title="Receiver Operating Characteristic (ROC) Curve")
+
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_roc_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["roc_curve"]
+                return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+    def _mock_roc_auc_score(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
+
+    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+
+    fig = plot_roc_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=True,
+        fig=fig
+    )
+
+    assert fig.layout.title.text == "Receiver Operating Characteristic (ROC) Curve"
+
+
+@pytest.mark.parametrize("plotly_graph_method", [plot_roc_curve_with_thresholds_annotations,
+                                                 plot_precision_recall_curve_with_thresholds_annotations],
+                         ids=["plot_roc_curve_with_thresholds_annotations",
+                              "plot_precision_recall_curve_with_thresholds_annotations"])
+def test_plotly_graph_method_shape_mismatch(plotly_graph_method, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"][:1])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+    with pytest.raises(ValueError,
+                       match=r"Shape mismatch: y_true \(1,\) and y_scores \(2239,\) for classifier Decision Tree"):
+        plotly_graph_method(
+            y_true,
+            classifiers_names_and_scores_dict
+        )
+
+
+@pytest.mark.parametrize("error, message",
+                         [(ValueError, "Error calculating ROC curve for classifier Decision Tree:"),
+                          (ValueError, "Error calculating AUC score for classifier Decision Tree:")],
+                         ids=["roc_calc_fail", "auc_calc_fail"])
+def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, error, message, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+    if request.node.callspec.id == "roc_calc_fail":
+        mocker.patch("ds_utils.metrics.roc_curve", side_effect=ValueError)
+    elif request.node.callspec.id == "auc_calc_fail":
+        def _mock_roc_curve(y_true, y_score, **kwargs):
+            for classifier, scores in classifiers_names_and_scores_dict.items():
+                if np.array_equal(scores, y_score):
+                    data = plotly_models_dict[classifier]["roc_curve"]
+                    return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
+
+        mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+
+        mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=ValueError)
+    with pytest.raises(error, match=message):
+        plot_roc_curve_with_thresholds_annotations(
+            y_true,
+            classifiers_names_and_scores_dict
+        )
+
+
+@pytest.mark.parametrize("add_random_classifier_line", [False, True], ids=["default", "with_random_classifier_line"])
+def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, add_random_classifier_line,
+                                                                 plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_precision_recall_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["precision_recall_curve"]
+                return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+
+    fig = plot_precision_recall_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=add_random_classifier_line
+    )
+
+    assert fig.layout.showlegend
+    assert fig.layout.xaxis.title.text == 'Recall'
+    assert fig.layout.yaxis.title.text == 'Precision'
+    assert not fig.layout.title.text
+    assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
+    # Check if the random classifier line is present when it should be
+    random_classifier_traces = [trace for trace in fig.data if trace.name == "Random Classifier"]
+    assert len(random_classifier_traces) == (1 if add_random_classifier_line else 0)
+    # Check if all classifiers are present in the plot
+    for classifier_name in classifiers_names_and_scores_dict.keys():
+        assert any(classifier_name in trace.name for trace in fig.data)
+
+
+def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(mocker, plotly_models_dict):
+    fig = go.Figure()
+    fig.update_layout(title="Precision-Recall Curve")
+
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    def _mock_precision_recall_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_dict[classifier]["precision_recall_curve"]
+                return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+
+    fig = plot_precision_recall_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        fig=fig
+    )
+
+    assert fig.layout.title.text == "Precision-Recall Curve"
+
+
+def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocker, plotly_models_dict):
+    y_true = np.array(plotly_models_dict["y_true"])
+    classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
+                                         if name != "y_true"}
+
+    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=ValueError)
+    with pytest.raises(ValueError, match="Error calculating Precision-Recall curve for classifier Decision Tree:"):
+        plot_precision_recall_curve_with_thresholds_annotations(
+            y_true,
+            classifiers_names_and_scores_dict
+        )

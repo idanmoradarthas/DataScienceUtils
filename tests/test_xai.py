@@ -218,6 +218,7 @@ def test_draw_tree_exists_ax(decision_tree_draw_tree, baseline_path, result_path
                   ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
                   ['setosa', 'versicolor', 'virginica'], ax=ax)
 
+    assert ax.get_title() == "My ax"
     plt.savefig(str(result_path))
     plt.cla()
     plt.close(plt.gcf())
@@ -261,6 +262,7 @@ def test_draw_dot_data_exist_ax(baseline_path, result_path):
     ax.set_title("My ax")
 
     draw_dot_data(dot_data, ax=ax)
+    assert ax.get_title() == "My ax"
 
     plt.savefig(str(result_path))
     plt.cla()
@@ -296,6 +298,7 @@ def test_plot_features_importance_exists_ax(importance, features, baseline_path,
 
     ax.set_title("My ax")
     plot_features_importance(features, importance, ax=ax)
+    assert ax.get_title() == "My ax"
 
     plt.gcf().set_size_inches(17, 10)
     plt.savefig(str(result_path))

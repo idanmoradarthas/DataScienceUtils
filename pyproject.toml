@@ -1,15 +1,15 @@
 [build-system]
-requires = ["setuptools==72.1.0", "wheel==0.43.0"]
+requires = ["setuptools==75.1.0", "wheel==0.44.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 authors = [
-  { name="Idan Morad", email="idanmorad.arthas@gmail.com" },
+    { name = "Idan Morad", email = "idanmorad.arthas@gmail.com" },
 ]
 name = "data_science_utils"
 dynamic = ["version", "dependencies"]
 description = "This project is an ensemble of methods which are frequently used in python Data Science projects."
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 readme = "README.md"
 classifiers = [
@@ -25,7 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib"]
+keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib", "plotly"]
 
 [project.urls]
 Homepage = "https://github.com/idanmoradarthas/DataScienceUtils"
@@ -38,5 +38,5 @@ Changelog = "https://github.com/idanmoradarthas/DataScienceUtils/blob/master/CHA
 packages = ["ds_utils"]
 
 [tool.setuptools.dynamic]
-version = {attr = "ds_utils.__version__"}
-dependencies = {file = ["requirements.txt"]}
+version = { attr = "ds_utils.__version__" }
+dependencies = { file = ["requirements.txt"] }

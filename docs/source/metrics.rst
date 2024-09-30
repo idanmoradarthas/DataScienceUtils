@@ -198,3 +198,87 @@ And the following image will be shown:
 .. image:: ../../tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[with_breakdown].png
     :align: center
     :alt: Visualize Accuracy Grouped by Probability with Breakdown
+
+*****************************************************************************************
+Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
+*****************************************************************************************
+
+.. autofunction:: metrics::plot_roc_curve_with_thresholds_annotations
+
+Code Example
+============
+Suppose that we want compare 3 classifiers based on ROC Curve and optimize the prediction threshold. The method is using
+Plotly as the backend engine to create the graphs and adds next to each classifier name what's its AUC score::
+
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.ensemble import RandomForestClassifier
+    from xgboost import XGBClassifier
+
+    from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+
+
+    tree_clf = DecisionTreeClassifier(random_state=42)
+    rf_clf = RandomForestClassifier(random_state=42)
+    xgb_clf = XGBClassifier(random_state=42, eval_metric='logloss')
+
+    tree_clf.fit(...)
+    rf_clf.fit(...)
+    xgb_clf.fit(...)
+
+    classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+                                         "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+                                         "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+    fig = plot_roc_curve_with_thresholds_annotations(
+          y_true,
+          classifiers_names_and_scores_dict,
+          positive_label=1
+    )
+    fig.show()
+
+And the following interactive graph will be shown:
+
+.. image:: images/test_plot_roc_curve_with_thresholds_annotations[default].png
+    :align: center
+    :alt: Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
+
+******************************************************************
+Precision-Recall Curve with Probabilities (Thresholds) Annotations
+******************************************************************
+
+.. autofunction:: metrics::plot_precision_recall_curve_with_thresholds_annotations
+
+Code Example
+============
+Suppose that we want compare 3 classifiers based on Precision-Recall Curve and optimize the prediction threshold.
+The method is using Plotly as the backend engine to create the graphs::
+
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.ensemble import RandomForestClassifier
+    from xgboost import XGBClassifier
+
+    from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+
+
+    tree_clf = DecisionTreeClassifier(random_state=42)
+    rf_clf = RandomForestClassifier(random_state=42)
+    xgb_clf = XGBClassifier(random_state=42, eval_metric='logloss')
+
+    tree_clf.fit(...)
+    rf_clf.fit(...)
+    xgb_clf.fit(...)
+
+    classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+                                         "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+                                         "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+    fig = plot_precision_recall_curve_with_thresholds_annotations(
+          y_true,
+          classifiers_names_and_scores_dict,
+          positive_label=1
+    )
+    fig.show()
+
+And the following interactive graph will be shown:
+
+.. image:: images/test_plot_precision_recall_curve_with_thresholds_annotations[default].png
+    :align: center
+    :alt: Precision-Recall Curve with Probabilities (Thresholds) Annotations

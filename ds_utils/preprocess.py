@@ -109,6 +109,7 @@ def visualize_correlations(
 ) -> axes.Axes:
     """
     Compute and visualize pairwise correlations of columns, excluding NA/null values.
+    `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
     :param data: The input DataFrame, where each feature is a column.
     :param method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
@@ -137,6 +138,7 @@ def plot_correlation_dendrogram(
 ) -> axes.Axes:
     """
     Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
+    `Original code <https://github.com/EthicalML/XAI>`_
 
     :param data: The input DataFrame, where each feature is a column.
     :param correlation_method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
