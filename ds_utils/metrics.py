@@ -455,7 +455,7 @@ def plot_precision_recall_curve_with_thresholds_annotations(
         fig.add_trace(
             go.Scatter(
                 x=[1, 0],
-                y=[1, 0],
+                y=[0, 1],
                 mode='lines',
                 line=dict(dash='dash', color='black'),
                 name="Random Classifier"
