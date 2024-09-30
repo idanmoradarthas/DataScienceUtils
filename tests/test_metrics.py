@@ -397,7 +397,8 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
 
     fig = plot_precision_recall_curve_with_thresholds_annotations(
         y_true,
-        classifiers_names_and_scores_dict
+        classifiers_names_and_scores_dict,
+        fig=fig
     )
 
     assert fig.layout.title.text == "Precision-Recall Curve"
