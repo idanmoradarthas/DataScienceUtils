@@ -237,7 +237,7 @@ Plotly as the backend engine to create the graphs and adds next to each classifi
 
 And the following interactive graph will be shown:
 
-.. image:: images/test_plot_roc_curve_with_thresholds_annotations[default].png
+.. image:: images/test_plot_roc_curve_with_thresholds_annotations.png
     :align: center
     :alt: Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 
@@ -279,6 +279,6 @@ The method is using Plotly as the backend engine to create the graphs::
 
 And the following interactive graph will be shown:
 
-.. image:: images/test_plot_precision_recall_curve_with_thresholds_annotations[default].png
+.. image:: images/test_plot_precision_recall_curve_with_thresholds_annotations.png
     :align: center
     :alt: Precision-Recall Curve with Probabilities (Thresholds) Annotations
