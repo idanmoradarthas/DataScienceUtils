@@ -241,7 +241,7 @@ def visualize_accuracy_grouped_by_probability(
 ) -> axes.Axes:
     """
     Receives true test labels and classifier probability predictions, divides and classifies the results,
-    and finally plots a stacked bar chart with the results.
+    and finally plots a stacked bar chart with the results. `Original code <https://github.com/EthicalML/XAI>`_
 
     :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
     :param labeled_class: the class to inquire about.

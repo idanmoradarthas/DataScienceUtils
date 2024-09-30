@@ -79,6 +79,46 @@ With breakdown:
 
 ![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[with_breakdown].png)
 
+### Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
+
+Plot ROC curves with threshold annotations for multiple classifiers, with plotly as a backend.
+
+```python
+from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+
+classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+                                     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+                                     "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+fig = plot_roc_curve_with_thresholds_annotations(
+    y_true,
+    classifiers_names_and_scores_dict,
+    positive_label=1
+)
+fig.show()
+```
+
+![plot_roc_curve_with_thresholds_annotations](https://github.com/idanmoradarthas/DataScienceUtils/tree/master/docs/source/images/test_plot_roc_curve_with_thresholds_annotations[default].png)
+
+### Precision-Recall Curve with Probabilities (Thresholds) Annotations
+
+Plot Precision-Recall curves with threshold annotations for multiple classifiers, with plotly as a backend.
+
+```python
+from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
+
+classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+                                     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+                                     "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+fig = plot_precision_recall_curve_with_thresholds_annotations(
+    y_true,
+    classifiers_names_and_scores_dict,
+    positive_label=1
+)
+fig.show()
+```
+
+![plot_precision_recall_curve_with_thresholds_annotations](https://github.com/idanmoradarthas/DataScienceUtils/tree/master/docs/source/images/test_plot_precision_recall_curve_with_thresholds_annotations[default].png)
+
 ## Preprocess
 ### Visualize Feature
 
