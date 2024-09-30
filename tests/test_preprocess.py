@@ -55,21 +55,17 @@ Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_pr
     exist_ok=True)
 
 
-@pytest.mark.parametrize("feature, test_case",
-                         [("emp_length_int", "float"),
-                          ("issue_d", "datetime"),
-                          ("loan_condition_cat", "int"),
-                          ("income_category", "object"),
-                          ("home_ownership", "category"),
-                          ("purpose", "category_more_than_10_categories")],
+@pytest.mark.parametrize("feature",
+                         ["emp_length_int", "issue_d", "loan_condition_cat", "income_category", "home_ownership",
+                          "purpose"],
                          ids=["float", "datetime", "int", "object", "category", "category_more_than_10_categories"])
-def test_visualize_feature(loan_data, feature, test_case, baseline_path, result_path):
+def test_visualize_feature(loan_data, feature, request, baseline_path, result_path):
     """Test visualize_feature function for different feature types."""
     visualize_feature(loan_data[feature])
 
-    if test_case in ["datetime", "object", "category"]:
+    if request.node.callspec.id in ["datetime", "object", "category"]:
         plt.gcf().set_size_inches(10, 8)
-    elif test_case == "category_more_than_10_categories":
+    elif request.node.callspec.id == "category_more_than_10_categories":
         plt.gcf().set_size_inches(11, 11)
 
     plt.savefig(str(result_path))
@@ -130,37 +126,37 @@ def test_visualize_correlations(data_1m, use_existing_ax, baseline_path, result_
     compare_images_from_paths(str(baseline_path), str(result_path))
 
 
-@pytest.mark.parametrize("feature1, feature2, data_fixture, test_case", [
-    ("x4", "x5", "data_1m", "both_numeric"),
-    ("x1", "x7", "data_1m", "numeric_categorical"),
-    ("x7", "x1", "data_1m", "numeric_categorical_reverse"),
-    ("x1", "x12", "data_1m", "numeric_boolean"),
-    ("x7", "x10", "data_1m", "both_categorical"),
-    ("x10", "x12", "data_1m", "categorical_bool"),
-    ("Date", "Temp", "daily_min_temperatures", "datetime_numeric"),
-    ("Temp", "Date", "daily_min_temperatures", "datetime_numeric_reverse"),
-    ("issue_d", "issue_d", "loan_data", "datetime_datetime"),
-    ("issue_d", "home_ownership", "loan_data", "datetime_categorical"),
-    ("home_ownership", "issue_d", "loan_data", "datetime_categorical_reverse"),
-    ("x12", "x12", "data_1m", "both_bool")
+@pytest.mark.parametrize("feature1, feature2, data_fixture", [
+    ("x4", "x5", "data_1m"),
+    ("x1", "x7", "data_1m"),
+    ("x7", "x1", "data_1m"),
+    ("x1", "x12", "data_1m"),
+    ("x7", "x10", "data_1m"),
+    ("x10", "x12", "data_1m"),
+    ("Date", "Temp", "daily_min_temperatures"),
+    ("Temp", "Date", "daily_min_temperatures"),
+    ("issue_d", "issue_d", "loan_data"),
+    ("issue_d", "home_ownership", "loan_data"),
+    ("home_ownership", "issue_d", "loan_data"),
+    ("x12", "x12", "data_1m")
 ], ids=["both_numeric", "numeric_categorical", "numeric_categorical_reverse", "numeric_boolean", "both_categorical",
         "categorical_bool", "datetime_numeric", "datetime_numeric_reverse", "datetime_datetime", "datetime_categorical",
         "datetime_categorical_reverse", "both_bool"])
-def test_plot_relationship_between_features(feature1, feature2, data_fixture, test_case, request, baseline_path,
+def test_plot_relationship_between_features(feature1, feature2, data_fixture, request, baseline_path,
                                             result_path):
     """Test plot_features_interaction function for various feature combinations."""
     data = request.getfixturevalue(data_fixture)
     plot_features_interaction(feature1, feature2, data)
 
-    if test_case in ["numeric_categorical", "numeric_categorical_reverse"]:
+    if request.node.callspec.id in ["numeric_categorical", "numeric_categorical_reverse"]:
         plt.gcf().set_size_inches(14, 9)
-    elif test_case == "numeric_boolean":
+    elif request.node.callspec.id == "numeric_boolean":
         plt.gcf().set_size_inches(8, 7)
-    elif test_case == "both_categorical":
+    elif request.node.callspec.id == "both_categorical":
         plt.gcf().set_size_inches(9, 5)
-    elif test_case in ["datetime_numeric", "datetime_numeric_reverse"]:
+    elif request.node.callspec.id in ["datetime_numeric", "datetime_numeric_reverse"]:
         plt.gcf().set_size_inches(18, 8)
-    elif test_case in ["datetime_categorical", "datetime_categorical_reverse"]:
+    elif request.node.callspec.id in ["datetime_categorical", "datetime_categorical_reverse"]:
         plt.gcf().set_size_inches(10, 11.5)
 
     plt.savefig(str(result_path))
