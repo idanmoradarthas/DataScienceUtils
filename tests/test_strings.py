@@ -47,18 +47,18 @@ def test_append_tags_to_frame(x_train, x_test, expected_train, expected_test):
     pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
 
 
-@pytest.mark.parametrize("test_case, x_train, x_test",
-                         [("empty_train", pd.DataFrame(columns=["article_name", "article_tags"]), pd.DataFrame([
+@pytest.mark.parametrize("x_train, x_test",
+                         [(pd.DataFrame(columns=["article_name", "article_tags"]), pd.DataFrame([
                              {"article_name": "3", "article_tags": "ds,ml,py"}
                          ])),
-                          ("empty_test", pd.DataFrame([
+                          (pd.DataFrame([
                               {"article_name": "1", "article_tags": "ds,ml,dl"},
                               {"article_name": "2", "article_tags": "ds,ml"}
                           ]), pd.DataFrame(columns=["article_name", "article_tags"]))],
                          ids=["empty_train", "empty_test"])
-def test_append_tags_to_frame_empty_dataframes(test_case, x_train, x_test):
+def test_append_tags_to_frame_empty_dataframes(request, x_train, x_test):
     x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
-    if test_case == "empty_train":
+    if request.node.callspec.id == "empty_train":
         assert x_train_with_tags.empty
     assert x_test_with_tags.empty
 
