@@ -194,6 +194,13 @@ def plot_features_interaction(
     else:
         plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
 
+    # Explicitly set the tick locations using FixedLocator before setting the tick labels
+    ticks_loc = ax.get_xticks()
+    ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
+
+    # Fix: ensure set_ticklabels is used after setting a FixedLocator or specific ticks
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+
     return ax
 
 
