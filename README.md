@@ -52,11 +52,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 plot_metric_growth_per_labeled_instances(
-   x_train, y_train, x_test, y_test,
-   {
-      "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
-      "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
-   }
+    x_train, y_train, x_test, y_test,
+    {
+        "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+        "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
+    }
 )
 ```
 
@@ -71,10 +71,10 @@ plots a stacked bar chart with the results. [Original code](https://github.com/E
 from ds_utils.metrics import visualize_accuracy_grouped_by_probability
 
 visualize_accuracy_grouped_by_probability(
-   test["target"],
-   1,
-   classifier.predict_proba(test[selected_features]),
-   display_breakdown=False
+    test["target"],
+    1,
+    classifier.predict_proba(test[selected_features]),
+    display_breakdown=False
 )
 ```
 
@@ -94,9 +94,9 @@ Plot ROC curves with threshold annotations for multiple classifiers, using plotl
 from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
-   "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-   "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-   "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+    "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
 }
 fig = plot_roc_curve_with_thresholds_annotations(
     y_true,
@@ -116,9 +116,9 @@ Plot Precision-Recall curves with threshold annotations for multiple classifiers
 from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
-   "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-   "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-   "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+    "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
 }
 fig = plot_precision_recall_curve_with_thresholds_annotations(
     y_true,
@@ -463,11 +463,11 @@ better for everyone. Whether you're a seasoned developer or just getting started
 3. **Create a branch**: Make your changes in a new git branch.
 
 4. **Make your changes**: Add your improvements or fixes. We appreciate:
-   - Bug reports and fixes
-   - Feature requests and implementations
-   - Documentation improvements
-   - Performance optimizations
-   - User experience enhancements
+    - Bug reports and fixes
+    - Feature requests and implementations
+    - Documentation improvements
+    - Performance optimizations
+    - User experience enhancements
 
 5. **Test your changes**: Ensure your code works as expected and doesn't introduce new issues.
 
@@ -481,7 +481,8 @@ these guidelines in your contributions.
 
 ### Getting Help
 
-If you're new to open source or need any help, don't hesitate to ask questions in the issues section or reach out to the
+If you're new to open source or need any help, don't hesitate to ask questions in
+the [issues](https://github.com/idanmoradarthas/DataScienceUtils/issues) section or reach out to the
 maintainers. We're here to help!
 
 ### Why Contribute?
@@ -498,7 +499,7 @@ Thank you for helping make Data Science Utils better for everyone!
 
 ## Installation Guide
 
-Data Science Utils is compatible with Python 3.9 or later. Here are several ways to install the package:
+Here are several ways to install the package:
 
 ### 1. Install from PyPI (Recommended)
 
