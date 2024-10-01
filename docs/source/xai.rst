@@ -1,6 +1,6 @@
-###
-XAI
-###
+####################
+XAI (Explainable AI)
+####################
 The module of xai contains methods that help explain a model decisions.
 
 In order for this module to work properly, Graphiz must be installed. In Linux based operating systems use::

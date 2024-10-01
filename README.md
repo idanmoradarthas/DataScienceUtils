@@ -1,4 +1,5 @@
 # Data Science Utils: Frequently Used Methods for Data Science
+
 [![License: MIT](https://img.shields.io/github/license/idanmoradarthas/DataScienceUtils)](https://opensource.org/licenses/MIT)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/idanmoradarthas/DataScienceUtils)
 [![GitHub issues](https://img.shields.io/github/issues/idanmoradarthas/DataScienceUtils)](https://github.com/idanmoradarthas/DataScienceUtils/issues)
@@ -10,29 +11,31 @@
 ![Build Status](https://github.com/idanmoradarthas/DataScienceUtils/actions/workflows/test.yml/badge.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/idanmoradarthas/DataScienceUtils/badge.svg?branch=master)](https://coveralls.io/github/idanmoradarthas/DataScienceUtils?branch=master)
 
-
-Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify task and 
-visualization over data. 
+Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and
+visualizations for data science projects.
 
 # Code Examples and Documentation
-**Let's see some code examples and outputs.** 
 
-**You can read the full documentation with all the code examples from:
+**Let's explore some code examples and outputs.**
+
+**You can find the full documentation with all the code examples at:
 [https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)**
 
-In the documentation you can find more methods and more examples.
+In the documentation, you can find more methods and additional examples.
 
-The API of the package is build to work with Scikit-Learn API and Matplotlib API. Here are some of capabilities of this
+The API of the package is built to work with the Scikit-Learn API and Matplotlib API. Here are some of the capabilities
+of this
 package:
 
 ## Metrics
+
 ### Plot Confusion Matrix
-Computes and plot confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a classification.
+
+Computes and plots a confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
+classification.
 
 ```python
 from ds_utils.metrics import plot_confusion_matrix
-
-
 
 plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 ```
@@ -41,34 +44,38 @@ plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 
 ### Plot Metric Growth per Labeled Instances
 
-Receives a train and test sets, and plots given metric change in increasing amount of trained instances.
+Receives train and test sets, and plots the given metric change with an increasing number of trained instances.
 
 ```python
 from ds_utils.metrics import plot_metric_growth_per_labeled_instances
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-
-
-plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
-                                             {"DecisionTreeClassifier":
-                                                DecisionTreeClassifier(random_state=0),
-                                              "RandomForestClassifier":
-                                                RandomForestClassifier(random_state=0, n_estimators=5)})
+plot_metric_growth_per_labeled_instances(
+   x_train, y_train, x_test, y_test,
+   {
+      "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+      "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
+   }
+)
 ```
 
 ![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances[with_n_samples].png)
 
 ### Visualize Accuracy Grouped by Probability
 
-Receives test true labels and classifier probabilities predictions, divide and classify the results and finally
+Receives test true labels and classifier probability predictions, divides and classifies the results, and finally
 plots a stacked bar chart with the results. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
 from ds_utils.metrics import visualize_accuracy_grouped_by_probability
 
-
-visualize_accuracy_grouped_by_probability(test["target"], 1, 
-                                          classifier.predict_proba(test[selected_features]),
-                                          display_breakdown=False)
+visualize_accuracy_grouped_by_probability(
+   test["target"],
+   1,
+   classifier.predict_proba(test[selected_features]),
+   display_breakdown=False
+)
 ```
 
 Without breakdown:
@@ -81,14 +88,16 @@ With breakdown:
 
 ### Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 
-Plot ROC curves with threshold annotations for multiple classifiers, with plotly as a backend.
+Plot ROC curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
 from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
 
-classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-                                     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-                                     "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+classifiers_names_and_scores_dict = {
+   "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+   "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+   "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+}
 fig = plot_roc_curve_with_thresholds_annotations(
     y_true,
     classifiers_names_and_scores_dict,
@@ -101,14 +110,16 @@ fig.show()
 
 ### Precision-Recall Curve with Probabilities (Thresholds) Annotations
 
-Plot Precision-Recall curves with threshold annotations for multiple classifiers, with plotly as a backend.
+Plot Precision-Recall curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
 from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
 
-classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-                                     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-                                     "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+classifiers_names_and_scores_dict = {
+   "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+   "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+   "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+}
 fig = plot_precision_recall_curve_with_thresholds_annotations(
     y_true,
     classifiers_names_and_scores_dict,
@@ -120,18 +131,17 @@ fig.show()
 ![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/docs/source/images/test_plot_precision_recall_curve_with_thresholds_annotations.png)
 
 ## Preprocess
+
 ### Visualize Feature
 
-Receives a feature and visualize its values on a graph:
+Receives a feature and visualizes its values on a graph:
 
-* If the feature is float then the method plots the distribution plot.
-* If the feature is datetime then the method plots a line plot of progression of amount thought time.
-* If the feature is object, categorical, boolean or integer then the method plots count plot (histogram).
+* If the feature is float, the method plots the distribution plot.
+* If the feature is datetime, the method plots a line plot of progression over time.
+* If the feature is object, categorical, boolean, or integer, the method plots a count plot (histogram).
 
 ```python
 from ds_utils.preprocess import visualize_feature
-
-
 
 visualize_feature(X_train["feature"])
 ```
@@ -146,31 +156,28 @@ visualize_feature(X_train["feature"])
 
 ### Get Correlated Features
 
-Calculate which features correlated above a threshold and extract a data frame with the correlations and correlation to 
-the target feature.
+Calculate which features are correlated above a threshold and extract a data frame with the correlations and correlation
+to the target feature.
 
 ```python
 from ds_utils.preprocess import get_correlated_features
 
-
-
 correlations = get_correlated_features(train, features, target)
 ```
 
-|level_0               |level_1               |level_0_level_1_corr|level_0_target_corr|level_1_target_corr|
-|----------------------|----------------------|--------------------|-------------------|-------------------|
-|income_category_Low   |income_category_Medium| 1.0                | 0.1182165609358650|0.11821656093586504|
-|term\_ 36 months      |term\_ 60 months      | 1.0                | 0.1182165609358650|0.11821656093586504|
-|interest_payments_High|interest_payments_Low | 1.0                | 0.1182165609358650|0.11821656093586504|
+| level_0                | level_1                | level_0_level_1_corr | level_0_target_corr | level_1_target_corr |
+|------------------------|------------------------|----------------------|---------------------|---------------------|
+| income_category_Low    | income_category_Medium | 1.0                  | 0.1182165609358650  | 0.11821656093586504 |
+| term\_ 36 months       | term\_ 60 months       | 1.0                  | 0.1182165609358650  | 0.11821656093586504 |
+| interest_payments_High | interest_payments_Low  | 1.0                  | 0.1182165609358650  | 0.11821656093586504 |
 
 ### Visualize Correlations
-Compute pairwise correlation of columns, excluding NA/null values, and visualize it with heat map.
+
+Compute pairwise correlation of columns, excluding NA/null values, and visualize it with a heat map.
 [Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
 
 ```python
 from ds_utils.preprocess import visualize_correlations
-
-
 
 visualize_correlations(data)
 ```
@@ -178,14 +185,13 @@ visualize_correlations(data)
 ![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations[default].png)
 
 ### Plot Correlation Dendrogram
-Plot dendrogram of a correlation matrix. This consists of a chart that that shows hierarchically the variables that are 
-most correlated by the connecting trees. The closer to the right that the connection is, the more correlated the 
+
+Plot a dendrogram of a correlation matrix. This consists of a chart that shows hierarchically the variables that are
+most correlated by connecting trees. The closer to the right that the connection is, the more correlated the
 features are. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
 from ds_utils.preprocess import plot_correlation_dendrogram
-
-
 
 plot_correlation_dendrogram(data)
 ```
@@ -193,22 +199,23 @@ plot_correlation_dendrogram(data)
 ![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram[default].png)
 
 ### Plot Features' Interaction
+
 Plots the joint distribution between two features:
-* If both features are either categorical, boolean or object then the method plots the shared histogram.
-* If one feature is either categorical, boolean or object and the other is numeric then the method plots a boxplot chart.
-* If one feature is datetime and the other is numeric or datetime then the method plots a line plot graph.
-* If one feature is datetime and the other is either categorical, boolean or object the method plots a violin plot (combination of boxplot and kernel density estimate).
-* If both features are numeric then the method plots scatter graph.
+
+* If both features are either categorical, boolean, or object, the method plots the shared histogram.
+* If one feature is either categorical, boolean, or object and the other is numeric, the method plots a boxplot chart.
+* If one feature is datetime and the other is numeric or datetime, the method plots a line plot graph.
+* If one feature is datetime and the other is either categorical, boolean, or object, the method plots a violin plot (
+  combination of boxplot and kernel density estimate).
+* If both features are numeric, the method plots a scatter graph.
 
 ```python
 from ds_utils.preprocess import plot_features_interaction
 
-
-
 plot_features_interaction("feature_1", "feature_2", data)
 ```
 
-|                 | Numeric                                                                                                                                                                               | Categorical                                                                                                                                                                            | Boolean                                                                                                                                                                                 | Datetime                                                                                                                                                                            
+|                 | Numeric                                                                                                                                                                               | Categorical                                                                                                                                                                            | Boolean                                                                                                                                                                                 | Datetime                                                                                                                                                                            |
 |-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Numeric**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_numeric].png)        |                                                                                                                                                                                        |                                                                                                                                                                                         |                                                                                                                                                                                     |
 | **Categorical** | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_categorical].png)     |                                                                                                                                                                                         |                                                                                                                                                                                     |
@@ -216,60 +223,61 @@ plot_features_interaction("feature_1", "feature_2", data)
 | **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_numeric].png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_categorical].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool[default].png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_datetime].png) |
 
 ## Strings
+
 ### Append Tags to Frame
 
-Extracts tags from a given field and append them as dataframe.
+This method extracts tags from a given field and appends them as new columns to the dataframe.
 
-A dataset that looks like this:
+Consider a dataset that looks like this:
 
 ``x_train``:
 
-|article_name|article_tags|
-|------------|------------|
-|1           |ds,ml,dl    |
-|2           |ds,ml       |
+| article_name | article_tags |
+|--------------|--------------|
+| 1            | ds,ml,dl     |
+| 2            | ds,ml        |
 
 ``x_test``:
 
-|article_name|article_tags|
-|------------|------------|
-|3           |ds,ml,py    |
+| article_name | article_tags |
+|--------------|--------------|
+| 3            | ds,ml,py     |
 
 Using this code:
+
 ```python
 import pandas as pd
-
 from ds_utils.strings import append_tags_to_frame
 
-
 x_train = pd.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
-                             {"article_name": "2", "article_tags": "ds,ml"}])
+                        {"article_name": "2", "article_tags": "ds,ml"}])
 x_test = pd.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
 x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 ```
 
-will be parsed into this:
+The result will be:
 
 ``x_train_with_tags``:
 
-|article_name|tag_ds|tag_ml|tag_dl|
-|------------|------|------|------|
-|1           |1     |1     |1     |
-|2           |1     |1     |0     |
+| article_name | tag_ds | tag_ml | tag_dl |
+|--------------|--------|--------|--------|
+| 1            | 1      | 1      | 1      |
+| 2            | 1      | 1      | 0      |
 
 ``x_test_with_tags``:
 
-|article_name|tag_ds|tag_ml|tag_dl|
-|------------|------|------|------|
-|3           |1     |1     |0     |
+| article_name | tag_ds | tag_ml | tag_dl |
+|--------------|--------|--------|--------|
+| 3            | 1      | 1      | 0      |
 
 ### Extract Significant Terms from Subset
-Returns interesting or unusual occurrences of terms in a subset. Based on the [elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
+
+This method returns interesting or unusual occurrences of terms in a subset. It is based on the
+[elasticsearch significant_text aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted).
 
 ```python
 import pandas as pd
-
 from ds_utils.strings import extract_significant_terms_from_subset
 
 corpus = ['This is the first document.', 'This document is the second document.',
@@ -277,30 +285,30 @@ corpus = ['This is the first document.', 'This document is the second document.'
 data_frame = pd.DataFrame(corpus, columns=["content"])
 # Let's differentiate between the last two documents from the full corpus
 subset_data_frame = data_frame[data_frame.index > 1]
-terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, 
-                                               "content")
-
+terms = extract_significant_terms_from_subset(data_frame, subset_data_frame,
+                                              "content")
 ```
-And the following table will be the output for ``terms``:
 
-|third|one|and|this|the |is  |first|document|second|
-|-----|---|---|----|----|----|-----|--------|------|
-|1.0  |1.0|1.0|0.67|0.67|0.67|0.5  |0.25    |0.0   |
+The output for ``terms`` will be the following table:
+
+| third | one | and | this | the  | is   | first | document | second |
+|-------|-----|-----|------|------|------|-------|----------|--------|
+| 1.0   | 1.0 | 1.0 | 0.67 | 0.67 | 0.67 | 0.5   | 0.25     | 0.0    |
 
 ## Unsupervised
+
 ### Cluster Cardinality
-Cluster cardinality is the number of examples per cluster. This method plots the number of points per cluster as a bar 
+
+Cluster cardinality is the number of examples per cluster. This method plots the number of points per cluster as a bar
 chart.
 
 ```python
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
-
 from ds_utils.unsupervised import plot_cluster_cardinality
 
-
-data = pd.read_csv(path/to/dataset)
+data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
@@ -308,10 +316,12 @@ plot_cluster_cardinality(estimator.labels_)
 
 plt.show()
 ```
+
 ![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_cardinality.png)
 
 ### Plot Cluster Magnitude
-Cluster magnitude is the sum of distances from all examples to the centroid of the cluster. This method plots the 
+
+Cluster magnitude is the sum of distances from all examples to the centroid of the cluster. This method plots the
 Total Point-to-Centroid Distance per cluster as a bar chart.
 
 ```python
@@ -319,10 +329,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
-
 from ds_utils.unsupervised import plot_cluster_magnitude
 
-data = pd.read_csv(path/to/dataset)
+data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
@@ -330,21 +339,23 @@ plot_cluster_magnitude(data, estimator.labels_, estimator.cluster_centers_, eucl
 
 plt.show()
 ```
+
 ![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png)
 
 ### Magnitude vs. Cardinality
+
 Higher cluster cardinality tends to result in a higher cluster magnitude, which intuitively makes sense. Clusters
-are anomalous when cardinality doesn't correlate with magnitude relative to the other clusters. Find anomalous 
-clusters by plotting magnitude against cardinality as a scatter plot.
+are considered anomalous when cardinality doesn't correlate with magnitude relative to the other clusters. This
+method helps find anomalous clusters by plotting magnitude against cardinality as a scatter plot.
+
 ```python
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
-
 from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 
-data = pd.read_csv(path/to/dataset)
+data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
 estimator.fit(data)
 
@@ -352,107 +363,191 @@ plot_magnitude_vs_cardinality(data, estimator.labels_, estimator.cluster_centers
 
 plt.show()
 ```
+
 ![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png)
 
 ### Optimum Number of Clusters
-k-means requires you to decide the number of clusters ``k`` beforehand. This method runs the KMean algorithm and 
-increases the cluster number at each try. The Total magnitude or sum of distance is used as loss.
 
-Right now the method only works with ``sklearn.cluster.KMeans``.
+K-means clustering requires you to decide the number of clusters `k` beforehand. This method runs the KMeans algorithm
+and
+increases the cluster number at each iteration. The total magnitude or sum of distances is used as the loss metric.
+
+Note: Currently, this method only works with ``sklearn.cluster.KMeans``.
 
 ```python
 import pandas as pd
-
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
-
 from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
-
-
-data = pd.read_csv(path/to/dataset)
+data = pd.read_csv(path / to / dataset)
 
 plot_loss_vs_cluster_number(data, 3, 20, euclidean)
 
 plt.show()
 ```
+
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
-## XAI
-## Plot Features` Importance
+## XAI (Explainable AI)
 
-plot feature importance as a bar chart.
+## Plot Feature Importance
+
+This method plots feature importance as a bar chart, helping to visualize which features have the most significant
+impact on the model's decisions.
 
 ```python
 import pandas as pd
-
 from matplotlib import pyplot as plt
 from sklearn.tree import DecisionTreeClassifier
-
 from ds_utils.xai import plot_features_importance
 
-
-data = pd.read_csv(path/to/dataset)
+# Load the dataset
+data = pd.read_csv(path / to / dataset)
 target = data["target"]
-features = data.columns.to_list()
+features = data.columns.tolist()
 features.remove("target")
 
+# Train a decision tree classifier
 clf = DecisionTreeClassifier(random_state=42)
 clf.fit(data[features], target)
+
+# Plot feature importance
 plot_features_importance(features, clf.feature_importances_)
 
 plt.show()
 ```
+
 ![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance.png)
 
-Excited?
+This visualization helps in understanding which features are most influential in the model's decision-making process,
+providing valuable insights for feature selection and model interpretation.
 
-Read about all the modules here and see more abilities: 
-* [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - The module of metrics contains methods that help to calculate and/or visualize evaluation performance of an algorithm.
-* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - The module of preprocess contains methods that are processes that could be made to data before training.
-* [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - The module of strings contains methods that help manipulate and process strings in a dataframe.
-* [Unsupervised](https://datascienceutils.readthedocs.io/en/latest/unsupervised.html) - The module od unsupervised contains methods that calculate and/or visualize evaluation performance of an unsupervised model.
-* [XAI](https://datascienceutils.readthedocs.io/en/latest/xai.html) - The module of xai contains methods that help explain a model decisions.
+## Explore More
+
+Excited about what you've seen so far? There's even more to discover! Dive deeper into each module to unlock the full
+potential of DataScienceUtils:
+
+* [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - Powerful methods for calculating and
+  visualizing algorithm performance evaluation. Gain insights into how your models are performing.
+
+* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - Essential data preprocessing
+  techniques to prepare your data for training. Improve your model's input for better results.
+
+* [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - Efficient methods for manipulating and
+  processing strings in dataframes. Handle text data with ease.
+
+* [Unsupervised](https://datascienceutils.readthedocs.io/en/latest/unsupervised.html) - Tools for calculating and
+  visualizing the performance of unsupervised models. Understand your clustering and dimensionality reduction results
+  better.
+
+* [XAI](https://datascienceutils.readthedocs.io/en/latest/xai.html) - Methods to help explain model decisions, making
+  your AI more interpretable and trustworthy.
+
+Each module is designed to streamline your data science workflow, providing you with the tools you need to preprocess
+data, train models, evaluate performance, and interpret results. Check out the detailed documentation for each module to
+see how DataScienceUtils can enhance your projects!
 
 ## Contributing
-Interested in contributing to Data Science Utils? Great! You're welcome,  and we would love to have you. We follow 
-the [Python Software Foundation Code of Conduct](http://www.python.org/psf/codeofconduct/) and 
-[Matplotlib Usage Guide](https://matplotlib.org/tutorials/introductory/usage.html#coding-styles).
 
-No matter your level of technical skill, you can be helpful. We appreciate bug reports, user testing, feature 
-requests, bug fixes, product enhancements, and documentation improvements.
+We're thrilled that you're interested in contributing to Data Science Utils! Your contributions help make this project
+better for everyone. Whether you're a seasoned developer or just getting started, there's a place for you here.
 
-Thank you for your contributions!
+### How to Contribute
 
-## Find a Bug?
-Check if there's already an open [issue](https://github.com/idanmoradarthas/DataScienceUtils/issues) on the topic. If 
-needed, file an issue.
+1. **Find an area to contribute to**: Check out our [issues](https://github.com/idanmoradarthas/DataScienceUtils/issues)
+   page for open tasks, or think of a feature you'd like to add.
 
-## Open Source
-Data Science Utils license is [MIT License](https://opensource.org/licenses/MIT). 
+2. **Fork the repository**: Make your own copy of the project to work on.
 
-## Installing Data Science Utils
-Data Science Utils is compatible with Python 3.6 or later. The simplest way to install Data Science Utils and its 
-dependencies is from PyPI with pip, Python's preferred package installer:
+3. **Create a branch**: Make your changes in a new git branch.
+
+4. **Make your changes**: Add your improvements or fixes. We appreciate:
+   - Bug reports and fixes
+   - Feature requests and implementations
+   - Documentation improvements
+   - Performance optimizations
+   - User experience enhancements
+
+5. **Test your changes**: Ensure your code works as expected and doesn't introduce new issues.
+
+6. **Submit a pull request**: Open a PR with a clear title and description of your changes.
+
+### Coding Guidelines
+
+We follow the [Python Software Foundation Code of Conduct](http://www.python.org/psf/codeofconduct/) and
+the [Matplotlib Usage Guide](https://matplotlib.org/tutorials/introductory/usage.html#coding-styles). Please adhere to
+these guidelines in your contributions.
+
+### Getting Help
+
+If you're new to open source or need any help, don't hesitate to ask questions in the issues section or reach out to the
+maintainers. We're here to help!
+
+### Why Contribute?
+
+- **Improve your skills**: Gain experience working on a real-world project.
+- **Be part of a community**: Connect with other developers and data scientists.
+- **Make a difference**: Your contributions will help others in their data science journey.
+- **Get recognition**: All contributors are acknowledged in our project.
+
+Remember, no contribution is too small. Whether it's fixing a typo in documentation or adding a major feature, all
+contributions are valued and appreciated.
+
+Thank you for helping make Data Science Utils better for everyone!
+
+## Installation Guide
+
+Data Science Utils is compatible with Python 3.9 or later. Here are several ways to install the package:
+
+### 1. Install from PyPI (Recommended)
+
+The simplest way to install Data Science Utils and its dependencies is from PyPI using pip, Python's preferred package
+installer:
+
 ```bash
 pip install data-science-utils
 ```
-Note that this package is an active project and routinely publishes new releases with more methods.  In order to 
-upgrade Data Science Utils to the latest version, use pip as follows:
+
+To upgrade Data Science Utils to the latest version, use:
+
 ```bash
 pip install -U data-science-utils
 ```
-Alternatively you can install from source by cloning the repo and running:
+
+### 2. Install from Source
+
+If you prefer to install from source, you can clone the repository and install:
+
 ```bash
 git clone https://github.com/idanmoradarthas/DataScienceUtils.git
 cd DataScienceUtils
 pip install .
 ```
-Or installation using pip from source:
+
+Alternatively, you can install directly from GitHub using pip:
+
 ```bash
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
+
+### 3. Install using Anaconda
+
 If you're using Anaconda, you can install using conda:
+
 ```bash
 conda install idanmorad::data-science-utils
 ```
+
+### Note on Dependencies
+
+Data Science Utils has several dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
+automatically installed when you install the package using the methods above.
+
+## Staying Updated
+
+Data Science Utils is an active project that routinely publishes new releases with additional methods and improvements.
+We recommend periodically checking for updates to access the latest features and bug fixes.
+
+If you encounter any issues during installation, please check our
+GitHub [issues](https://github.com/idanmoradarthas/DataScienceUtils/issues) page or open a new issue for assistance.
