@@ -30,11 +30,14 @@ def append_tags_to_frame(
     :param X_test: Pandas DataFrame with the test features.
     :param field_name: The feature to parse.
     :param prefix: The prefix for new tag features.
-    :param max_features: Maximum number of tag names to consider. Default is 500.
+    :param max_features: Maximum number of tag names to consider. Default is 500. This helps limit the number of
+                         new columns created, especially useful for datasets with a large number of unique tags.
     :param min_df: When building the tag name set, ignore tags with a document frequency strictly
                    lower than the given threshold. If float, the parameter represents a proportion
-                   of documents. If integer, it represents absolute counts. Default is 1.
-    :param lowercase: Convert all characters to lowercase before tokenizing the tag names. Default is False.
+                   of documents. If integer, it represents absolute counts. Default is 1. This helps filter out
+                   rare tags.
+    :param lowercase: Convert all characters to lowercase before tokenizing the tag names. Default is False. Set to
+                      True if you want case-insensitive tag matching.
     :param tokenizer: Callable to override the string tokenization step while preserving the
                       preprocessing and n-grams generation steps. Default splits by ",", and
                       retains alphanumeric characters with special characters "_", "$", and "-".
