@@ -104,7 +104,7 @@ And the following image will be shown:
 ***********************
 Generate Decision Paths
 ***********************
-.. deprecated:: 1.7.4
+.. deprecated:: 1.8.0
     Use `sklearn.tree.export_text <https://scikit-learn.org/stable/modules/generated/sklearn.tree.export_text.html>`_ instead
 
 .. autofunction:: xai::generate_decision_paths
