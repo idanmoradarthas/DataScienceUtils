@@ -2,41 +2,37 @@
 Unsupervised
 ############
 
-The module of unsupervised contains methods that calculate and/or visualize evaluation performance of an unsupervised
-model.
-
-Mostly inspired by the Interpet Results of Cluster in Google's Machine Learning Crash Course. See more information
-`here <https://developers.google.com/machine-learning/clustering/interpret>`_
+The unsupervised module contains methods for calculating and visualizing evaluation performance of unsupervised
+models. These tools are primarily inspired by the "Interpret Results of Cluster" section in Google's Machine Learning
+Crash Course. For more information, see `here <https://developers.google.com/machine-learning/clustering/interpret>`_.
 
 ************************
 Plot Cluster Cardinality
 ************************
 
+The plot_cluster_cardinality function visualizes the number of points in each cluster, which can help identify imbalanced clusters or outliers.
+
 .. autofunction:: unsupervised::plot_cluster_cardinality
 
 .. highlight:: python
 
-In following examples we are going to use the iris dataset from scikit-learn. so firstly let's import it::
+In the following example, we'll use the iris dataset from scikit-learn and create a simple K-Means algorithm with k=8 to plot how many points go to each cluster::
 
     from sklearn import datasets
-
-
-    iris = datasets.load_iris()
-    x = iris.data
-
-We'll create a simple K-Means algorithm with k=8 and plot how many point goes to each cluster::
-
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
-
     from ds_utils.unsupervised import plot_cluster_cardinality
 
+    # Load the iris dataset
+    iris = datasets.load_iris()
+    X = iris.data
 
+    # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
-    estimator.fit(x)
+    estimator.fit(X)
 
+    # Plot the cluster cardinality
     plot_cluster_cardinality(estimator.labels_)
-
     plt.show()
 
 And the following image will be shown:
@@ -49,24 +45,24 @@ And the following image will be shown:
 Plot Cluster Magnitude
 **********************
 
+The plot_cluster_magnitude function visualizes the total point-to-centroid distance for each cluster, which can help
+identify compact or dispersed clusters.
+
 .. autofunction:: unsupervised::plot_cluster_magnitude
 
-Again we'll create a simple K-Means algorithm with k=8. This time we'll plot the sum of distances from points to their
-centroid::
+Here's an example of how to use the plot_cluster_magnitude function::
 
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
-
     from ds_utils.unsupervised import plot_cluster_magnitude
 
-
-
+    # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
-    estimator.fit(x)
+    estimator.fit(X)
 
-    plot_cluster_magnitude(x, estimator.labels_, estimator.cluster_centers_, euclidean)
-
+    #Plot the cluster magnitude
+    plot_cluster_magnitude(X, estimator.labels_, estimator.cluster_centers_, euclidean)
     plt.show()
 
 And the following image will be shown:
@@ -79,23 +75,23 @@ And the following image will be shown:
 Magnitude vs. Cardinality
 *************************
 
+The plot_magnitude_vs_cardinality function creates a scatter plot of cluster magnitude against cardinality, which can help identify anomalous clusters.
+
 .. autofunction:: unsupervised::plot_magnitude_vs_cardinality
 
-Now let's plot the Cardinality vs. the Magnitude::
+Here's how to use the plot_magnitude_vs_cardinality function::
 
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
-
     from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 
-
-
+    # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
-    estimator.fit(x)
+    estimator.fit(X)
 
-    plot_magnitude_vs_cardinality(x, estimator.labels_, estimator.cluster_centers_, euclidean)
-
+    # Plot magnitude vs. cardinality
+    plot_magnitude_vs_cardinality(X, estimator.labels_, estimator.cluster_centers_, euclidean)
     plt.show()
 
 And the following image will be shown:
@@ -107,20 +103,18 @@ And the following image will be shown:
 **************************
 Optimum Number of Clusters
 **************************
+The plot_loss_vs_cluster_number function helps determine the optimal number of clusters by plotting the total magnitude (sum of distances) as loss against the number of clusters.
 
 .. autofunction:: unsupervised::plot_loss_vs_cluster_number
 
-Final plot we ca use is Loss vs Cluster Number::
+Here's an example of how to use the plot_loss_vs_cluster_number function::
 
     from matplotlib import pyplot as plt
     from scipy.spatial.distance import euclidean
-
     from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
-
-
-    plot_loss_vs_cluster_number(x, 3, 20, euclidean)
-
+    # Plot loss vs. number of clusters
+    plot_loss_vs_cluster_number(X, 3, 20, euclidean)
     plt.show()
 
 And the following image will be shown:

@@ -14,7 +14,7 @@ Plot Confusion Matrix
 
 Code Examples
 =============
-In following examples we are going to use the iris dataset from scikit-learn. so firstly let's import it::
+In the following examples, we are going to use the iris dataset from scikit-learn. First, let's import it::
 
     import numpy as np
     from sklearn import datasets
@@ -22,7 +22,7 @@ In following examples we are going to use the iris dataset from scikit-learn. so
     IRIS = datasets.load_iris()
     RANDOM_STATE = np.random.RandomState(0)
 
-Next we'll add a small function to add noise::
+Next, we'll add a small function to add noise::
 
     def _add_noisy_features(x, random_state):
         n_samples, n_features = x.shape
@@ -31,7 +31,7 @@ Next we'll add a small function to add noise::
 Binary Classification
 ---------------------
 
-So We'll use the only first two classes in the iris dataset, build a SVM classifier and evaluate it::
+We'll use only the first two classes in the iris dataset, build an SVM classifier and evaluate it::
 
     from matplotlib import pyplot as plt
     from sklearn.model_selection import train_test_split
@@ -39,21 +39,21 @@ So We'll use the only first two classes in the iris dataset, build a SVM classif
 
     from ds_utils.metrics import plot_confusion_matrix
 
+    # Load and prepare the data
+    features = IRIS.data
+    labels = IRIS.target
 
-    x = IRIS.data
-    y = IRIS.target
-
-    # Add noisy features
-    x = _add_noisy_features(x, RANDOM_STATE)
+    # Add noisy features to make the problem harder
+    features = _add_noisy_features(features, RANDOM_STATE)
 
     # Limit to the two first classes, and split into training and test
-    x_train, x_test, y_train, y_test = train_test_split(x[y < 2], y[y < 2], test_size=.5,
-                                            random_state=RANDOM_STATE)
+    X_train, X_test, y_train, y_test = train_test_split(features[labels < 2], labels[labels < 2],
+                                                        test_size=.5, random_state=RANDOM_STATE)
 
     # Create a simple classifier
     classifier = svm.LinearSVC(random_state=RANDOM_STATE)
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
+    classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
 
     plot_confusion_matrix(y_test, y_pred, [1, 0])
 
@@ -68,7 +68,7 @@ And the following image will be shown:
 Multi-Label Classification
 --------------------------
 
-This time we'll train on all the classes and plot an evaluation::
+This time, we'll train on all the classes and plot an evaluation::
 
     from matplotlib import pyplot as plt
     from sklearn.model_selection import train_test_split
@@ -77,19 +77,20 @@ This time we'll train on all the classes and plot an evaluation::
 
     from ds_utils.metrics import plot_confusion_matrix
 
+    # Load and prepare the data
+    features = IRIS.data
+    labels = IRIS.target
 
-    x = IRIS.data
-    y = IRIS.target
+    # Add noisy features to make the problem harder
+    features = _add_noisy_features(features, RANDOM_STATE)
 
-    # Add noisy features
-    x = _add_noisy_features(x, RANDOM_STATE)
-
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.5, random_state=RANDOM_STATE)
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=.5, random_state=RANDOM_STATE)
 
     # Create a simple classifier
+    # OneVsRestClassifier is used for multi-class classification
     classifier = OneVsRestClassifier(svm.LinearSVC(random_state=RANDOM_STATE))
-    classifier.fit(x_train, y_train)
-    y_pred = classifier.predict(x_test)
+    classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
 
     plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
     plt.show()
@@ -108,7 +109,7 @@ Plot Metric Growth per Labeled Instances
 
 Code Example
 ============
-In this example we'll divide the data into train and test sets, decide on which classifiers we want to measure and plot
+In this example, we'll divide the data into train and test sets, decide on which classifiers we want to measure, and plot
 the results::
 
     from matplotlib import pyplot as plt
@@ -118,16 +119,20 @@ the results::
 
     from ds_utils.metrics import plot_metric_growth_per_labeled_instances
 
+    # Load and prepare the data
+    features = IRIS.data
+    labels = IRIS.target
 
-    x = IRIS.data
-    y = IRIS.target
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=.3, random_state=0)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.3, random_state=0)
-    plot_metric_growth_per_labeled_instances(x_train, y_train, x_test, y_test,
-                                             {"DecisionTreeClassifier":
-                                                DecisionTreeClassifier(random_state=0),
-                                              "RandomForestClassifier":
-                                                RandomForestClassifier(random_state=0, n_estimators=5)})
+    # Define classifiers to compare
+    classifiers = {
+        "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
+        "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
+    }
+
+    # Plot metric growth for different amounts of training data
+    plot_metric_growth_per_labeled_instances(X_train, y_train, X_test, y_test, classifiers)
     plt.show()
 
 And the following image will be shown:
@@ -139,13 +144,13 @@ And the following image will be shown:
 *****************************************
 Visualize Accuracy Grouped by Probability
 *****************************************
-This method was created due the lack of maintenance of the package `EthicalML / xai <https://github.com/EthicalML/XAI>`_.
+This method was created due to the lack of maintenance of the package `EthicalML / xai <https://github.com/EthicalML/XAI>`_.
 
 .. autofunction:: metrics::visualize_accuracy_grouped_by_probability
 
 Code Example
 ============
-The example uses a small sample from of a dataset from
+The example uses a small sample from a dataset from
 `kaggle <https://www.kaggle.com/mrferozi/loan-data-for-dummy-bank>`_, which a dummy bank provides loans.
 
 Let's see how to use the code::
@@ -153,31 +158,46 @@ Let's see how to use the code::
     from matplotlib import pyplot as plt
     from sklearn.ensemble import RandomForestClassifier
 
-
     from ds_utils.metrics import visualize_accuracy_grouped_by_probability
 
-
+    # Load and prepare the data
     loan_data = pandas.read_csv(path/to/dataset, encoding="latin1", nrows=11000,
-                                 parse_dates=["issue_d"])
-                                 .drop("id", axis=1)
-    loan_data = loan_data.drop("application_type", axis=1)
+                                parse_dates=["issue_d"])
+    loan_data = loan_data.drop(["id", "application_type"], axis=1)
     loan_data = loan_data.sort_values("issue_d")
     loan_data = pandas.get_dummies(loan_data)
-    train = loan_data.head(int(loan_data.shape[0] * 0.7)).sample(frac=1)
-            .reset_index(drop=True).drop("issue_d", axis=1)
+
+    # Prepare train and test sets
+    train = (loan_data.head(int(loan_data.shape[0] * 0.7))
+             .sample(frac=1)
+             .reset_index(drop=True)
+             .drop("issue_d", axis=1))
     test = loan_data.tail(int(loan_data.shape[0] * 0.3)).drop("issue_d", axis=1)
 
-    selected_features = ['emp_length_int', 'home_ownership_MORTGAGE', 'home_ownership_RENT',
-                         'income_category_Low', 'term_ 36 months', 'purpose_debt_consolidation',
-                         'purpose_small_business', 'interest_payments_High']
-    classifier = RandomForestClassifier(min_samples_leaf=int(train.shape[0] * 0.01),
-                                        class_weight="balanced",
-                                        n_estimators=1000, random_state=0)
+    # Define features to use for classification
+    selected_features = [
+        'emp_length_int', 'home_ownership_MORTGAGE', 'home_ownership_RENT',
+        'income_category_Low', 'term_ 36 months', 'purpose_debt_consolidation',
+        'purpose_small_business', 'interest_payments_High'
+    ]
+
+    # Train the classifier
+    classifier = RandomForestClassifier(
+        min_samples_leaf=int(train.shape[0] * 0.01),
+        class_weight="balanced",
+        n_estimators=1000,
+        random_state=0
+    )
     classifier.fit(train[selected_features], train["loan_condition_cat"])
 
+    # Make predictions and visualize accuracy
     probabilities = classifier.predict_proba(test[selected_features])
-    visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
-                                              display_breakdown=False)
+    visualize_accuracy_grouped_by_probability(
+        test["loan_condition_cat"],
+        1,
+        probabilities[:, 1],
+        display_breakdown=False
+    )
 
     plt.show()
 
@@ -187,10 +207,14 @@ And the following image will be shown:
     :align: center
     :alt: Visualize Accuracy Grouped by Probability
 
-If we chose to display the breakdown::
+If we choose to display the breakdown::
 
-    visualize_accuracy_grouped_by_probability(test["loan_condition_cat"], 1, probabilities[:, 1],
-                                              display_breakdown=True)
+    visualize_accuracy_grouped_by_probability(
+        test["loan_condition_cat"],
+        1,
+        probabilities[:, 1],
+        display_breakdown=True
+    )
     plt.show()
 
 And the following image will be shown:
@@ -203,12 +227,14 @@ And the following image will be shown:
 Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 *****************************************************************************************
 
+The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. It plots the True Positive Rate (TPR) against the False Positive Rate (FPR) at various threshold settings. The ROC curve is particularly useful when you have balanced classes or when you want to evaluate the classifier's performance across all possible thresholds.
+
 .. autofunction:: metrics::plot_roc_curve_with_thresholds_annotations
 
 Code Example
 ============
-Suppose that we want compare 3 classifiers based on ROC Curve and optimize the prediction threshold. The method is using
-Plotly as the backend engine to create the graphs and adds next to each classifier name what's its AUC score::
+Suppose that we want to compare 3 classifiers based on ROC Curve and optimize the prediction threshold. The method uses
+Plotly as the backend engine to create the graphs and adds the AUC score next to each classifier name::
 
     from sklearn.tree import DecisionTreeClassifier
     from sklearn.ensemble import RandomForestClassifier
@@ -216,24 +242,31 @@ Plotly as the backend engine to create the graphs and adds next to each classifi
 
     from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
 
-
+    # Define and train classifiers
     tree_clf = DecisionTreeClassifier(random_state=42)
     rf_clf = RandomForestClassifier(random_state=42)
     xgb_clf = XGBClassifier(random_state=42, eval_metric='logloss')
 
-    tree_clf.fit(...)
-    rf_clf.fit(...)
-    xgb_clf.fit(...)
+    tree_clf.fit(X_train, y_train)
+    rf_clf.fit(X_train, y_train)
+    xgb_clf.fit(X_train, y_train)
 
-    classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-                                         "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-                                         "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+    # Prepare classifier predictions
+    classifiers_names_and_scores_dict = {
+        "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+        "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+        "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    }
+
+    # Plot ROC curves
     fig = plot_roc_curve_with_thresholds_annotations(
-          y_true,
-          classifiers_names_and_scores_dict,
-          positive_label=1
+        y_test,
+        classifiers_names_and_scores_dict,
+        positive_label=1
     )
     fig.show()
+
+The `positive_label=1` parameter specifies which class should be considered as the positive class when calculating the ROC curve. In this case, it indicates that the class labeled as '1' is the positive class.
 
 And the following interactive graph will be shown:
 
@@ -245,37 +278,46 @@ And the following interactive graph will be shown:
 Precision-Recall Curve with Probabilities (Thresholds) Annotations
 ******************************************************************
 
+The Precision-Recall curve shows the tradeoff between precision and recall for different threshold values. It is particularly useful when you have imbalanced classes, as it focuses on the performance of the positive class. Precision-Recall curves are preferred over ROC curves when you have a large skew in the class distribution, as they are more sensitive to differences in the minority class.
+
 .. autofunction:: metrics::plot_precision_recall_curve_with_thresholds_annotations
 
 Code Example
 ============
-Suppose that we want compare 3 classifiers based on Precision-Recall Curve and optimize the prediction threshold.
-The method is using Plotly as the backend engine to create the graphs::
+Suppose that we want to compare 3 classifiers based on Precision-Recall Curve and optimize the prediction threshold.
+The method uses Plotly as the backend engine to create the graphs::
 
     from sklearn.tree import DecisionTreeClassifier
     from sklearn.ensemble import RandomForestClassifier
     from xgboost import XGBClassifier
 
-    from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+    from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
 
-
+    # Define and train classifiers
     tree_clf = DecisionTreeClassifier(random_state=42)
     rf_clf = RandomForestClassifier(random_state=42)
     xgb_clf = XGBClassifier(random_state=42, eval_metric='logloss')
 
-    tree_clf.fit(...)
-    rf_clf.fit(...)
-    xgb_clf.fit(...)
+    tree_clf.fit(X_train, y_train)
+    rf_clf.fit(X_train, y_train)
+    xgb_clf.fit(X_train, y_train)
 
-    classifiers_names_and_scores_dict = {"Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
-                                         "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-                                         "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]}
+    # Prepare classifier predictions
+    classifiers_names_and_scores_dict = {
+        "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
+        "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
+        "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    }
+
+    # Plot Precision-Recall curves
     fig = plot_precision_recall_curve_with_thresholds_annotations(
-          y_true,
-          classifiers_names_and_scores_dict,
-          positive_label=1
+        y_test,
+        classifiers_names_and_scores_dict,
+        positive_label=1
     )
     fig.show()
+
+Similar to the ROC curve example, the `positive_label=1` parameter here specifies that the class labeled as '1' should be considered as the positive class when calculating the Precision-Recall curve.
 
 And the following interactive graph will be shown:
 
