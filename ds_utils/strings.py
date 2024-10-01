@@ -45,7 +45,7 @@ def append_tags_to_frame(
     :raise KeyError: if the one of the frames is missing columns.
     """
     vectorizer = CountVectorizer(binary=True, tokenizer=tokenizer, encoding="utf-8", lowercase=lowercase,
-                                 min_df=min_df, max_features=max_features)
+                                 min_df=min_df, max_features=max_features, token_pattern=None)
 
     if X_train.empty:
         return pd.DataFrame(), pd.DataFrame()

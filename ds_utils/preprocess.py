@@ -231,6 +231,8 @@ def plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
     dup_df[feature_1] = data[feature_1]
     chart = sns.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
+    ticks_loc = chart.get_xticks()  # Get the tick positions
+    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
 
 
@@ -272,6 +274,8 @@ def plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs
     """Plot when the first feature is categorical-like and the second is numeric."""
     dup_df[feature_2] = data[feature_2]
     chart = sns.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
+    ticks_loc = chart.get_xticks()  # Get the tick positions
+    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
 
 
