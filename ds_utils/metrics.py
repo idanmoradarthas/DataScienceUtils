@@ -281,7 +281,7 @@ def visualize_accuracy_grouped_by_probability(
 
     # Group the results by probability bins
     df_results["Probability Bin"] = pd.cut(df_results["Probability"], bins=bins)
-    grouped_results = df_results.groupby("Probability Bin")[display_columns].sum()
+    grouped_results = df_results.groupby("Probability Bin", observed=False)[display_columns].sum()
 
     # Plot the results
     grouped_results.plot(kind="bar", stacked=True, ax=ax, **kwargs)
