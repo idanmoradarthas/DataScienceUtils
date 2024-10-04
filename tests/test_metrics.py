@@ -62,9 +62,6 @@ def setup_teardown():
 
 BASELINE_DIR = Path(__file__).parent.joinpath("baseline_images", "test_metrics")
 
-Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("custom_y_test, custom_y_pred, labels", [
