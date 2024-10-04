@@ -143,19 +143,19 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles(iris
         )
 
 
-def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifiers, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"))
+def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifiers):
     fig, ax = plt.subplots()
     ax.set_title("My ax")
     plot_metric_growth_per_labeled_instances(
         iris_data["x_train"], iris_data["y_train"],
         iris_data["x_test"], iris_data["y_test"],
-        classifiers, ax=ax
+        classifiers, ax=ax, random_state=42
     )
-    plt.savefig(str(result_path))
 
     assert ax.get_title() == "My ax"
 
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_plot_metric_growth_per_labeled_instances_verbose(iris_data, classifiers, capsys):
