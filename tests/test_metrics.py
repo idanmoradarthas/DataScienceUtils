@@ -61,10 +61,13 @@ def setup_teardown():
     plt.close(plt.gcf())
 
 
+BASELINE_DIR = Path(__file__).parent.joinpath("baseline_images", "test_metrics")
+
 Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
 Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("custom_y_test, custom_y_pred, labels", [
     ("1 1 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 0 1 0 1 0 0 1 1 1 1 1 0 0 0 1 0 1 0 1 0 0 0 0 1 1 1 1 0 1 1 0 1 0",
      "0 1 1 1 1 0 0 0 1 0 0 0 0 1 1 0 1 1 0 0 1 0 0 1 1 0 1 1 0 0 0 1 0 1 0 1 1 0 1 0 1 1 1 1 0 1 1 1 1 1",
@@ -75,7 +78,7 @@ Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_me
      "0 1 2 0 0 0 2 2 2 2 0 0 2 2 1 0 2 0 0 2 0 2",
      [0, 1, 2])
 ], ids=["binary", "multiclass"])
-def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels, result_path, baseline_path):
+def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels):
     y_test = np.fromstring(custom_y_test, dtype=int, sep=' ')
     y_pred = np.fromstring(custom_y_pred, dtype=int, sep=' ')
 
@@ -90,9 +93,7 @@ def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels, result_path
     accuracy = float(ax[2].texts[0].get_text().split(': ')[1])
     assert accuracy == np.mean(y_test == y_pred)
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
 def test_print_confusion_matrix_exception():
@@ -143,7 +144,7 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles(iris
         )
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=Path(__file__).parent.joinpath("baseline_images", "test_metrics"))
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifiers):
     fig, ax = plt.subplots()
     ax.set_title("My ax")

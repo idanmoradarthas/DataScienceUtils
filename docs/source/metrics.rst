@@ -61,7 +61,7 @@ We'll use only the first two classes in the iris dataset, build an SVM classifie
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_metrics/test_plot_confusion_matrix[binary].png
+.. image:: ../../tests/baseline_images/test_metrics/test_plot_confusion_matrix_binary.png
     :align: center
     :alt: binary classification confusion matrix
 
@@ -97,7 +97,7 @@ This time, we'll train on all the classes and plot an evaluation::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_metrics/test_plot_confusion_matrix[multiclass].png
+.. image:: ../../tests/baseline_images/test_metrics/test_plot_confusion_matrix_multiclass.png
     :align: center
     :alt: multi label classification confusion matrix
 

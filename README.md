@@ -40,7 +40,7 @@ from ds_utils.metrics import plot_confusion_matrix
 plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 ```
 
-![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_confusion_matrix[binary].png)
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_confusion_matrix_binary.png)
 
 ### Plot Metric Growth per Labeled Instances
 
