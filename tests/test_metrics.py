@@ -17,6 +17,8 @@ from ds_utils.metrics import (
     plot_roc_curve_with_thresholds_annotations, plot_precision_recall_curve_with_thresholds_annotations
 )
 
+BASELINE_DIR = Path(__file__).parent.joinpath("baseline_images", "test_metrics")
+
 
 @pytest.fixture
 def iris_data():
@@ -43,24 +45,11 @@ def plotly_models_dict():
         return json.load(file)
 
 
-@pytest.fixture
-def result_path(request):
-    return Path(__file__).parent.joinpath("result_images", "test_metrics", f"{request.node.name}.png")
-
-
-@pytest.fixture
-def baseline_path(request):
-    return Path(__file__).parent.joinpath("baseline_images", "test_metrics", f"{request.node.name}.png")
-
-
 @pytest.fixture(autouse=True)
 def setup_teardown():
     yield
     plt.cla()
     plt.close(plt.gcf())
-
-
-BASELINE_DIR = Path(__file__).parent.joinpath("baseline_images", "test_metrics")
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
