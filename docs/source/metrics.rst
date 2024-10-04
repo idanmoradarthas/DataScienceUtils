@@ -137,7 +137,7 @@ the results::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances[with_n_samples].png
+.. image:: ../../tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png
     :align: center
     :alt: Features Visualization
 
@@ -203,7 +203,7 @@ Let's see how to use the code::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[default].png
+.. image:: ../../tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_default.png
     :align: center
     :alt: Visualize Accuracy Grouped by Probability
 
@@ -219,7 +219,7 @@ If we choose to display the breakdown::
 
 And the following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability[with_breakdown].png
+.. image:: ../../tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png
     :align: center
     :alt: Visualize Accuracy Grouped by Probability with Breakdown
 
