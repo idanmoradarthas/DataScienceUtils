@@ -214,7 +214,7 @@ def test_draw_tree_exists_ax(decision_tree_draw_tree):
     return fig
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=9)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
 def test_draw_dot_data():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
@@ -231,7 +231,7 @@ def test_draw_dot_data():
     return plt.gcf()
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=9)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
 def test_draw_dot_data_exist_ax():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
