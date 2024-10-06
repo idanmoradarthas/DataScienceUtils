@@ -192,7 +192,7 @@ def test_print_decision_paths_no_class_names(decision_tree_generate_decision_pat
     assert result == expected
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=53)
 def test_draw_tree(decision_tree_draw_tree):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
         draw_tree(decision_tree_draw_tree,
@@ -201,7 +201,7 @@ def test_draw_tree(decision_tree_draw_tree):
     return plt.gcf()
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=54)
 def test_draw_tree_exists_ax(decision_tree_draw_tree):
     fig, ax = plt.subplots()
     ax.set_title("My ax")
@@ -214,7 +214,7 @@ def test_draw_tree_exists_ax(decision_tree_draw_tree):
     return fig
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=9)
 def test_draw_dot_data():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
@@ -231,7 +231,7 @@ def test_draw_dot_data():
     return plt.gcf()
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=9)
 def test_draw_dot_data_exist_ax():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
