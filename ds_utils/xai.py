@@ -57,7 +57,7 @@ def generate_decision_paths(
     :param indent_char: Character used for indentation
     :return: Textual representation of the decision paths of the tree
     """
-    warnings.warn("This module is deprecated. sklearn.tree.export_text instead", DeprecationWarning, stacklevel=2)
+    warnings.warn("This module is deprecated. Use sklearn.tree.export_text instead", DeprecationWarning, stacklevel=2)
 
     tree = classifier.tree_
     feature_names = feature_names or [f"feature_{i}" for i in range(classifier.n_features_in_)]
