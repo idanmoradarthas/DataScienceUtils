@@ -1,6 +1,28 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2024-10-08
+
+### Added
+
+- **GitHub Actions**: Implemented as the primary CI/CD infrastructure, replacing TravisCI.
+- **ROC and Precision-Recall Curves**: Introduced new functions to generate ROC and Precision-Recall curves with
+  threshold annotations using Plotly figures.
+
+### Changed
+
+- **Testing Infrastructure**: Switched from `nose` to `pytest-mpl` for testing plots, ensuring better compatibility
+  and features.
+- **Codebase, Tests, Readme, and Documentation**: Refactored using Claude 3.5 Sonnet to improve readability,
+  maintainability, and overall quality.
+
+### Fixed
+
+- **Coveralls Integration**: Restored Coveralls integration to track code coverage and ensure high-quality code.
+- **xai::generate_decision_paths**: Deprecated the method and recommended using `sklearn.tree.export_text` as a more
+  suitable alternative.
+- minor changes
+
 ## [1.7.4] - 2024-09-12
 ### Changed
 - Updated Matplotlib version to accommodate the change of xticks now returning a list of a numpy's ndarry.
