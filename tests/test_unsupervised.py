@@ -161,7 +161,7 @@ def test_magnitude_vs_cardinality_invalid_distance_function(mocker, iris_data):
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 def test_plot_loss_vs_cluster_number(iris_data):
     iris_x, _, _ = iris_data
-    plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean, algorithm_parameters={"random_state": 42})
+    plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean)
     return plt.gcf()
 
 
@@ -171,7 +171,7 @@ def test_plot_loss_vs_cluster_number_exist_ax(iris_data):
     ax.set_facecolor('tab:red')
 
     iris_x, _, _ = iris_data
-    plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean, algorithm_parameters={"random_state": 42}, ax=ax)
+    plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean, ax=ax)
     return fig
 
 
