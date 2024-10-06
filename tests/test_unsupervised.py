@@ -12,7 +12,8 @@ from ds_utils.unsupervised import (
     plot_magnitude_vs_cardinality,
     plot_loss_vs_cluster_number
 )
-from tests.utils import compare_images_from_paths
+
+BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_unsupervised"
 
 
 @pytest.fixture()
@@ -51,38 +52,29 @@ def distance_wrapper_plot_magnitude_vs_cardinality(mocker):
     return wrapper
 
 
-@pytest.fixture
-def result_path(request):
-    return Path(__file__).parent.joinpath("result_images", "test_unsupervised", f"{request.node.name}.png")
+@pytest.fixture(autouse=True)
+def setup_teardown():
+    yield
+    plt.cla()
+    plt.close(plt.gcf())
 
 
-@pytest.fixture
-def baseline_path(request):
-    return Path(__file__).parent.joinpath("baseline_images", "test_unsupervised", f"{request.node.name}.png")
-
-
-Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_unsupervised").mkdir(exist_ok=True)
-
-
-def test_cluster_cardinality(iris_data, result_path, baseline_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_cluster_cardinality(iris_data):
     _, labels, _ = iris_data
     plot_cluster_cardinality(np.asarray(labels))
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_cluster_cardinality_exist_ax(iris_data, result_path, baseline_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_cluster_cardinality_exist_ax(iris_data):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     _, labels, _ = iris_data
     plot_cluster_cardinality(np.asarray(labels), ax=ax)
     assert ax.get_title() == "My ax"
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_cluster_cardinality_empty_labels():
@@ -90,27 +82,24 @@ def test_cluster_cardinality_empty_labels():
         plot_cluster_cardinality(np.array([]))
 
 
-def test_plot_cluster_magnitude(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path, baseline_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_cluster_magnitude(iris_data, distance_wrapper_plot_magnitude_vs_cardinality):
     iris_x, labels, cluster_centers = iris_data
 
     plot_cluster_magnitude(iris_x.values, labels, cluster_centers, distance_wrapper_plot_magnitude_vs_cardinality)
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_plot_cluster_magnitude_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
-                                         baseline_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_cluster_magnitude_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     iris_x, labels, cluster_centers = iris_data
     plot_cluster_magnitude(iris_x.values, labels, cluster_centers, distance_wrapper_plot_magnitude_vs_cardinality,
                            ax=ax)
     assert ax.get_title() == "My ax"
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_cluster_magnitude_inconsistent_shapes(mocker, iris_data):
@@ -131,28 +120,24 @@ def test_cluster_magnitude_invalid_cluster_number_vs_labels(mocker, iris_data):
         plot_cluster_magnitude(np.array([1]), np.array([1]), cluster_centers, mocker.Mock())
 
 
-def test_plot_magnitude_vs_cardinality(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
-                                       baseline_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_magnitude_vs_cardinality(iris_data, distance_wrapper_plot_magnitude_vs_cardinality):
     iris_x, labels, cluster_centers = iris_data
     plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers,
                                   distance_wrapper_plot_magnitude_vs_cardinality)
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality, result_path,
-                                                baseline_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_magnitude_vs_cardinality_exist_ax(iris_data, distance_wrapper_plot_magnitude_vs_cardinality):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     iris_x, labels, cluster_centers = iris_data
     plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers,
                                   distance_wrapper_plot_magnitude_vs_cardinality, ax=ax)
     assert ax.get_title() == "My ax"
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_plot_magnitude_vs_cardinality_inconsistent_shapes(mocker, iris_data):
@@ -173,32 +158,29 @@ def test_magnitude_vs_cardinality_invalid_distance_function(mocker, iris_data):
         plot_magnitude_vs_cardinality(iris_x.values, labels, cluster_centers, mocker.Mock(side_effect=TypeError))
 
 
-def test_plot_loss_vs_cluster_number(iris_data, result_path, baseline_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_loss_vs_cluster_number(iris_data):
     iris_x, _, _ = iris_data
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean)
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_plot_loss_vs_cluster_number_exist_ax(iris_data, result_path, baseline_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_loss_vs_cluster_number_exist_ax(iris_data):
+    fig, ax = plt.subplots()
     ax.set_facecolor('tab:red')
 
     iris_x, _, _ = iris_data
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean, ax=ax)
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
-def test_plot_loss_vs_cluster_number_given_parameters(iris_data, result_path, baseline_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_loss_vs_cluster_number_given_parameters(iris_data):
     iris_x, _, _ = iris_data
     plot_loss_vs_cluster_number(iris_x.values, 3, 20, euclidean,
                                 algorithm_parameters={"random_state": 42, "algorithm": "lloyd", "n_clusters": 3})
-
-    plt.savefig(str(result_path))
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
 def test_loss_vs_cluster_number_invalid_k_range(mocker, iris_data):

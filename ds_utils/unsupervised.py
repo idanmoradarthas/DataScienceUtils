@@ -214,7 +214,7 @@ def plot_loss_vs_cluster_number(
         raise ValueError("k_min must be less than or equal to k_max.")
 
     if algorithm_parameters is None:
-        algorithm_parameters = {}
+        algorithm_parameters = {"random_state": 42}
     else:
         algorithm_parameters = algorithm_parameters.copy()
 

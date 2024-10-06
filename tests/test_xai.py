@@ -11,7 +11,8 @@ from ds_utils.xai import (
     draw_dot_data,
     plot_features_importance
 )
-from tests.utils import compare_images_from_paths
+
+BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_xai"
 
 
 @pytest.fixture()
@@ -90,18 +91,11 @@ def features():
             'x10_value_1', 'x10_value_2']
 
 
-@pytest.fixture
-def baseline_path(request):
-    return Path(__file__).parent.joinpath("baseline_images", "test_xai", f"{request.node.name}.png")
-
-
-@pytest.fixture
-def result_path(request):
-    return Path(__file__).parent.joinpath("result_images", "test_xai", f"{request.node.name}.png")
-
-
-Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_xai").mkdir(exist_ok=True)
+@pytest.fixture(autouse=True)
+def setup_teardown():
+    yield
+    plt.cla()
+    plt.close(plt.gcf())
 
 
 @pytest.mark.parametrize("tree_name, expected_name", [
@@ -198,20 +192,18 @@ def test_print_decision_paths_no_class_names(decision_tree_generate_decision_pat
     assert result == expected
 
 
-def test_draw_tree(decision_tree_draw_tree, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=53)
+def test_draw_tree(decision_tree_draw_tree):
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
         draw_tree(decision_tree_draw_tree,
                   ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)'],
                   ['setosa', 'versicolor', 'virginica'])
-
-    plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_draw_tree_exists_ax(decision_tree_draw_tree, baseline_path, result_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=54)
+def test_draw_tree_exists_ax(decision_tree_draw_tree):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
         draw_tree(decision_tree_draw_tree,
@@ -219,13 +211,11 @@ def test_draw_tree_exists_ax(decision_tree_draw_tree, baseline_path, result_path
                   ['setosa', 'versicolor', 'virginica'], ax=ax)
 
     assert ax.get_title() == "My ax"
-    plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
-def test_draw_dot_data(baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
+def test_draw_dot_data():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
                "\tB [shape=box]\n" \
@@ -238,15 +228,11 @@ def test_draw_dot_data(baseline_path, result_path):
                "}"
 
     draw_dot_data(dot_data)
-
-    plt.savefig(str(result_path))
-
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_draw_dot_data_exist_ax(baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
+def test_draw_dot_data_exist_ax():
     dot_data = "digraph D{\n" \
                "\tA [shape=diamond]\n" \
                "\tB [shape=box]\n" \
@@ -258,16 +244,12 @@ def test_draw_dot_data_exist_ax(baseline_path, result_path):
                "\n" \
                "}"
 
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     draw_dot_data(dot_data, ax=ax)
     assert ax.get_title() == "My ax"
-
-    plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_draw_dot_data_empty_input():
@@ -283,28 +265,25 @@ def test_draw_dot_data_invalid_input(mocker):
         draw_dot_data("invalid dot data")
 
 
-def test_plot_features_importance(importance, features, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_importance(importance, features):
     plot_features_importance(features, importance)
 
-    plt.gcf().set_size_inches(17, 10)
-    plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    figure = plt.gcf()
+    figure.set_size_inches(17, 10)
+    return figure
 
 
-def test_plot_features_importance_exists_ax(importance, features, baseline_path, result_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_importance_exists_ax(importance, features):
+    fig, ax = plt.subplots()
 
     ax.set_title("My ax")
     plot_features_importance(features, importance, ax=ax)
     assert ax.get_title() == "My ax"
 
-    plt.gcf().set_size_inches(17, 10)
-    plt.savefig(str(result_path))
-    plt.cla()
-    plt.close(plt.gcf())
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    fig.set_size_inches(17, 10)
+    return fig
 
 
 def test_plot_features_importance_mismatched_lengths():

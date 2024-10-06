@@ -16,7 +16,8 @@ from ds_utils.metrics import (
     visualize_accuracy_grouped_by_probability,
     plot_roc_curve_with_thresholds_annotations, plot_precision_recall_curve_with_thresholds_annotations
 )
-from tests.utils import compare_images_from_paths
+
+BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_metrics"
 
 
 @pytest.fixture
@@ -44,16 +45,6 @@ def plotly_models_dict():
         return json.load(file)
 
 
-@pytest.fixture
-def result_path(request):
-    return Path(__file__).parent.joinpath("result_images", "test_metrics", f"{request.node.name}.png")
-
-
-@pytest.fixture
-def baseline_path(request):
-    return Path(__file__).parent.joinpath("baseline_images", "test_metrics", f"{request.node.name}.png")
-
-
 @pytest.fixture(autouse=True)
 def setup_teardown():
     yield
@@ -61,10 +52,7 @@ def setup_teardown():
     plt.close(plt.gcf())
 
 
-Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_metrics").mkdir(exist_ok=True)
-
-
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("custom_y_test, custom_y_pred, labels", [
     ("1 1 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 0 1 0 1 0 0 1 1 1 1 1 0 0 0 1 0 1 0 1 0 0 0 0 1 1 1 1 0 1 1 0 1 0",
      "0 1 1 1 1 0 0 0 1 0 0 0 0 1 1 0 1 1 0 0 1 0 0 1 1 0 1 1 0 0 0 1 0 1 0 1 1 0 1 0 1 1 1 1 0 1 1 1 1 1",
@@ -75,7 +63,7 @@ Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_me
      "0 1 2 0 0 0 2 2 2 2 0 0 2 2 1 0 2 0 0 2 0 2",
      [0, 1, 2])
 ], ids=["binary", "multiclass"])
-def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels, result_path, baseline_path):
+def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels):
     y_test = np.fromstring(custom_y_test, dtype=int, sep=' ')
     y_pred = np.fromstring(custom_y_pred, dtype=int, sep=' ')
 
@@ -90,9 +78,7 @@ def test_plot_confusion_matrix(custom_y_test, custom_y_pred, labels, result_path
     accuracy = float(ax[2].texts[0].get_text().split(': ')[1])
     assert accuracy == np.mean(y_test == y_pred)
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
 def test_print_confusion_matrix_exception():
@@ -100,15 +86,16 @@ def test_print_confusion_matrix_exception():
         plot_confusion_matrix(np.array([]), np.array([]), [])
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("n_samples, quantiles, random_state", [
-    (None, np.linspace(0.05, 1, 20).tolist(), None),
-    (None, np.linspace(0.05, 1, 20).tolist(), None),
-    (list(range(10, 100, 10)), None, None),
+    (None, np.linspace(0.05, 1, 20).tolist(), 42),
+    (None, np.linspace(0.05, 1, 20).tolist(), 42),
+    (list(range(10, 100, 10)), None, 42),
     (None, np.linspace(0.05, 1, 20).tolist(), 1),
     (None, np.linspace(0.05, 1, 20).tolist(), RandomState(5))
 ], ids=["no_n_samples", "y_shape_n_outputs", "with_n_samples", "given_random_state_int", "given_random_state"])
 def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, n_samples, quantiles, random_state,
-                                                  request, result_path, baseline_path):
+                                                  request):
     if request.node.callspec.id == "y_shape_n_outputs":
         y_train = pd.get_dummies(pd.DataFrame(iris_data["y_train"]).astype(str))
         y_test = pd.get_dummies(pd.DataFrame(iris_data["y_test"]).astype(str))
@@ -129,9 +116,7 @@ def test_plot_metric_growth_per_labeled_instances(iris_data, classifiers, n_samp
     # Assert that the y-axis label is correct
     assert ax.get_ylabel() == "Metric score"
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
 def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles(iris_data, classifiers):
@@ -143,19 +128,19 @@ def test_plot_metric_growth_per_labeled_instances_no_n_samples_no_quantiles(iris
         )
 
 
-def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifiers, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_metric_growth_per_labeled_instances_exists_ax(iris_data, classifiers):
     fig, ax = plt.subplots()
     ax.set_title("My ax")
     plot_metric_growth_per_labeled_instances(
         iris_data["x_train"], iris_data["y_train"],
         iris_data["x_test"], iris_data["y_test"],
-        classifiers, ax=ax
+        classifiers, ax=ax, random_state=42
     )
-    plt.savefig(str(result_path))
 
     assert ax.get_title() == "My ax"
 
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
 def test_plot_metric_growth_per_labeled_instances_verbose(iris_data, classifiers, capsys):
@@ -170,14 +155,14 @@ def test_plot_metric_growth_per_labeled_instances_verbose(iris_data, classifiers
     assert captured == expected
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("display_breakdown, bins, threshold", [
     (False, None, 0.5),
     (True, None, 0.5),
     (False, [0, 0.3, 0.5, 0.8, 1], 0.5),
     (False, None, 0.3)
 ], ids=["default", "with_breakdown", "custom_bins", "custom_threshold"])
-def test_visualize_accuracy_grouped_by_probability(display_breakdown, bins, threshold, result_path,
-                                                   baseline_path):
+def test_visualize_accuracy_grouped_by_probability(display_breakdown, bins, threshold):
     class_with_probabilities = pd.read_csv(Path(__file__).parent.joinpath("resources", "class_with_probabilities.csv"))
     ax = visualize_accuracy_grouped_by_probability(
         class_with_probabilities["loan_condition_cat"], 1,
@@ -194,13 +179,13 @@ def test_visualize_accuracy_grouped_by_probability(display_breakdown, bins, thre
     # Assert that the title is correct
     assert ax.get_title() == "Accuracy Distribution for 1 Class"
 
-    plt.gcf().set_size_inches(10, 8)
-    plt.savefig(str(result_path))
+    figure = plt.gcf()
+    figure.set_size_inches(10, 8)
+    return figure
 
-    compare_images_from_paths(str(baseline_path), str(result_path))
 
-
-def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_accuracy_grouped_by_probability_exists_ax():
     fig, ax = plt.subplots()
     ax.set_title("My ax")
 
@@ -212,10 +197,9 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax(baseline_path, resu
 
     assert ax.get_title() == "My ax"
 
-    plt.gcf().set_size_inches(10, 8)
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    figure = plt.gcf()
+    figure.set_size_inches(10, 8)
+    return figure
 
 
 @pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
