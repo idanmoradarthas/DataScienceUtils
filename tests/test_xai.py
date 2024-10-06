@@ -103,7 +103,7 @@ def setup_teardown():
     (None, "def tree(petal width (cm), petal length (cm)):")
 ], ids=["default", "no_tree_name"])
 def test_print_decision_paths(tree_name, expected_name, decision_tree_generate_decision_paths):
-    with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
+    with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(decision_tree_generate_decision_paths,
                                          ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
                                           'petal width (cm)'],
@@ -135,7 +135,7 @@ def test_print_decision_paths(tree_name, expected_name, decision_tree_generate_d
 
 
 def test_print_decision_paths_no_feature_names(decision_tree_generate_decision_paths):
-    with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
+    with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(decision_tree_generate_decision_paths, None,
                                          ['setosa', 'versicolor', 'virginica'], "iris_tree", "  ")
 
@@ -163,7 +163,7 @@ def test_print_decision_paths_no_feature_names(decision_tree_generate_decision_p
 
 
 def test_print_decision_paths_no_class_names(decision_tree_generate_decision_paths):
-    with pytest.warns(DeprecationWarning, match="This module is deprecated. sklearn.tree.export_text instead"):
+    with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(decision_tree_generate_decision_paths,
                                          ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
                                           'petal width (cm)'],
