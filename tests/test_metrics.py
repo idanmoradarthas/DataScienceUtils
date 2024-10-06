@@ -17,7 +17,7 @@ from ds_utils.metrics import (
     plot_roc_curve_with_thresholds_annotations, plot_precision_recall_curve_with_thresholds_annotations
 )
 
-BASELINE_DIR = Path(__file__).parent.joinpath("baseline_images", "test_metrics")
+BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_metrics"
 
 
 @pytest.fixture

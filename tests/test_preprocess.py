@@ -12,19 +12,9 @@ from ds_utils.preprocess import (
     visualize_feature,
     get_correlated_features
 )
-from tests.utils import compare_images_from_paths
 
-RESOURCES_PATH = Path(__file__).parents[0].joinpath("resources")
-
-
-@pytest.fixture
-def baseline_path(request):
-    return Path(__file__).parent.joinpath("baseline_images", "test_preprocess", f"{request.node.name}.png")
-
-
-@pytest.fixture
-def result_path(request):
-    return Path(__file__).parent.joinpath("result_images", "test_preprocess", f"{request.node.name}.png")
+RESOURCES_PATH = Path(__file__).parent / "resources"
+BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_preprocess"
 
 
 @pytest.fixture()
@@ -50,16 +40,12 @@ def setup_teardown():
     plt.close(plt.gcf())
 
 
-Path(__file__).parents[0].absolute().joinpath("result_images").mkdir(exist_ok=True)
-Path(__file__).parents[0].absolute().joinpath("result_images").joinpath("test_preprocess").mkdir(
-    exist_ok=True)
-
-
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("feature",
                          ["emp_length_int", "issue_d", "loan_condition_cat", "income_category", "home_ownership",
                           "purpose"],
                          ids=["float", "datetime", "int", "object", "category", "category_more_than_10_categories"])
-def test_visualize_feature(loan_data, feature, request, baseline_path, result_path):
+def test_visualize_feature(loan_data, feature, request):
     """Test visualize_feature function for different feature types."""
     visualize_feature(loan_data[feature])
 
@@ -68,35 +54,32 @@ def test_visualize_feature(loan_data, feature, request, baseline_path, result_pa
     elif request.node.callspec.id == "category_more_than_10_categories":
         plt.gcf().set_size_inches(11, 11)
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_visualize_feature_float_exist_ax(loan_data, baseline_path, result_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_float_exist_ax(loan_data):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     visualize_feature(loan_data["emp_length_int"], ax=ax)
 
     assert ax.get_title() == "My ax"
-    plt.gcf().set_size_inches(10, 8)
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    fig.set_size_inches(10, 8)
+    return fig
 
 
-def test_visualize_feature_bool(loan_data, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_bool(loan_data):
     """Test visualize_feature function for boolean data."""
     loan_dup = pd.DataFrame()
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: term == " 36 months").astype("bool")
     visualize_feature(loan_dup["term 36 months"])
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-def test_visualize_feature_remove_na(loan_data, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_remove_na(loan_data):
     """Test visualize_feature function with NA values removed."""
     loan_data_dup = pd.concat([
         loan_data[["emp_length_int"]],
@@ -104,28 +87,27 @@ def test_visualize_feature_remove_na(loan_data, baseline_path, result_path):
     ], ignore_index=True).sample(frac=1, random_state=0)
 
     visualize_feature(loan_data_dup["emp_length_int"], remove_na=True)
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
-def test_visualize_correlations(data_1m, use_existing_ax, baseline_path, result_path):
+def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
     if use_existing_ax:
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.set_title("My ax")
         visualize_correlations(data_1m, ax=ax)
         assert ax.get_title() == "My ax"
     else:
         visualize_correlations(data_1m)
 
-    plt.gcf().set_size_inches(14, 9)
-    plt.savefig(str(result_path))
+    fig = plt.gcf()
+    fig.set_size_inches(14, 9)
+    return fig
 
-    compare_images_from_paths(str(baseline_path), str(result_path))
 
-
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("feature1, feature2, data_fixture", [
     ("x4", "x5", "data_1m"),
     ("x1", "x7", "data_1m"),
@@ -142,8 +124,7 @@ def test_visualize_correlations(data_1m, use_existing_ax, baseline_path, result_
 ], ids=["both_numeric", "numeric_categorical", "numeric_categorical_reverse", "numeric_boolean", "both_categorical",
         "categorical_bool", "datetime_numeric", "datetime_numeric_reverse", "datetime_datetime", "datetime_categorical",
         "datetime_categorical_reverse", "both_bool"])
-def test_plot_relationship_between_features(feature1, feature2, data_fixture, request, baseline_path,
-                                            result_path):
+def test_plot_relationship_between_features(feature1, feature2, data_fixture, request):
     """Test plot_features_interaction function for various feature combinations."""
     data = request.getfixturevalue(data_fixture)
     plot_features_interaction(feature1, feature2, data)
@@ -159,41 +140,38 @@ def test_plot_relationship_between_features(feature1, feature2, data_fixture, re
     elif request.node.callspec.id in ["datetime_categorical", "datetime_categorical_reverse"]:
         plt.gcf().set_size_inches(10, 11.5)
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
-@pytest.mark.parametrize("test_case", ["default", "reverse"], ids=["default", "reverse"])
-def test_plot_relationship_between_features_datetime_bool(loan_data, test_case, baseline_path, result_path):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("feature1, feature2",
+                         [("issue_d", "loan_condition_cat"), ("loan_condition_cat", "issue_d")],
+                         ids=["default", "reverse"])
+def test_plot_relationship_between_features_datetime_bool(loan_data, feature1, feature2):
     df = pd.DataFrame()
     df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
     df["issue_d"] = loan_data["issue_d"]
 
-    if test_case == "default":
-        plot_features_interaction("issue_d", "loan_condition_cat", df)
-    else:
-        plot_features_interaction("loan_condition_cat", "issue_d", df)
+    plot_features_interaction(feature1, feature2, df)
 
-    plt.gcf().set_size_inches(10, 11.5)
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    fig = plt.gcf()
+    fig.set_size_inches(10, 11.5)
+    return fig
 
 
-def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m, baseline_path, result_path):
-    _, ax = plt.subplots()
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
+    fig, ax = plt.subplots()
     ax.set_title("My ax")
 
     plot_features_interaction("x4", "x5", data_1m, ax=ax)
     assert ax.get_title() == "My ax"
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return fig
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
-def test_plot_correlation_dendrogram(data_1m, use_existing_ax, baseline_path, result_path):
+def test_plot_correlation_dendrogram(data_1m, use_existing_ax):
     """Test plot_correlation_dendrogram function with and without existing axes."""
     if use_existing_ax:
         _, ax = plt.subplots()
@@ -203,9 +181,7 @@ def test_plot_correlation_dendrogram(data_1m, use_existing_ax, baseline_path, re
     else:
         plot_correlation_dendrogram(data_1m)
 
-    plt.savefig(str(result_path))
-
-    compare_images_from_paths(str(baseline_path), str(result_path))
+    return plt.gcf()
 
 
 def test_get_correlated_features():

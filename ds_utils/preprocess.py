@@ -37,7 +37,7 @@ def visualize_feature(
         sns.histplot(feature_series, ax=ax, kde=True, **kwargs)
         labels = ax.get_xticks()
     elif pd.api.types.is_datetime64_any_dtype(feature_series):
-        feature_series.value_counts().plot(kind="line", ax=ax, **kwargs)
+        feature_series.value_counts().sort_index().plot(kind="line", ax=ax, **kwargs)
         labels = ax.get_xticks()
     else:
         sns.countplot(x=_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)

@@ -40,7 +40,7 @@ Float
 -----
 A distribution plot is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[float].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float.png
     :align: center
     :alt: Visualize Feature Float
 
@@ -48,7 +48,7 @@ Datetime Series
 ---------------
 A line plot is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[datetime].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_datetime.png
     :align: center
     :alt: Visualize Feature Datetime Series
 
@@ -61,7 +61,7 @@ Categorical / Object:
 If the categorical / object feature has more than 10 unique values, the 10 most common values are shown, and
 the others are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[category_more_than_10_categories].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_category_more_than_10_categories.png
     :align: center
     :alt: Visualize Feature Categorical
 
@@ -73,7 +73,7 @@ Boolean:
 
 Integer:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature[int].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_int.png
     :align: center
     :alt: Visualize Feature Integer
 
@@ -175,7 +175,7 @@ Here's how to use the code::
 
 The following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_correlations[default].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_correlations_default.png
     :align: center
     :alt: Features Correlations
 
@@ -209,7 +209,7 @@ Here's how to use the code::
 
 The following image will be shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram[default].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram_default.png
     :align: center
     :alt: Plot Correlation Dendrogram
 
@@ -246,7 +246,7 @@ Both Features are Numeric
 -------------------------
 A scatter plot of the shared distribution is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_numeric].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_numeric.png
     :align: center
     :alt: Both Features are Numeric
 
@@ -256,13 +256,13 @@ If one feature is numeric and the other is either an ``object``, a ``category``,
 plot is shown. The plot displays the distribution of the numeric feature for each unique value of the categorical feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown, and
 the others are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_categorical].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_categorical.png
     :align: center
     :alt: Numeric and Categorical
 
 Here is an example for a boolean feature plot:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[numeric_boolean].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_boolean.png
     :align: center
     :alt: Numeric and Boolean
 
@@ -271,7 +271,7 @@ Both Features are Categorical
 A shared histogram will be shown. If one or both features have more than 10 unique values, then the 10 most common
 values are shown, and the others are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[both_categorical].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_categorical.png
     :align: center
     :alt: Both Features are Categorical
 
@@ -279,7 +279,7 @@ One Feature is Datetime Series and the Other is Numeric or Datetime Series
 --------------------------------------------------------------------------
 A line plot where the datetime series is on the x-axis is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_numeric].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_numeric.png
     :align: center
     :alt: One Feature is Datetime Series and the other is Numeric or Datetime Series
 
@@ -290,13 +290,13 @@ violin plot is shown. A violin plot is a combination of a boxplot and a kernel d
 has more than 10 unique values, then the 10 most common values are shown, and the others are labeled "Other Values". The
 datetime series will be on the x-axis:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features[datetime_categorical].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_categorical.png
     :align: center
     :alt: Datetime Series and Categorical
 
 Here is an example for a boolean feature plot:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool[default].png
+.. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool_default.png
     :align: center
     :alt: Datetime Series and Boolean
 
