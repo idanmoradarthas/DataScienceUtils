@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Dict, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -19,21 +20,21 @@ from ds_utils.metrics import (
 
 BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_metrics"
 RESULT_DIR = Path(__file__).parent / "result_images" / "test_metrics"
+RESOURCES_DIR = Path(__file__).parent / "resources"
 
 
 @pytest.fixture
-def iris_data():
-    base_path = Path(__file__).parent.joinpath("resources")
+def iris_data() -> Dict[str, np.ndarray]:
+    """Load and return iris dataset splits."""
     return {
-        "x_train": pd.read_csv(base_path.joinpath("iris_x_train.csv")).values,
-        "x_test": pd.read_csv(base_path.joinpath("iris_x_test.csv")).values,
-        "y_train": pd.read_csv(base_path.joinpath("iris_y_train.csv")).values,
-        "y_test": pd.read_csv(base_path.joinpath("iris_y_test.csv")).values
+        key: pd.read_csv(RESOURCES_DIR / f"iris_{key}.csv").values
+        for key in ["x_train", "x_test", "y_train", "y_test"]
     }
 
 
 @pytest.fixture
-def classifiers():
+def classifiers() -> Dict[str, Union[DecisionTreeClassifier, RandomForestClassifier]]:
+    """Create and return classifier instances."""
     return {
         "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
         "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
@@ -41,28 +42,27 @@ def classifiers():
 
 
 @pytest.fixture
-def plotly_models_dict():
-    with Path(__file__).parent.joinpath("resources", "plotly_models.json").open("r") as file:
+def plotly_models_dict() -> Dict[str, Any]:
+    """Load plotly models data from JSON file."""
+    with (RESOURCES_DIR / "plotly_models.json").open("r") as file:
         return json.load(file)
 
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
+    """Setup and teardown for tests."""
     RESULT_DIR.mkdir(exist_ok=True, parents=True)
     yield
-    plt.cla()
-    plt.close(plt.gcf())
+    plt.close("all")  # Close all figures instead of just current
 
 
 def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) -> plt.Figure:
+    """Save plotly figure and convert to matplotlib figure for comparison."""
     fig.write_image(str(path_to_save))
-
-    # Load the saved image and use Matplotlib for pytest-mpl
     img = plt.imread(path_to_save)
     figure, ax = plt.subplots()
     ax.imshow(img)
-    ax.axis("off")  # Hide the axes for a clean comparison
-
+    ax.axis("off")
     return figure
 
 
@@ -244,7 +244,7 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
         add_random_classifier_line=add_random_classifier_line
     )
 
-    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR.joinpath(f"{request.node.name}.png"))
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
@@ -278,7 +278,7 @@ def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, request
         fig=fig
     )
 
-    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR.joinpath(f"{request.node.name}.png"))
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 @pytest.mark.parametrize("plotly_graph_method", [plot_roc_curve_with_thresholds_annotations,
@@ -346,7 +346,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request
         add_random_classifier_line=add_random_classifier_line
     )
 
-    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR.joinpath(f"{request.node.name}.png"))
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
@@ -372,7 +372,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
         fig=fig
     )
 
-    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR.joinpath(f"{request.node.name}.png"))
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocker, plotly_models_dict):
