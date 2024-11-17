@@ -3,3 +3,4 @@ pytest-mock==3.10.0
 pytest-cov==4.1.0
 pytest-xdist==3.5.0
 pytest-mpl==0.17.0
+kaleido==0.4.1

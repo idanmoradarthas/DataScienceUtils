@@ -350,6 +350,8 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, add_ran
         add_random_classifier_line=add_random_classifier_line
     )
 
+    fig.write_image("figure.png")
+
     assert fig.layout.showlegend
     assert fig.layout.xaxis.title.text == 'Recall'
     assert fig.layout.yaxis.title.text == 'Precision'
