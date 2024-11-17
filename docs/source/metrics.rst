@@ -270,7 +270,7 @@ The `positive_label=1` parameter specifies which class should be considered as t
 
 And the following interactive graph will be shown:
 
-.. image:: images/test_plot_roc_curve_with_thresholds_annotations.png
+.. image:: ../../tests/baseline_images/test_metrics/test_plot_roc_curve_with_thresholds_annotations_default.png
     :align: center
     :alt: Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 
@@ -321,6 +321,6 @@ Similar to the ROC curve example, the `positive_label=1` parameter here specifie
 
 And the following interactive graph will be shown:
 
-.. image:: images/test_plot_precision_recall_curve_with_thresholds_annotations.png
+.. image:: ../../tests/baseline_images/test_metrics/test_plot_precision_recall_curve_with_thresholds_annotations_default.png
     :align: center
     :alt: Precision-Recall Curve with Probabilities (Thresholds) Annotations
