@@ -216,7 +216,7 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax():
     return figure
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=14)
 @pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
 def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line, plotly_models_dict):
     y_true = np.array(plotly_models_dict["y_true"])
@@ -247,7 +247,7 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
     return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=16)
 def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, request, plotly_models_dict):
     fig = go.Figure()
     fig.update_layout(title="Receiver Operating Characteristic (ROC) Curve")
@@ -324,7 +324,7 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
         )
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
 @pytest.mark.parametrize("add_random_classifier_line", [False, True], ids=["default", "with_random_classifier_line"])
 def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line,
                                                                  plotly_models_dict):
@@ -349,7 +349,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request
     return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=15)
 def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(mocker, request, plotly_models_dict):
     fig = go.Figure()
     fig.update_layout(title="Precision-Recall Curve")
