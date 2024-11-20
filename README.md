@@ -106,7 +106,7 @@ fig = plot_roc_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/docs/source/images/test_plot_roc_curve_with_thresholds_annotations.png)
+![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_roc_curve_with_thresholds_annotations_default.png)
 
 ### Precision-Recall Curve with Probabilities (Thresholds) Annotations
 
@@ -128,7 +128,7 @@ fig = plot_precision_recall_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/docs/source/images/test_plot_precision_recall_curve_with_thresholds_annotations.png)
+![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
 
 ## Preprocess
 
