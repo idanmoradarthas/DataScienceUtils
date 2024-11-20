@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Dict, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -18,21 +19,22 @@ from ds_utils.metrics import (
 )
 
 BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_metrics"
+RESULT_DIR = Path(__file__).parent / "result_images" / "test_metrics"
+RESOURCES_DIR = Path(__file__).parent / "resources"
 
 
 @pytest.fixture
-def iris_data():
-    base_path = Path(__file__).parent.joinpath("resources")
+def iris_data() -> Dict[str, np.ndarray]:
+    """Load and return iris dataset splits."""
     return {
-        "x_train": pd.read_csv(base_path.joinpath("iris_x_train.csv")).values,
-        "x_test": pd.read_csv(base_path.joinpath("iris_x_test.csv")).values,
-        "y_train": pd.read_csv(base_path.joinpath("iris_y_train.csv")).values,
-        "y_test": pd.read_csv(base_path.joinpath("iris_y_test.csv")).values
+        key: pd.read_csv(RESOURCES_DIR / f"iris_{key}.csv").values
+        for key in ["x_train", "x_test", "y_train", "y_test"]
     }
 
 
 @pytest.fixture
-def classifiers():
+def classifiers() -> Dict[str, Union[DecisionTreeClassifier, RandomForestClassifier]]:
+    """Create and return classifier instances."""
     return {
         "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
         "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
@@ -40,16 +42,28 @@ def classifiers():
 
 
 @pytest.fixture
-def plotly_models_dict():
-    with Path(__file__).parent.joinpath("resources", "plotly_models.json").open("r") as file:
+def plotly_models_dict() -> Dict[str, Any]:
+    """Load plotly models data from JSON file."""
+    with (RESOURCES_DIR / "plotly_models.json").open("r") as file:
         return json.load(file)
 
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
+    """Setup and teardown for tests."""
+    RESULT_DIR.mkdir(exist_ok=True, parents=True)
     yield
-    plt.cla()
-    plt.close(plt.gcf())
+    plt.close("all")  # Close all figures instead of just current
+
+
+def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) -> plt.Figure:
+    """Save plotly figure and convert to matplotlib figure for comparison."""
+    fig.write_image(str(path_to_save))
+    img = plt.imread(path_to_save)
+    figure, ax = plt.subplots()
+    ax.imshow(img)
+    ax.axis("off")
+    return figure
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
@@ -202,8 +216,9 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax():
     return figure
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=14)
 @pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
-def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifier_line, plotly_models_dict):
+def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line, plotly_models_dict):
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
                                          if name != "y_true"}
@@ -229,31 +244,11 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, add_random_classifie
         add_random_classifier_line=add_random_classifier_line
     )
 
-    # fig.write_image(str(result_path))
-    #
-    # compare_images_from_paths(str(baseline_path), str(result_path))
-    # Due to the fact that kaleido package freezes the test suite in GitHub Actions I added assertions to try and test
-    # whatever I can without writing the image
-    # See issue: https://github.com/plotly/Kaleido/issues/205
-
-    assert fig.layout.showlegend
-    assert fig.layout.xaxis.title.text == 'False Positive Rate'
-    assert fig.layout.yaxis.title.text == 'True Positive Rate'
-    assert not fig.layout.title.text
-    assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
-    # Check if the random classifier line is present when it should be
-    random_classifier_traces = [trace for trace in fig.data if trace.name == "Random Classifier"]
-    assert len(random_classifier_traces) == (1 if add_random_classifier_line else 0)
-    # Check if all classifiers are present in the plot
-    for classifier_name in classifiers_names_and_scores_dict.keys():
-        assert any(classifier_name in trace.name for trace in fig.data)
-        # Check if AUC scores are present in the legend
-        for trace in fig.data:
-            if trace.name != "Random Classifier":
-                assert "AUC =" in trace.name
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
-def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, plotly_models_dict):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=16)
+def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, request, plotly_models_dict):
     fig = go.Figure()
     fig.update_layout(title="Receiver Operating Characteristic (ROC) Curve")
 
@@ -283,7 +278,7 @@ def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, plotly_
         fig=fig
     )
 
-    assert fig.layout.title.text == "Receiver Operating Characteristic (ROC) Curve"
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 @pytest.mark.parametrize("plotly_graph_method", [plot_roc_curve_with_thresholds_annotations,
@@ -329,8 +324,9 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
         )
 
 
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
 @pytest.mark.parametrize("add_random_classifier_line", [False, True], ids=["default", "with_random_classifier_line"])
-def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, add_random_classifier_line,
+def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line,
                                                                  plotly_models_dict):
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items()
@@ -350,20 +346,11 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, add_ran
         add_random_classifier_line=add_random_classifier_line
     )
 
-    assert fig.layout.showlegend
-    assert fig.layout.xaxis.title.text == 'Recall'
-    assert fig.layout.yaxis.title.text == 'Precision'
-    assert not fig.layout.title.text
-    assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
-    # Check if the random classifier line is present when it should be
-    random_classifier_traces = [trace for trace in fig.data if trace.name == "Random Classifier"]
-    assert len(random_classifier_traces) == (1 if add_random_classifier_line else 0)
-    # Check if all classifiers are present in the plot
-    for classifier_name in classifiers_names_and_scores_dict.keys():
-        assert any(classifier_name in trace.name for trace in fig.data)
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
-def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(mocker, plotly_models_dict):
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=15)
+def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(mocker, request, plotly_models_dict):
     fig = go.Figure()
     fig.update_layout(title="Precision-Recall Curve")
 
@@ -385,7 +372,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
         fig=fig
     )
 
-    assert fig.layout.title.text == "Precision-Recall Curve"
+    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
 def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocker, plotly_models_dict):

@@ -29,9 +29,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install graphviz
-      - name: Install graphviz binaries for Windows (${{ runner.arch }})
+      - name: Install graphviz binaries & Chromium for Windows (${{ runner.arch }})
         if: runner.os == 'Windows'
-        run: choco install graphviz
+        run: |
+          choco install graphviz
+          choco install chromium
       - name: Install graphviz binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
         run: brew install graphviz
