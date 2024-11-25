@@ -14,22 +14,26 @@ for /f "delims=" %%v in ('python -c "import numpy; print(numpy.__version__)"') d
 )
 
 
-if not exist .\outputdir mkdir .\outputdir
-
-for %%v in (3.9 3.10 3.11 3.12) do (
-    call conda build --python %%v data-science-utils --numpy %numpy_version% --output-folder outputdir\
-)
-call conda build purge
-
-for %%v in (39 310 311 312) do (
-    call conda convert -f --platform all outputdir\win-64\data-science-utils-%version%-py%%v_0.tar.bz2 -o outputdir\
+:: Get available platforms from conda convert help
+:: First, find the line containing -p or --platform
+for /f "tokens=1,* delims={}" %%a in ('conda convert --help ^| findstr /C:"-p {" /C:"--platform {"') do (
+    set "platforms_str=%%b"
 )
 
+:: Remove trailing text after } to get clean platform list
+for /f "tokens=1 delims=}" %%a in ("%platforms_str%") do (
+    set "platforms_str=%%a"
+)
+
+:: Login to Anaconda
 anaconda login --username IdanMorad
 
+:: Upload packages for all Python versions and platforms
 for %%v in (39 310 311 312) do (
-    for %%i in (linux-32 linux-64 linux-aarch64 linux-armv6l linux-armv7l linux-ppc64le osx-64 win-32 win-64) do (
-        call anaconda upload outputdir/%%i/data-science-utils-%version%-py%%v_0.tar.bz2
+    for %%p in (%platforms_str%) do (
+        if not "%%p"=="all" (
+            call anaconda upload outputdir/%%p/data-science-utils-%version%-py%%v_0.tar.bz2
+        )
     )
 )
 
