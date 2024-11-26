@@ -287,5 +287,19 @@ def test_plot_features_importance_exists_ax(importance, features):
 
 
 def test_plot_features_importance_mismatched_lengths():
+    """
+    Test that ValueError is raised for mismatched feature and importance lengths.
+    """
     with pytest.raises(ValueError, match="feature_names and feature_importance must have the same length"):
         plot_features_importance(['feature1', 'feature2'], [0.5, 0.3, 0.2])
+
+
+def test_plot_features_importance_invalid_input_dimensions():
+    """
+    Test that ValueError is raised for multidimensional inputs.
+    """
+    with pytest.raises(ValueError, match="feature_names and feature_importance must be 1-dimensional"):
+        plot_features_importance(
+            np.array([['f1', 'f2'], ['f3', 'f4']]),
+            np.array([[0.5, 0.3], [0.2, 0.1]])
+        )

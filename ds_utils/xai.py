@@ -1,7 +1,7 @@
 import os
 import warnings
 from io import StringIO, BytesIO
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import numpy as np
 import pydotplus
@@ -135,8 +135,8 @@ def draw_dot_data(
 
 
 def plot_features_importance(
-        feature_names: List[str],
-        feature_importance: List[float],
+        feature_names: Union[np.ndarray, List[str]],
+        feature_importance: Union[np.ndarray, List[float]],
         *,
         ax: Optional[axes.Axes] = None,
         **kwargs
@@ -144,24 +144,41 @@ def plot_features_importance(
     """
     Plot feature importance as a bar chart.
 
-    :param feature_names: List of feature names
-    :param feature_importance: List of feature importance values
+    :param feature_names: Numpy array or list of feature names of shape (n_features,)
+    :param feature_importance:  Numpy array or list of feature importance values of shape (n_features,)
     :param ax: Axes object to draw the plot onto, otherwise uses the current Axes
     :param kwargs: Additional keyword arguments passed to matplotlib.axes.Axes.bar()
     :return: Axes object with the plot drawn onto it
-    :raises ValueError: If feature_names and feature_importance have different lengths
+    :raises ValueError: If feature_names and feature_importance have different lengths or invalid input
     """
+    # Convert inputs to numpy arrays if they aren't already
+    names = np.asarray(feature_names)
+    importance = np.asarray(feature_importance)
+
+    # Validate input
+    if names.ndim != 1 or importance.ndim != 1:
+        raise ValueError("feature_names and feature_importance must be 1-dimensional")
+
     if len(feature_names) != len(feature_importance):
         raise ValueError("feature_names and feature_importance must have the same length")
 
     if ax is None:
         _, ax = plt.subplots()
 
-    names = np.array(feature_names)
-    importance = np.array(feature_importance)
-    non_zero_importance = np.nonzero(importance)
+    # Filter out zero importance features
+    mask = importance > 0
+    filtered_names = names[mask]
+    filtered_importance = importance[mask]
 
-    ax.bar(names[non_zero_importance], importance[non_zero_importance], **kwargs)
+    # Sort features by importance in descending order
+    sorted_indices = np.argsort(filtered_importance)[::-1]
+    sorted_names = filtered_names[sorted_indices]
+    sorted_importance = filtered_importance[sorted_indices]
+
+    ax.bar(sorted_names, sorted_importance, **kwargs)
+    ax.set_ylabel('Importance')
+    if not ax.get_title():
+        ax.set_title('Feature Importance')
     plt.xticks(rotation=90)
 
     return ax
