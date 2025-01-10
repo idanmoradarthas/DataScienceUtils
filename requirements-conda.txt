@@ -1,5 +1,5 @@
-conda-build==24.9.0
-anaconda-client==1.12.3
+conda-build==24.11.2
+anaconda-client==1.13.0
 m2-patch==2.7.5
 conda-verify==3.4.2
 ripgrep==14.1.0
