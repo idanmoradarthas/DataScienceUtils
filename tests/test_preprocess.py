@@ -3,9 +3,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-from ds_utils.math import safe_percentile
 from matplotlib import pyplot as plt
 
+from ds_utils.math_utils import safe_percentile
 from ds_utils.preprocess import (
     visualize_correlations,
     plot_features_interaction,
