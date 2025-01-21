@@ -34,12 +34,12 @@ jobs:
         run: |
           choco install graphviz
           choco install chromium
-      - name: Install graphviz binaries for macOS (${{ runner.arch }})
+      - name: Install graphviz & other dependencies binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
-        run: brew install graphviz
+        run: brew install graphviz libjpeg zlib chromium google-chrome
       - name: Run tox (install test dependencies)
         # Run tox using the version of Python in `PATH`
-        run: tox -e py -p auto --parallel-live
+        run: tox -e py
       - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
