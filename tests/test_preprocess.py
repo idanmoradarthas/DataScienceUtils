@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from ds_utils.math import safe_percentile
 from matplotlib import pyplot as plt
 
 from ds_utils.preprocess import (
@@ -10,7 +11,8 @@ from ds_utils.preprocess import (
     plot_features_interaction,
     plot_correlation_dendrogram,
     visualize_feature,
-    get_correlated_features
+    get_correlated_features,
+    extract_statistics_dataframe_per_label
 )
 
 RESOURCES_PATH = Path(__file__).parent / "resources"
@@ -32,6 +34,15 @@ def data_1m():
 def daily_min_temperatures():
     return pd.read_csv(RESOURCES_PATH.joinpath("daily-min-temperatures.csv"), parse_dates=["Date"])
 
+
+@pytest.fixture
+def sample_df() -> pd.DataFrame:
+    """Create a sample DataFrame for testing."""
+    return pd.DataFrame({
+        'value': [1.0, 2.0, 3.0, 4.0, 5.0, np.nan, 7.0, 8.0, 9.0, 10.0],
+        'category': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C', 'C'],
+        'text_col': ['x', 'y', 'z', 'x', 'y', 'z', 'x', 'y', 'z', 'x']
+    })
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
@@ -218,3 +229,48 @@ def test_get_correlated_features_empty_result():
     correlation_expected = pd.DataFrame(
         columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
     pd.testing.assert_frame_equal(correlation_expected, correlation)
+
+
+def assert_series_called_with(mock_calls, expected_series, percentile):
+    """Helper function to check if a pandas Series was called with specific values."""
+    for args, _ in mock_calls:
+        series, p = args
+        if (p == percentile and
+                isinstance(series, pd.Series) and
+                series.equals(expected_series)):
+            return True
+    return False
+
+
+def test_extract_statistics_dataframe_per_label_basic_functionality(sample_df, mocker):
+    """Test basic functionality and verify safe_percentile calls."""
+    mock_safe_percentile = mocker.patch('ds_utils.preprocess.safe_percentile', wraps=safe_percentile)
+
+    result = extract_statistics_dataframe_per_label(sample_df, 'value', 'category')
+
+    # Check if all expected columns are present
+    expected_columns = [
+        'count', 'null_count', 'mean', 'min', '1_percentile', '5_percentile',
+        '25_percentile', 'median', '75_percentile', '95_percentile', '99_percentile'
+    ]
+    assert all(col in result.columns for col in expected_columns)
+
+    # Verify safe_percentile was called correct number of times with right arguments
+    assert mock_safe_percentile.call_count == 18  # 6 percentiles * 3 categories
+
+    # Verify some specific calls
+    expected_series_a = pd.Series([1.0, 2.0, 3.0])
+    assert assert_series_called_with(mock_safe_percentile.call_args_list,
+                                     expected_series_a, 1)  # Category A, 1st percentile
+    assert assert_series_called_with(mock_safe_percentile.call_args_list,
+                                     expected_series_a, 99)  # Category A, 99th percentile
+
+
+@pytest.mark.parametrize("feature_name, label_name, exception, message", [
+    ('invalid_col', 'category', KeyError, "Feature column 'invalid_col' not found"),
+    ('value', 'invalid_col', KeyError, "Label column 'invalid_col' not found"),
+    ('text_col', 'category', TypeError, "Feature column 'text_col' must be numeric")
+], ids=["test_invalid_feature_name", "test_invalid_label_name", "test_non_numeric_feature"])
+def test_extract_statistics_dataframe_per_label_exceptions(sample_df, feature_name, label_name, exception, message):
+    with pytest.raises(exception, match=message):
+        extract_statistics_dataframe_per_label(sample_df, feature_name, label_name)

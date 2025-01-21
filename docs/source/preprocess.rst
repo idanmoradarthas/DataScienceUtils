@@ -339,3 +339,18 @@ Choosing the Right Visualization
 - Use `plot_features_interaction` to deep dive into the relationship between specific feature pairs.
 
 By combining these visualizations, you can gain a comprehensive understanding of your dataset's structure, which is crucial for effective data preprocessing, feature engineering, and model selection.
+
+**************************************
+Extract Statistics DataFrame per Label
+**************************************
+
+.. autofunction:: preprocess::extract_statistics_dataframe_per_label
+
+Code Example
+============
+See the following code example of usage::
+
+    import pandas as pd
+
+    from ds_utils.preprocess import extract_statistics_dataframe_per_label
+

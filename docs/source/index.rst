@@ -10,6 +10,7 @@ visualizations for data science projects.
    :caption: Contents:
 
    installation
+   math_utils
    metrics
    preprocess
    strings
