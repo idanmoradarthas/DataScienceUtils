@@ -29,6 +29,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install graphviz
+          sudo apt-get -y install chromium-browser chromium-chromedriver
+          sudo apt-get -y install libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev
       - name: Install graphviz binaries & Chromium for Windows (${{ runner.arch }})
         if: runner.os == 'Windows'
         run: |
