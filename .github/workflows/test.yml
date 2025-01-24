@@ -29,16 +29,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install graphviz
-          sudo apt-get -y install chromium-browser chromium-chromedriver
-          sudo apt-get -y install libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev
       - name: Install graphviz binaries & Chromium for Windows (${{ runner.arch }})
         if: runner.os == 'Windows'
         run: |
           choco install graphviz
           choco install chromium
-      - name: Install graphviz & other dependencies binaries for macOS (${{ runner.arch }})
+      - name: Install graphviz binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
-        run: brew install graphviz libjpeg zlib chromium google-chrome
+        run: brew install graphviz
       - name: Run tox (install test dependencies)
         # Run tox using the version of Python in `PATH`
         run: tox -e py

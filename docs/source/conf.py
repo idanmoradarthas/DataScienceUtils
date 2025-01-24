@@ -58,8 +58,8 @@ html_theme = 'sphinx_rtd_theme'
 
 master_doc = 'index'
 
-html_context = {
-    "display_version": True,
-    "current_version": "stable",
-    "version_slug": "stable",
-}
+# html_context = {
+#     "display_version": True,
+#     "current_version": "stable",
+#     "version_slug": "stable",
+# }
