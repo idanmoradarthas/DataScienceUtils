@@ -365,8 +365,8 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request
     )
 
     assert fig.layout.showlegend
-    assert fig.layout.xaxis.title.text == 'False Positive Rate'
-    assert fig.layout.yaxis.title.text == 'True Positive Rate'
+    assert fig.layout.xaxis.title.text == 'Recall'
+    assert fig.layout.yaxis.title.text == 'Precision'
     assert not fig.layout.title.text
     assert len(fig.data) == len(classifiers_names_and_scores_dict) + (1 if add_random_classifier_line else 0)
     # Check if the random classifier line is present when it should be
@@ -406,7 +406,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
         fig=fig
     )
 
-    assert fig.layout.title.text == "Receiver Operating Characteristic (ROC) Curve"
+    assert fig.layout.title.text == "Precision-Recall Curve"
 
     # return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
