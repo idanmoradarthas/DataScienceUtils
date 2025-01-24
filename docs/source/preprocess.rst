@@ -339,3 +339,69 @@ Choosing the Right Visualization
 - Use `plot_features_interaction` to deep dive into the relationship between specific feature pairs.
 
 By combining these visualizations, you can gain a comprehensive understanding of your dataset's structure, which is crucial for effective data preprocessing, feature engineering, and model selection.
+
+**************************************
+Extract Statistics DataFrame per Label
+**************************************
+This method calculates comprehensive statistical metrics for numerical features grouped by label values. Use this when you want to:
+
+- Analyze how a numerical feature's distribution varies across different categories
+- Detect potential patterns or anomalies in feature behavior per group
+- Generate detailed statistical summaries for reporting or analysis
+- Understand the relationship between features and target variables
+
+.. autofunction:: preprocess::extract_statistics_dataframe_per_label
+
+Code Example
+============
+Here's how to use the method to analyze numerical features across different categories::
+
+    import pandas as pd
+    from ds_utils.preprocess import extract_statistics_dataframe_per_label
+
+    # Load your dataset
+    df = pd.DataFrame({
+        'amount': [100, 200, 150, 300, 250, 175],
+        'category': ['A', 'A', 'B', 'B', 'C', 'C']
+    })
+
+    # Calculate statistics for amount grouped by category
+    stats = extract_statistics_dataframe_per_label(
+        df=df,
+        feature_name='amount',
+        label_name='category'
+    )
+    print(stats)
+
+The output will be a DataFrame containing the following statistics for each category:
+
++----------+-------+-----------+--------+------+-------------+-------------+--------------+--------+--------------+--------------+--------------+
+|category  |count  |null_count |mean    |min   |1_percentile |5_percentile |25_percentile |median  |75_percentile |95_percentile |99_percentile |
++==========+=======+===========+========+======+=============+=============+==============+========+==============+==============+==============+
+|A         |2      |0         |150.0   |100   |100.0        |100.0        |100.0         |150.0   |200.0         |200.0         |200.0         |
++----------+-------+-----------+--------+------+-------------+-------------+--------------+--------+--------------+--------------+--------------+
+|B         |2      |0         |225.0   |150   |150.0        |150.0        |150.0         |225.0   |300.0         |300.0         |300.0         |
++----------+-------+-----------+--------+------+-------------+-------------+--------------+--------+--------------+--------------+--------------+
+|C         |2      |0         |212.5   |175   |175.0        |175.0        |175.0         |212.5   |250.0         |250.0         |250.0         |
++----------+-------+-----------+--------+------+-------------+-------------+--------------+--------+--------------+--------------+--------------+
+
+The statistics include:
+
+- count: Number of non-null observations
+- null_count: Number of null values
+- mean: Average value
+- min: Minimum value
+- 1_percentile: 1st percentile
+- 5_percentile: 5th percentile
+- 25_percentile: 25th percentile (first quartile)
+- median: 50th percentile
+- 75_percentile: 75th percentile (third quartile)
+- 95_percentile: 95th percentile
+- 99_percentile: 99th percentile
+
+This comprehensive set of statistics helps in understanding the distribution of numerical features across different categories, which can be valuable for:
+
+- Identifying outliers within specific groups
+- Understanding data skewness per category
+- Detecting potential data quality issues
+- Making informed decisions about feature engineering strategies

@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, axes, dates, ticker
-from scipy.cluster import hierarchy
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import squareform
+
+from ds_utils.math_utils import safe_percentile
 
 
 def visualize_feature(
@@ -152,10 +155,10 @@ def plot_correlation_dendrogram(
         _, ax = plt.subplots()
 
     corr = _calc_correlations(data, correlation_method, min_periods)
-    corr_condensed = hierarchy.distance.squareform(1 - corr)
-    z = hierarchy.linkage(corr_condensed, method=cluster_distance_method)
+    corr_condensed = squareform(1 - corr)
+    z = linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    hierarchy.dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
+    dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
     return ax
 
 
@@ -303,3 +306,79 @@ def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
 @plt.FuncFormatter
 def _convert_numbers_to_dates(x, pos):
     return dates.num2date(x).strftime('%Y-%m-%d %H:%M')
+
+
+def extract_statistics_dataframe_per_label(
+        df: pd.DataFrame,
+        feature_name: str,
+        label_name: str
+) -> pd.DataFrame:
+    """
+    Calculate comprehensive statistical metrics for a specified feature grouped by label.
+
+    This method computes various statistical measures for a given numerical feature, broken down by unique
+    values in the specified label column. The statistics include count, null count,
+    mean, standard deviation, min/max values and multiple percentiles.
+
+    :param df: Input pandas DataFrame containing the data
+    :param feature_name: Name of the column to calculate statistics on
+    :param label_name: Name of the column to group by
+    :return: DataFrame with statistical metrics for each unique label value, with columns:
+            - count: Number of non-null observations
+            - null_count: Number of null values
+            - mean: Average value
+            - min: Minimum value
+            - 1_percentile: 1st percentile
+            - 5_percentile: 5th percentile
+            - 25_percentile: 25th percentile
+            - median: 50th percentile
+            - 75_percentile: 75th percentile
+            - 95_percentile: 95th percentile
+            - 99_percentile: 99th percentile
+
+    :raises KeyError: If feature_name or label_name not found in DataFrame
+    :raises TypeError: If feature_name column is not numeric
+    """
+    if feature_name not in df.columns:
+        raise KeyError(f"Feature column '{feature_name}' not found in DataFrame")
+    if label_name not in df.columns:
+        raise KeyError(f"Label column '{label_name}' not found in DataFrame")
+    if not pd.api.types.is_numeric_dtype(df[feature_name]):
+        raise TypeError(f"Feature column '{feature_name}' must be numeric")
+
+        # Define percentile functions with consistent naming
+
+    def percentile_1(x):
+        return safe_percentile(x, 1)
+
+    def percentile_5(x):
+        return safe_percentile(x, 5)
+
+    def percentile_25(x):
+        return safe_percentile(x, 25)
+
+    def percentile_75(x):
+        return safe_percentile(x, 75)
+
+    def percentile_95(x):
+        return safe_percentile(x, 95)
+
+    def percentile_99(x):
+        return safe_percentile(x, 99)
+
+    return df.groupby(
+        [label_name],
+        observed=True
+    )[feature_name].agg([
+        ("count", "count"),
+        ("null_count", lambda x: x.isnull().sum()),
+        ("mean", "mean"),
+        ("min", "min"),
+        ("1_percentile", percentile_1),
+        ("5_percentile", percentile_5),
+        ("25_percentile", percentile_25),
+        ("median", "median"),
+        ("75_percentile", percentile_75),
+        ("95_percentile", percentile_95),
+        ("99_percentile", percentile_99),
+    ])
