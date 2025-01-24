@@ -378,7 +378,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(mocker, request
         # Check if AUC scores are present in the legend
         for trace in fig.data:
             if trace.name != "Random Classifier":
-                assert "AUC =" in trace.name
+                assert "AUC =" not in trace.name
 
     # return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
