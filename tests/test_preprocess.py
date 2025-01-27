@@ -197,8 +197,8 @@ def test_plot_correlation_dendrogram(data_1m, use_existing_ax):
 
 def test_get_correlated_features():
     """Test get_correlated_features function."""
-    data_frame = pd.read_csv(RESOURCES_PATH.joinpath("loan_final313_small.csv"))
-    correlation = get_correlated_features(data_frame, data_frame.columns.drop("loan_condition_cat").tolist(),
+    correlations = pd.read_feather(RESOURCES_PATH.joinpath("loan_final313_small_corr.feather"))
+    correlation = get_correlated_features(correlations, correlations.columns.drop("loan_condition_cat").tolist(),
                                           "loan_condition_cat", 0.95)
     correlation_expected = pd.DataFrame([
         {'level_0': 'income_category_Low', 'level_1': 'income_category_Medium',
@@ -218,10 +218,10 @@ def test_get_correlated_features():
 
 def test_get_correlated_features_empty_result():
     """Test get_correlated_features function with an empty result."""
-    data_frame = pd.read_csv(RESOURCES_PATH.joinpath("clothing_classification_train.csv"))
+    correlations = pd.read_feather(RESOURCES_PATH.joinpath("clothing_classification_train_corr.feather"))
     expected_warning = "Correlation threshold 0.95 was too high. An empty frame was returned"
     with pytest.warns(UserWarning, match=expected_warning):
-        correlation = get_correlated_features(data_frame,
+        correlation = get_correlated_features(correlations,
                                               ["Clothing ID", "Age", "Title", "Review Text", "Rating",
                                                "Recommended IND", "Positive Feedback Count", "Division Name",
                                                "Department Name"],

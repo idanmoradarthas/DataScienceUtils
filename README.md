@@ -162,7 +162,7 @@ to the target feature.
 ```python
 from ds_utils.preprocess import get_correlated_features
 
-correlations = get_correlated_features(train, features, target)
+correlations = get_correlated_features(correlation_matrix, features, target)
 ```
 
 | level_0                | level_1                | level_0_level_1_corr | level_0_target_corr | level_1_target_corr |

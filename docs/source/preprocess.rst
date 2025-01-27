@@ -128,10 +128,10 @@ Here's how to use the code::
     import pandas as pd
     from ds_utils.preprocess import get_correlated_features
 
-    loan_frame = pd.read_csv('path/to/dataset', encoding="latin1", nrows=30)
+    loan_frame = pd.get_dummies(pd.read_csv('path/to/dataset', encoding="latin1", nrows=30))
     target = "loan_condition_cat"
     features = loan_frame.columns.drop(["loan_condition_cat", "issue_d", "application_type"]).tolist()
-    correlations = get_correlated_features(pd.get_dummies(loan_frame), features, target)
+    correlations = get_correlated_features(loan_frame.corr(), features, target)
     print(correlations)
 
 The following table will be the output:

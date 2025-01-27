@@ -65,26 +65,21 @@ def _calc_correlations(data, method, min_periods):
 
 
 def get_correlated_features(
-        data_frame: pd.DataFrame,
+        correlations: pd.DataFrame,
         features: List[str],
         target_feature: str,
-        threshold: float = 0.95,
-        method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1
+        threshold: float = 0.95
 ) -> pd.DataFrame:
     """
     Calculate features correlated above a threshold and extract a DataFrame with correlations and correlation
     to the target feature.
 
-    :param data_frame: The input DataFrame.
+    :param correlations: The correlation matrix.
     :param features: List of feature names to analyze.
     :param target_feature: Name of the target feature.
     :param threshold: Correlation threshold (default 0.95).
-    :param method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
     :return: DataFrame with correlations and correlation to the target feature.
     """
-    correlations = _calc_correlations(data_frame[features + [target_feature]], method, min_periods)
     target_corr = correlations[target_feature]
     features_corr = correlations.loc[features, features]
     corr_matrix = features_corr.where(np.triu(np.ones(features_corr.shape), k=1).astype(bool))
