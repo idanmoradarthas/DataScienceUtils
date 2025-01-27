@@ -138,7 +138,7 @@ def test_visualize_correlations(data_1m, use_existing_ax):
 def test_plot_relationship_between_features(feature1, feature2, data_fixture, request):
     """Test plot_features_interaction function for various feature combinations."""
     data = request.getfixturevalue(data_fixture)
-    plot_features_interaction(feature1, feature2, data)
+    plot_features_interaction(data, feature1, feature2)
 
     if request.node.callspec.id in ["numeric_categorical", "numeric_categorical_reverse"]:
         plt.gcf().set_size_inches(14, 9)
@@ -163,7 +163,7 @@ def test_plot_relationship_between_features_datetime_bool(loan_data, feature1, f
     df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
     df["issue_d"] = loan_data["issue_d"]
 
-    plot_features_interaction(feature1, feature2, df)
+    plot_features_interaction(df, feature1, feature2)
 
     fig = plt.gcf()
     fig.set_size_inches(10, 11.5)
@@ -175,7 +175,7 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
     fig, ax = plt.subplots()
     ax.set_title("My ax")
 
-    plot_features_interaction("x4", "x5", data_1m, ax=ax)
+    plot_features_interaction(data_1m, "x4", "x5", ax=ax)
     assert ax.get_title() == "My ax"
     return fig
 

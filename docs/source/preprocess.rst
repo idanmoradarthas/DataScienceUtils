@@ -237,7 +237,7 @@ Here's how to use the code::
     from ds_utils.preprocess import plot_features_interaction
 
     data_1M = pd.read_csv('path/to/dataset')
-    plot_features_interaction("x7", "x10", data_1M)
+    plot_features_interaction(data_1M, "x7", "x10")
     plt.show()
 
 For each different combination of feature types, a different plot will be shown:

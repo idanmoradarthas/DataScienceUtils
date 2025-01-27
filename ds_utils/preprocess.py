@@ -158,19 +158,18 @@ def plot_correlation_dendrogram(
 
 
 def plot_features_interaction(
+        data: pd.DataFrame,
         feature_1: str,
         feature_2: str,
-        data: pd.DataFrame,
         *,
         ax: Optional[axes.Axes] = None,
-        **kwargs
-) -> axes.Axes:
+        **kwargs) -> axes.Axes:
     """
     Plot the joint distribution between two features.
 
+    :param data: The input DataFrame, where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
-    :param data: The input DataFrame, where each feature is a column.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the underlying plotting function.
     :return: The Axes object with the plot drawn onto it.

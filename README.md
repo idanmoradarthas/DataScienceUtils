@@ -212,7 +212,7 @@ Plots the joint distribution between two features:
 ```python
 from ds_utils.preprocess import plot_features_interaction
 
-plot_features_interaction("feature_1", "feature_2", data)
+plot_features_interaction(data, "feature_1", "feature_2")
 ```
 
 |                 | Numeric                                                                                                                                                                              | Categorical                                                                                                                                                                           | Boolean                                                                                                                                                                                | Datetime                                                                                                                                                                           |
