@@ -335,6 +335,7 @@ def extract_statistics_dataframe_per_label(
             - 75_percentile: 75th percentile
             - 95_percentile: 95th percentile
             - 99_percentile: 99th percentile
+            - max: Maximum value
 
     :raises KeyError: If feature_name or label_name not found in DataFrame
     :raises TypeError: If feature_name column is not numeric
@@ -346,7 +347,7 @@ def extract_statistics_dataframe_per_label(
     if not pd.api.types.is_numeric_dtype(df[feature_name]):
         raise TypeError(f"Feature column '{feature_name}' must be numeric")
 
-        # Define percentile functions with consistent naming
+    # Define percentile functions with consistent naming
 
     def percentile_1(x):
         return safe_percentile(x, 1)
@@ -381,4 +382,5 @@ def extract_statistics_dataframe_per_label(
         ("75_percentile", percentile_75),
         ("95_percentile", percentile_95),
         ("99_percentile", percentile_99),
+        ("max", "max")
     ])

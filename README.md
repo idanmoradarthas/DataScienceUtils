@@ -222,6 +222,32 @@ plot_features_interaction("feature_1", "feature_2", data)
 | **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_boolean.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_categorical_bool.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_bool.png)             |                                                                                                                                                                                    |
 | **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_numeric.png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool_default.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_datetime.png) |
 
+### Extract Statistics DataFrame per Label
+
+This method calculates comprehensive statistical metrics for numerical features grouped by label values. Use this when
+you want to:
+
+- Analyze how a numerical feature's distribution varies across different categories
+- Detect potential patterns or anomalies in feature behavior per group
+- Generate detailed statistical summaries for reporting or analysis
+- Understand the relationship between features and target variables
+
+```python
+from ds_utils.preprocess import extract_statistics_dataframe_per_label
+
+extract_statistics_dataframe_per_label(
+    df=df,
+    feature_name='amount',
+    label_name='category'
+)
+```
+
+| category | count | null_count | mean  | min | 1_percentile | 5_percentile | 25_percentile | median | 75_percentile | 95_percentile | 99_percentile | max   |
+|----------|-------|------------|-------|-----|--------------|--------------|---------------|--------|---------------|---------------|---------------|-------|
+| A        | 2     | 0          | 150.0 | 100 | 100.0        | 100.0        | 100.0         | 150.0  | 200.0         | 200.0         | 200.0         | 200.0 |
+| B        | 2     | 0          | 225.0 | 150 | 150.0        | 150.0        | 150.0         | 225.0  | 300.0         | 300.0         | 300.0         | 300.0 |
+| C        | 2     | 0          | 212.5 | 175 | 175.0        | 175.0        | 175.0         | 212.5  | 250.0         | 250.0         | 250.0         | 250.0 |
+
 ## Strings
 
 ### Append Tags to Frame
