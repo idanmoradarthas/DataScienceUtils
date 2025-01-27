@@ -251,7 +251,7 @@ def test_extract_statistics_dataframe_per_label_basic_functionality(sample_df, m
     # Check if all expected columns are present
     expected_columns = [
         'count', 'null_count', 'mean', 'min', '1_percentile', '5_percentile',
-        '25_percentile', 'median', '75_percentile', '95_percentile', '99_percentile'
+        '25_percentile', 'median', '75_percentile', '95_percentile', '99_percentile', 'max'
     ]
     assert all(col in result.columns for col in expected_columns)
 
