@@ -65,7 +65,7 @@ def _calc_correlations(data, method, min_periods):
 
 
 def get_correlated_features(
-        correlations: pd.DataFrame,
+        correlation_matrix: pd.DataFrame,
         features: List[str],
         target_feature: str,
         threshold: float = 0.95
@@ -74,14 +74,14 @@ def get_correlated_features(
     Calculate features correlated above a threshold and extract a DataFrame with correlations and correlation
     to the target feature.
 
-    :param correlations: The correlation matrix.
+    :param correlation_matrix: The correlation matrix.
     :param features: List of feature names to analyze.
     :param target_feature: Name of the target feature.
     :param threshold: Correlation threshold (default 0.95).
     :return: DataFrame with correlations and correlation to the target feature.
     """
-    target_corr = correlations[target_feature]
-    features_corr = correlations.loc[features, features]
+    target_corr = correlation_matrix[target_feature]
+    features_corr = correlation_matrix.loc[features, features]
     corr_matrix = features_corr.where(np.triu(np.ones(features_corr.shape), k=1).astype(bool))
     corr_matrix = corr_matrix[~np.isnan(corr_matrix)].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
@@ -98,7 +98,7 @@ def get_correlated_features(
 
 
 def visualize_correlations(
-        corr: pd.DataFrame,
+        correlation_matrix: pd.DataFrame,
         *,
         ax: Optional[axes.Axes] = None,
         **kwargs
@@ -107,7 +107,7 @@ def visualize_correlations(
     Compute and visualize pairwise correlations of columns, excluding NA/null values.
     `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
-    :param corr: The correlation matrix.
+    :param correlation_matrix: The correlation matrix.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
     :return: The Axes object with the plot drawn onto it.
@@ -115,8 +115,8 @@ def visualize_correlations(
     if ax is None:
         _, ax = plt.subplots()
 
-    mask = np.triu(np.ones_like(corr, dtype=bool))
-    sns.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
+    mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
+    sns.heatmap(correlation_matrix, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
 
 
