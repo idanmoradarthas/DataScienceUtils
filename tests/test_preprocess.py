@@ -105,13 +105,14 @@ def test_visualize_feature_remove_na(loan_data):
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
+    corr = data_1m.apply(lambda x: x.factorize()[0]).corr(method="pearson", min_periods=1)
     if use_existing_ax:
         _, ax = plt.subplots()
         ax.set_title("My ax")
-        visualize_correlations(data_1m, ax=ax)
+        visualize_correlations(corr, ax=ax)
         assert ax.get_title() == "My ax"
     else:
-        visualize_correlations(data_1m)
+        visualize_correlations(corr)
 
     fig = plt.gcf()
     fig.set_size_inches(14, 9)

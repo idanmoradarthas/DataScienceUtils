@@ -98,9 +98,7 @@ def get_correlated_features(
 
 
 def visualize_correlations(
-        data: pd.DataFrame,
-        method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1,
+        corr: pd.DataFrame,
         *,
         ax: Optional[axes.Axes] = None,
         **kwargs
@@ -109,9 +107,7 @@ def visualize_correlations(
     Compute and visualize pairwise correlations of columns, excluding NA/null values.
     `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
-    :param data: The input DataFrame, where each feature is a column.
-    :param method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
+    :param corr: The correlation matrix.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
     :return: The Axes object with the plot drawn onto it.
@@ -119,7 +115,6 @@ def visualize_correlations(
     if ax is None:
         _, ax = plt.subplots()
 
-    corr = _calc_correlations(data, method, min_periods)
     mask = np.triu(np.ones_like(corr, dtype=bool))
     sns.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
