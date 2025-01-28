@@ -179,7 +179,7 @@ Compute pairwise correlation of columns, excluding NA/null values, and visualize
 ```python
 from ds_utils.preprocess import visualize_correlations
 
-visualize_correlations(data)
+visualize_correlations(correlation_matrix)
 ```
 
 ![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations_default.png)
