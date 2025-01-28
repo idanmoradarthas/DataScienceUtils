@@ -60,33 +60,24 @@ def visualize_feature(
     return ax
 
 
-def _calc_correlations(data, method, min_periods):
-    return data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
-
-
 def get_correlated_features(
-        data_frame: pd.DataFrame,
+        correlation_matrix: pd.DataFrame,
         features: List[str],
         target_feature: str,
-        threshold: float = 0.95,
-        method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1
+        threshold: float = 0.95
 ) -> pd.DataFrame:
     """
     Calculate features correlated above a threshold and extract a DataFrame with correlations and correlation
     to the target feature.
 
-    :param data_frame: The input DataFrame.
+    :param correlation_matrix: The correlation matrix.
     :param features: List of feature names to analyze.
     :param target_feature: Name of the target feature.
     :param threshold: Correlation threshold (default 0.95).
-    :param method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
     :return: DataFrame with correlations and correlation to the target feature.
     """
-    correlations = _calc_correlations(data_frame[features + [target_feature]], method, min_periods)
-    target_corr = correlations[target_feature]
-    features_corr = correlations.loc[features, features]
+    target_corr = correlation_matrix[target_feature]
+    features_corr = correlation_matrix.loc[features, features]
     corr_matrix = features_corr.where(np.triu(np.ones(features_corr.shape), k=1).astype(bool))
     corr_matrix = corr_matrix[~np.isnan(corr_matrix)].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
@@ -103,9 +94,7 @@ def get_correlated_features(
 
 
 def visualize_correlations(
-        data: pd.DataFrame,
-        method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1,
+        correlation_matrix: pd.DataFrame,
         *,
         ax: Optional[axes.Axes] = None,
         **kwargs
@@ -114,9 +103,7 @@ def visualize_correlations(
     Compute and visualize pairwise correlations of columns, excluding NA/null values.
     `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
-    :param data: The input DataFrame, where each feature is a column.
-    :param method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
+    :param correlation_matrix: The correlation matrix.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
     :return: The Axes object with the plot drawn onto it.
@@ -124,16 +111,13 @@ def visualize_correlations(
     if ax is None:
         _, ax = plt.subplots()
 
-    corr = _calc_correlations(data, method, min_periods)
-    mask = np.triu(np.ones_like(corr, dtype=bool))
-    sns.heatmap(corr, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
+    mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
+    sns.heatmap(correlation_matrix, mask=mask, annot=True, fmt=".3f", ax=ax, **kwargs)
     return ax
 
 
 def plot_correlation_dendrogram(
-        data: pd.DataFrame,
-        correlation_method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1,
+        correlation_matrix: pd.DataFrame,
         cluster_distance_method: Union[str, Callable] = "average",
         *,
         ax: Optional[axes.Axes] = None,
@@ -143,10 +127,9 @@ def plot_correlation_dendrogram(
     Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
     `Original code <https://github.com/EthicalML/XAI>`_
 
-    :param data: The input DataFrame, where each feature is a column.
-    :param correlation_method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
+    :param correlation_matrix: The correlation matrix.
     :param cluster_distance_method: Method for calculating the distance between newly formed clusters.
+                                    `Read more here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the dendrogram function.
     :return: The Axes object with the plot drawn onto it.
@@ -154,28 +137,26 @@ def plot_correlation_dendrogram(
     if ax is None:
         _, ax = plt.subplots()
 
-    corr = _calc_correlations(data, correlation_method, min_periods)
-    corr_condensed = squareform(1 - corr)
+    corr_condensed = squareform(1 - correlation_matrix)
     z = linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
+    dendrogram(z, labels=correlation_matrix.columns.tolist(), orientation="left", ax=ax)
     return ax
 
 
 def plot_features_interaction(
+        data: pd.DataFrame,
         feature_1: str,
         feature_2: str,
-        data: pd.DataFrame,
         *,
         ax: Optional[axes.Axes] = None,
-        **kwargs
-) -> axes.Axes:
+        **kwargs) -> axes.Axes:
     """
     Plot the joint distribution between two features.
 
+    :param data: The input DataFrame, where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
-    :param data: The input DataFrame, where each feature is a column.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the underlying plotting function.
     :return: The Axes object with the plot drawn onto it.

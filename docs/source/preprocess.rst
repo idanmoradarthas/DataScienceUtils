@@ -128,10 +128,10 @@ Here's how to use the code::
     import pandas as pd
     from ds_utils.preprocess import get_correlated_features
 
-    loan_frame = pd.read_csv('path/to/dataset', encoding="latin1", nrows=30)
+    loan_frame = pd.get_dummies(pd.read_csv('path/to/dataset', encoding="latin1", nrows=30))
     target = "loan_condition_cat"
     features = loan_frame.columns.drop(["loan_condition_cat", "issue_d", "application_type"]).tolist()
-    correlations = get_correlated_features(pd.get_dummies(loan_frame), features, target)
+    correlations = get_correlated_features(loan_frame.corr(), features, target)
     print(correlations)
 
 The following table will be the output:
@@ -170,7 +170,7 @@ Here's how to use the code::
     from ds_utils.preprocess import visualize_correlations
 
     data_1M = pd.read_csv('path/to/dataset')
-    visualize_correlations(data_1M)
+    visualize_correlations(data_1M.corr())
     plt.show()
 
 The following image will be shown:
@@ -204,7 +204,7 @@ Here's how to use the code::
     from ds_utils.preprocess import plot_correlation_dendrogram
 
     data_1M = pd.read_csv('path/to/dataset')
-    plot_correlation_dendrogram(data_1M)
+    plot_correlation_dendrogram(data_1M.corr())
     plt.show()
 
 The following image will be shown:
@@ -237,7 +237,7 @@ Here's how to use the code::
     from ds_utils.preprocess import plot_features_interaction
 
     data_1M = pd.read_csv('path/to/dataset')
-    plot_features_interaction("x7", "x10", data_1M)
+    plot_features_interaction(data_1M, "x7", "x10")
     plt.show()
 
 For each different combination of feature types, a different plot will be shown:

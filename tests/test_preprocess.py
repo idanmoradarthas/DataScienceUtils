@@ -105,13 +105,14 @@ def test_visualize_feature_remove_na(loan_data):
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
+    corr = data_1m.apply(lambda x: x.factorize()[0]).corr(method="pearson", min_periods=1)
     if use_existing_ax:
         _, ax = plt.subplots()
         ax.set_title("My ax")
-        visualize_correlations(data_1m, ax=ax)
+        visualize_correlations(corr, ax=ax)
         assert ax.get_title() == "My ax"
     else:
-        visualize_correlations(data_1m)
+        visualize_correlations(corr)
 
     fig = plt.gcf()
     fig.set_size_inches(14, 9)
@@ -138,7 +139,7 @@ def test_visualize_correlations(data_1m, use_existing_ax):
 def test_plot_relationship_between_features(feature1, feature2, data_fixture, request):
     """Test plot_features_interaction function for various feature combinations."""
     data = request.getfixturevalue(data_fixture)
-    plot_features_interaction(feature1, feature2, data)
+    plot_features_interaction(data, feature1, feature2)
 
     if request.node.callspec.id in ["numeric_categorical", "numeric_categorical_reverse"]:
         plt.gcf().set_size_inches(14, 9)
@@ -163,7 +164,7 @@ def test_plot_relationship_between_features_datetime_bool(loan_data, feature1, f
     df["loan_condition_cat"] = loan_data["loan_condition_cat"].astype("bool")
     df["issue_d"] = loan_data["issue_d"]
 
-    plot_features_interaction(feature1, feature2, df)
+    plot_features_interaction(df, feature1, feature2)
 
     fig = plt.gcf()
     fig.set_size_inches(10, 11.5)
@@ -175,7 +176,7 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
     fig, ax = plt.subplots()
     ax.set_title("My ax")
 
-    plot_features_interaction("x4", "x5", data_1m, ax=ax)
+    plot_features_interaction(data_1m, "x4", "x5", ax=ax)
     assert ax.get_title() == "My ax"
     return fig
 
@@ -184,21 +185,22 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_plot_correlation_dendrogram(data_1m, use_existing_ax):
     """Test plot_correlation_dendrogram function with and without existing axes."""
+    corr = data_1m.apply(lambda x: x.factorize()[0]).corr(method="pearson", min_periods=1)
     if use_existing_ax:
         _, ax = plt.subplots()
         ax.set_title("My ax")
-        plot_correlation_dendrogram(data_1m, ax=ax)
+        plot_correlation_dendrogram(corr, ax=ax)
         assert ax.get_title() == "My ax"
     else:
-        plot_correlation_dendrogram(data_1m)
+        plot_correlation_dendrogram(corr)
 
     return plt.gcf()
 
 
 def test_get_correlated_features():
     """Test get_correlated_features function."""
-    data_frame = pd.read_csv(RESOURCES_PATH.joinpath("loan_final313_small.csv"))
-    correlation = get_correlated_features(data_frame, data_frame.columns.drop("loan_condition_cat").tolist(),
+    correlations = pd.read_feather(RESOURCES_PATH.joinpath("loan_final313_small_corr.feather"))
+    correlation = get_correlated_features(correlations, correlations.columns.drop("loan_condition_cat").tolist(),
                                           "loan_condition_cat", 0.95)
     correlation_expected = pd.DataFrame([
         {'level_0': 'income_category_Low', 'level_1': 'income_category_Medium',
@@ -218,10 +220,10 @@ def test_get_correlated_features():
 
 def test_get_correlated_features_empty_result():
     """Test get_correlated_features function with an empty result."""
-    data_frame = pd.read_csv(RESOURCES_PATH.joinpath("clothing_classification_train.csv"))
+    correlations = pd.read_feather(RESOURCES_PATH.joinpath("clothing_classification_train_corr.feather"))
     expected_warning = "Correlation threshold 0.95 was too high. An empty frame was returned"
     with pytest.warns(UserWarning, match=expected_warning):
-        correlation = get_correlated_features(data_frame,
+        correlation = get_correlated_features(correlations,
                                               ["Clothing ID", "Age", "Title", "Review Text", "Rating",
                                                "Recommended IND", "Positive Feedback Count", "Division Name",
                                                "Department Name"],

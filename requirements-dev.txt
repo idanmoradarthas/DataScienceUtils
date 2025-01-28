@@ -1,3 +1,4 @@
+pyarrow==17.0.0
 pytest==7.4.4
 pytest-mock==3.14.0
 pytest-cov==6.0.0

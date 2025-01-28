@@ -162,7 +162,7 @@ to the target feature.
 ```python
 from ds_utils.preprocess import get_correlated_features
 
-correlations = get_correlated_features(train, features, target)
+correlations = get_correlated_features(correlation_matrix, features, target)
 ```
 
 | level_0                | level_1                | level_0_level_1_corr | level_0_target_corr | level_1_target_corr |
@@ -179,7 +179,7 @@ Compute pairwise correlation of columns, excluding NA/null values, and visualize
 ```python
 from ds_utils.preprocess import visualize_correlations
 
-visualize_correlations(data)
+visualize_correlations(correlation_matrix)
 ```
 
 ![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations_default.png)
@@ -193,7 +193,7 @@ features are. [Original code](https://github.com/EthicalML/XAI)
 ```python
 from ds_utils.preprocess import plot_correlation_dendrogram
 
-plot_correlation_dendrogram(data)
+plot_correlation_dendrogram(correlation_matrix)
 ```
 
 ![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram_default.png)
@@ -212,7 +212,7 @@ Plots the joint distribution between two features:
 ```python
 from ds_utils.preprocess import plot_features_interaction
 
-plot_features_interaction("feature_1", "feature_2", data)
+plot_features_interaction(data, "feature_1", "feature_2")
 ```
 
 |                 | Numeric                                                                                                                                                                              | Categorical                                                                                                                                                                           | Boolean                                                                                                                                                                                | Datetime                                                                                                                                                                           |
