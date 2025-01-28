@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.8.1] -2025-01-08
+## [1.8.1] - 2025-01-08
 
 ### Added
 
