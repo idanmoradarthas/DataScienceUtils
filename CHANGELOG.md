@@ -1,6 +1,31 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] -2025-01-08
+
+### Added
+
+- **Statistics Functions**: Added `safe_percentile` and `extract_statistics_dataframe_per_label` methods, including
+  comprehensive tests and documentation.
+- **Correlation Removal**: Removed all correlation calculations from `get_correlated_features`,
+  `visualize_correlations`, and `plot_correlation_dendrogram`.
+- Added support for Github Actions in tox.
+
+### Changed
+
+- **Feature Importance Plot**: Updated to comply with scikit-learn conventions, improve type handling, and sort features
+  by importance in descending order.- Updated package versions in requirements files.
+- **API Change**: Changed the signature of `preprocess::plot_features_interaction`.
+- Improved documentation using Claude AI and updated README.md.
+
+### Fixed
+
+- Fixed imports for `plot_correlation_dendrogram`.
+- Fixed various test issues.
+- Fixed documentation inconsistencies.
+- Temporarily excluded kaleido from tests.
+- minor changes
+
 ## [1.8.0] - 2024-10-08
 
 ### Added

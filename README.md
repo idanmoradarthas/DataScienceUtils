@@ -19,7 +19,7 @@ visualizations for data science projects.
 **Let's explore some code examples and outputs.**
 
 **You can find the full documentation with all the code examples at:
-[https://datascienceutils.readthedocs.io/en/latest/](https://datascienceutils.readthedocs.io/en/latest/)**
+[https://datascienceutils.readthedocs.io/en/stable/](https://datascienceutils.readthedocs.io/en/stable/)**
 
 In the documentation, you can find more methods and additional examples.
 
