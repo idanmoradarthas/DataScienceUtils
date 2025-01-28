@@ -8,13 +8,15 @@ authors = [
 ]
 name = "data_science_utils"
 dynamic = ["version", "dependencies"]
-description = "This project is an ensemble of methods which are frequently used in python Data Science projects."
+description = "Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and visualizations for data science projects."
 license = { text = "MIT" }
 requires-python = ">=3.9"
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: tox",
+    "Framework :: Matplotlib",
+    "Framework :: Pytest",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
@@ -24,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities"
 ]
 keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib", "plotly"]
 
