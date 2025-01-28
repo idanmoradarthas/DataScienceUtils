@@ -129,6 +129,7 @@ def plot_correlation_dendrogram(
 
     :param correlation_matrix: The correlation matrix.
     :param cluster_distance_method: Method for calculating the distance between newly formed clusters.
+                                    `Read more here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the dendrogram function.
     :return: The Axes object with the plot drawn onto it.
