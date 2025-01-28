@@ -185,13 +185,14 @@ def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_plot_correlation_dendrogram(data_1m, use_existing_ax):
     """Test plot_correlation_dendrogram function with and without existing axes."""
+    corr = data_1m.apply(lambda x: x.factorize()[0]).corr(method="pearson", min_periods=1)
     if use_existing_ax:
         _, ax = plt.subplots()
         ax.set_title("My ax")
-        plot_correlation_dendrogram(data_1m, ax=ax)
+        plot_correlation_dendrogram(corr, ax=ax)
         assert ax.get_title() == "My ax"
     else:
-        plot_correlation_dendrogram(data_1m)
+        plot_correlation_dendrogram(corr)
 
     return plt.gcf()
 

@@ -60,10 +60,6 @@ def visualize_feature(
     return ax
 
 
-def _calc_correlations(data, method, min_periods):
-    return data.apply(lambda x: x.factorize()[0]).corr(method=method, min_periods=min_periods)
-
-
 def get_correlated_features(
         correlation_matrix: pd.DataFrame,
         features: List[str],
@@ -121,9 +117,7 @@ def visualize_correlations(
 
 
 def plot_correlation_dendrogram(
-        data: pd.DataFrame,
-        correlation_method: Union[str, Callable] = 'pearson',
-        min_periods: Optional[int] = 1,
+        correlation_matrix: pd.DataFrame,
         cluster_distance_method: Union[str, Callable] = "average",
         *,
         ax: Optional[axes.Axes] = None,
@@ -133,9 +127,7 @@ def plot_correlation_dendrogram(
     Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
     `Original code <https://github.com/EthicalML/XAI>`_
 
-    :param data: The input DataFrame, where each feature is a column.
-    :param correlation_method: Method of correlation: 'pearson', 'kendall', 'spearman', or a callable.
-    :param min_periods: Minimum number of observations required per a pair of columns for a valid result.
+    :param correlation_matrix: The correlation matrix.
     :param cluster_distance_method: Method for calculating the distance between newly formed clusters.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the dendrogram function.
@@ -144,11 +136,10 @@ def plot_correlation_dendrogram(
     if ax is None:
         _, ax = plt.subplots()
 
-    corr = _calc_correlations(data, correlation_method, min_periods)
-    corr_condensed = squareform(1 - corr)
+    corr_condensed = squareform(1 - correlation_matrix)
     z = linkage(corr_condensed, method=cluster_distance_method)
     ax.set(**kwargs)
-    dendrogram(z, labels=data.columns.tolist(), orientation="left", ax=ax)
+    dendrogram(z, labels=correlation_matrix.columns.tolist(), orientation="left", ax=ax)
     return ax
 
 

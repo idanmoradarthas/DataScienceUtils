@@ -204,7 +204,7 @@ Here's how to use the code::
     from ds_utils.preprocess import plot_correlation_dendrogram
 
     data_1M = pd.read_csv('path/to/dataset')
-    plot_correlation_dendrogram(data_1M)
+    plot_correlation_dendrogram(data_1M.corr())
     plt.show()
 
 The following image will be shown:

@@ -193,7 +193,7 @@ features are. [Original code](https://github.com/EthicalML/XAI)
 ```python
 from ds_utils.preprocess import plot_correlation_dendrogram
 
-plot_correlation_dendrogram(data)
+plot_correlation_dendrogram(correlation_matrix)
 ```
 
 ![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram_default.png)
