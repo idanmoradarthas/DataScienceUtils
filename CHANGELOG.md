@@ -14,7 +14,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Feature Importance Plot**: Updated to comply with scikit-learn conventions, improve type handling, and sort features
-  by importance in descending order.- Updated package versions in requirements files.
+  by importance in descending order.
+- Updated package versions in requirements files.
 - **API Change**: Changed the signature of `preprocess::plot_features_interaction`.
 - Improved documentation using Claude AI and updated README.md.
 
