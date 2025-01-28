@@ -170,7 +170,7 @@ Here's how to use the code::
     from ds_utils.preprocess import visualize_correlations
 
     data_1M = pd.read_csv('path/to/dataset')
-    visualize_correlations(data_1M)
+    visualize_correlations(data_1M.corr())
     plt.show()
 
 The following image will be shown:
