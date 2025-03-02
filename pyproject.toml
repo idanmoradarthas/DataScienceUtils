@@ -64,7 +64,6 @@ dependencies = [
     "pytest-mpl==0.17.0",
     "kaleido==0.4.1"
 ]
-python = "3.12"
 
 [tool.hatch.envs.test.env-vars]
 PYTHONPATH = "."
