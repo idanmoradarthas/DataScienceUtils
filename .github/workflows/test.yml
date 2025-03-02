@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install tox and coveralls
-        run: pip install tox tox-gh-actions coveralls
+      - name: Install hatch and coveralls
+        run: pip install hatch hatchling coveralls
       - name: Install graphviz binaries for Linux (${{ runner.arch }})
         if: runner.os == 'Linux'
         run: |
@@ -37,9 +37,10 @@ jobs:
       - name: Install graphviz binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
         run: brew install graphviz
-      - name: Run tox (install test dependencies)
-        # Run tox using the version of Python in `PATH`
-        run: tox -e py
+      - name: Run tests
+        run: |
+          python -m hatch env create test
+          python -m hatch run test:run
       - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
