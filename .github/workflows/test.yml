@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install tox and coveralls
-        run: pip install tox tox-gh-actions coveralls
+      - name: Install hatch and coveralls
+        run: pip install hatch hatchling coveralls
       - name: Install graphviz binaries for Linux (${{ runner.arch }})
         if: runner.os == 'Linux'
         run: |
