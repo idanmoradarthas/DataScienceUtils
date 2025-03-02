@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools==75.8.0", "wheel==0.45.1"]
-build-backend = "setuptools.build_meta"
+requires = ["hatch==1.14.0", "hatchling==1.27.0"]
+build-backend = "hatchling.build"
 
 [project]
 authors = [
     { name = "Idan Morad", email = "idanmorad.arthas@gmail.com" },
 ]
 name = "data_science_utils"
-dynamic = ["version", "dependencies"]
+dynamic = ["version"]
 description = "Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and visualizations for data science projects."
 license = { text = "MIT" }
 requires-python = ">=3.9"
@@ -29,6 +29,17 @@ classifiers = [
     "Topic :: Utilities"
 ]
 keywords = ["data-science", "utilities", "python", "machine-learning", "scikit-learn", "matplotlib", "plotly"]
+dependencies = [
+    "numpy>=1.26.3",
+    "scipy>=1.11.4",
+    "pandas>=2.1.4",
+    "matplotlib>=3.8.4",
+    "seaborn>=0.12.2",
+    "scikit-learn>=1.2.2",
+    "pydotplus>=2.0.2",
+    "joblib>=1.2.0",
+    "plotly>=5.24.1"
+]
 
 [project.urls]
 Homepage = "https://github.com/idanmoradarthas/DataScienceUtils"
@@ -37,9 +48,34 @@ Issues = "https://github.com/idanmoradarthas/DataScienceUtils/issues"
 Repository = "https://github.com/idanmoradarthas/DataScienceUtils.git"
 Changelog = "https://github.com/idanmoradarthas/DataScienceUtils/blob/master/CHANGELOG.md"
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["ds_utils"]
 
-[tool.setuptools.dynamic]
-version = { attr = "ds_utils.__version__" }
-dependencies = { file = ["requirements.txt"] }
+[tool.hatch.version]
+path = "ds_utils/__init__.py"
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pyarrow==19.0.1",
+    "pytest==8.3.5",
+    "pytest-mock==3.14.0",
+    "pytest-cov==6.0.0",
+    "pytest-xdist==3.6.1",
+    "pytest-mpl==0.17.0",
+    "kaleido==0.4.1"
+]
+python = "3.12"
+
+[tool.hatch.envs.test.env-vars]
+PYTHONPATH = "."
+OMP_NUM_THREADS = "1"
+DISPLAY = ":99"
+
+[tool.hatch.envs.test.scripts]
+run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=xml -n auto}"
+
+[tool.hatch.envs.dev]
+dependencies = [
+    "build==1.2.2",
+    "twine==6.1.0",
+]

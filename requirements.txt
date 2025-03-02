@@ -1,9 +1,0 @@
-numpy>=1.26.3
-scipy>=1.11.4
-pandas>=2.1.4
-matplotlib>=3.8.4
-seaborn>=0.12.2
-scikit-learn>=1.2.2
-pydotplus>=2.0.2
-joblib>=1.2.0
-plotly>=5.24.1
