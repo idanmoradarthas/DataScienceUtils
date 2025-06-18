@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatch==1.14.0", "hatchling==1.27.0"]
+requires = ["hatch==1.14.1", "hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -10,7 +10,7 @@ name = "data_science_utils"
 dynamic = ["version"]
 description = "Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and visualizations for data science projects."
 license = { text = "MIT" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -21,10 +21,10 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Utilities"
 ]
@@ -62,7 +62,7 @@ dependencies = [
     "pytest-cov==6.0.0",
     "pytest-xdist==3.6.1",
     "pytest-mpl==0.17.0",
-    "kaleido==0.4.1"
+    "kaleido==0.2.1"
 ]
 
 [tool.hatch.envs.test.env-vars]
@@ -75,6 +75,6 @@ run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=x
 
 [tool.hatch.envs.dev]
 dependencies = [
-    "build==1.2.2",
+    "build==1.2.2.post1",
     "twine==6.1.0",
 ]

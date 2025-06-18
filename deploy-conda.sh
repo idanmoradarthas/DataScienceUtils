@@ -10,13 +10,13 @@ numpy_version=$(python -c "import numpy; print(numpy.__version__)")
 mkdir -p ./outputdir
 
 # Build for different Python versions
-for pyver in 3.9 3.10 3.11 3.12; do
+for pyver in 3.10 3.11 3.12 3.13; do
     conda build --python $pyver data-science-utils --numpy $numpy_version --output-folder outputdir/ --package-format 1
 done
 conda build purge
 
 # Convert packages for all Python versions and platforms
-for pyver in 39 310 311 312; do
+for pyver in 310 311 312 313; do
     conda convert -f --platform all "outputdir/osx-arm64/data-science-utils-${version}-py${pyver}_0.tar.bz2" -o outputdir/
 done
 
@@ -27,7 +27,7 @@ platforms=$(conda convert --help | grep -E "(-p|--platform)" | grep -o "{.*}" | 
 anaconda login --username IdanMorad
 
 # Upload packages for all Python versions and platforms
-for pyver in 39 310 311 312; do
+for pyver in 310 311 312 313; do
     for platform in $platforms; do
         if [ "$platform" != "all" ]; then
             anaconda upload "outputdir/${platform}/data-science-utils-${version}-py${pyver}_0.tar.bz2"

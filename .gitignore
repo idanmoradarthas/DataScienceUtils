@@ -111,3 +111,4 @@ Temporary Items
 /tests/result_images/
 /outputdir/
 .pypirc
+.vscode

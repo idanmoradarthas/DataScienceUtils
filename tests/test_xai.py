@@ -62,6 +62,36 @@ def decision_tree_draw_tree(mocker):
     mock.get_depth.return_value = 5
     mock.get_n_leaves.return_value = 9
 
+    # Create a mock tags object with the required attributes
+    mock_tags = mocker.Mock()
+    mock_tags.requires_fit = True
+    mock_tags.requires_y = True
+    mock_tags.requires_positive_X = False
+    mock_tags.requires_positive_y = False
+    mock_tags.no_validation = False
+    mock_tags.poor_score = False
+    mock_tags.allow_nan = False
+    mock_tags.stateless = False
+    mock_tags.binary_only = False
+    mock_tags._xfail_checks = {}
+    mock_tags.multiclass_only = False
+    mock_tags.multilabel = False
+    mock_tags.multioutput_only = False
+    mock_tags.multioutput = False
+    mock_tags.pairwise = False
+    mock_tags.preserves_dtype = []
+    mock_tags.X_types = ['2darray']
+    mock_tags.y_types = ['1dlabels']
+    mock_tags.target_tags = ['multiclass']
+    mock_tags._estimator_type = "classifier"
+
+    # Add the __sklearn_tags__ method that returns the mock_tags object
+    mock.__sklearn_tags__ = mocker.Mock(return_value=mock_tags)
+
+    # Add some fitted attributes to make the estimator appear fitted
+    # mock.feature_importances_ = np.random.Generator(4)
+    mock.n_features_ = 4
+    
     return mock
 
 
