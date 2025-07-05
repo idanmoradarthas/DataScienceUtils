@@ -19,13 +19,13 @@ for /f "delims=" %%v in ('python -c "import numpy; print(numpy.__version__)"') d
 if not exist .\outputdir mkdir .\outputdir
 
 :: Build for different Python versions
-for %%v in (3.9 3.10 3.11 3.12) do (
+for %%v in (3.10 3.11 3.12 3.13) do (
     call conda build --python %%v data-science-utils --numpy %numpy_version% --output-folder outputdir\
 )
 call conda build purge
 
 :: Convert packages for all Python versions and platforms
-for %%v in (39 310 311 312) do (
+for %%v in (310 311 312 313) do (
     call conda convert -f --platform all outputdir\win-64\data-science-utils-%version%-py%%v_0.tar.bz2 -o outputdir\
 )
 
@@ -44,7 +44,7 @@ for /f "tokens=1 delims=}" %%a in ("%platforms_str%") do (
 anaconda login --username IdanMorad
 
 :: Upload packages for all Python versions and platforms
-for %%v in (39 310 311 312) do (
+for %%v in (310 311 312 313) do (
     for %%p in (%platforms_str%) do (
         if not "%%p"=="all" (
             call anaconda upload outputdir/%%p/data-science-utils-%version%-py%%v_0.tar.bz2
