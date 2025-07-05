@@ -21,10 +21,10 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Utilities"
 ]
@@ -57,12 +57,12 @@ path = "ds_utils/__init__.py"
 [tool.hatch.envs.test]
 dependencies = [
     "pyarrow==19.0.1",
-    "pytest==8.3.5",
+    "pytest==8.4.1",
     "pytest-mock==3.14.0",
     "pytest-cov==6.0.0",
     "pytest-xdist==3.6.1",
     "pytest-mpl==0.17.0",
-    "kaleido==0.4.1"
+    "kaleido==1.0.0"
 ]
 
 [tool.hatch.envs.test.env-vars]
@@ -75,6 +75,6 @@ run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=x
 
 [tool.hatch.envs.dev]
 dependencies = [
-    "build==1.2.2",
+    "build==1.2.2.post1",
     "twine==6.1.0",
 ]
