@@ -1,3 +1,4 @@
+"""Tests for mathematical utility functions."""
 import numpy as np
 import pandas as pd
 import pytest
@@ -32,17 +33,25 @@ def test_valid_array(sample_data):
     assert isinstance(safe_percentile(array, 50), np.floating)
 
 
-@pytest.mark.parametrize("x, expected",
-                         [
-                             (pd.Series([1.0, np.nan, 3.0, None, 5.0]), 3.0),
-                             (np.array([1.0, np.nan, 3.0, np.nan, 5.0]), 3.0),
-                             (pd.Series([np.nan, None, pd.NA]), None),
-                             (np.array([np.nan, np.nan, np.nan]), None),
-                             (pd.Series([]), None),
-                             (np.array([]), None)
-                         ],
-                         ids=["test_series_with_na", "test_array_with_nan", "test_all_na_series",
-                              "test_all_nan_array", "test_empty_series", "test_empty_array"])
+@pytest.mark.parametrize(
+    ("x", "expected"),
+    [
+        (pd.Series([1.0, np.nan, 3.0, None, 5.0]), 3.0),
+        (np.array([1.0, np.nan, 3.0, np.nan, 5.0]), 3.0),
+        (pd.Series([np.nan, None, pd.NA]), None),
+        (np.array([np.nan, np.nan, np.nan]), None),
+        (pd.Series([]), None),
+        (np.array([]), None),
+    ],
+    ids=[
+        "test_series_with_na",
+        "test_array_with_nan",
+        "test_all_na_series",
+        "test_all_nan_array",
+        "test_empty_series",
+        "test_empty_array",
+    ],
+)
 def test_with_na(x, expected):
     """Test percentile calculation with pandas Series containing NA values."""
     assert safe_percentile(x, 50) == expected
@@ -68,7 +77,9 @@ def test_invalid_input_types():
     ]
 
     for invalid_input in invalid_inputs:
-        with pytest.raises(TypeError, match="Input must be pandas Series or numpy array"):
+        with pytest.raises(
+            TypeError, match="Input must be pandas Series or numpy array"
+        ):
             safe_percentile(invalid_input, 50)
 
 

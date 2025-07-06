@@ -62,7 +62,8 @@ dependencies = [
     "pytest-cov==6.0.0",
     "pytest-xdist==3.6.1",
     "pytest-mpl==0.17.0",
-    "kaleido==1.0.0"
+    "kaleido==1.0.0",
+    "ruff==0.5.5"
 ]
 
 [tool.hatch.envs.test.env-vars]
@@ -72,9 +73,49 @@ DISPLAY = ":99"
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=xml -n auto}"
+ruff = "ruff {args:.}"
 
 [tool.hatch.envs.dev]
 dependencies = [
     "build==1.2.2.post1",
     "twine==6.1.0",
 ]
+
+[tool.ruff]
+line-length = 88
+# Assume Python 3.10 for now, can be made dynamic if needed or match project minimum.
+target-version = "py310"
+
+[tool.ruff.lint]
+# Extend Ruff's recommended rule set
+extend-select = [
+    "D",  # flake8-docstrings
+    "PT", # flake8-pytest-style
+]
+# Enable Pyflakes and pycodestyle rules by default.
+# For a full list of available rules, see:
+# https://docs.astral.sh/ruff/rules/
+select = ["E", "F", "W"] # Base set: pycodestyle errors, Pyflakes, pycodestyle warnings
+ignore = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+# Sort imports within sections alphabetically.
+# Ensure that from imports are grouped together.
+force-sort-within-sections = true
+# Combine as imports when sorting.
+combine-as-imports = true
+# Known first party imports (your project's modules)
+known-first-party = ["ds_utils", "tests"]
