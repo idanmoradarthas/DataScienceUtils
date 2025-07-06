@@ -73,7 +73,7 @@ DISPLAY = ":99"
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=xml -n auto}"
-ruff = "ruff {args:.}"
+ruff = "python -m ruff {args:.}"
 
 [tool.hatch.envs.dev]
 dependencies = [
