@@ -1,3 +1,4 @@
+"""Mathematical utility functions."""
 from typing import Union
 
 import numpy as np
@@ -6,16 +7,14 @@ from numpy.typing import NDArray
 
 
 def safe_percentile(
-        x: Union[pd.Series, NDArray[np.number]],
-        percentile: float
+    x: Union[pd.Series, NDArray[np.number]], percentile: float
 ) -> Union[None, np.floating]:
-    """
-    Calculate the percentile of an array, handling NA values.
+    """Calculate the percentile of an array, handling NA values.
 
     :param x: Input series or numeric numpy array with potentially nullable values.
     :param percentile: Percentile to calculate, must be between 0 and 100.
-    :return: Return None If no valid (non-NA) values are present; Otherwise Calculated percentile value.
-
+    :return: Return None If no valid (non-NA) values are present;
+        Otherwise Calculated percentile value.
     :raise ValueError: If percentile is not between 0 and 100.
     :raise TypeError: If input is not pandas Series or numpy array.
     """

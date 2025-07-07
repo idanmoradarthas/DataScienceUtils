@@ -1,3 +1,4 @@
+"""Data preprocessing utilities."""
 import warnings
 from typing import Optional, Union, Callable, List
 
@@ -12,23 +13,24 @@ from ds_utils.math_utils import safe_percentile
 
 
 def visualize_feature(
-        series: pd.Series,
-        remove_na: bool = False,
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs
+    series: pd.Series,
+    remove_na: bool = False,
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
-    """
-    Visualize a feature series:
+    """Visualize a feature series.
 
     * For float features, plot a distribution plot.
     * For datetime features, plot a line plot of progression over time.
-    * For object, categorical, boolean, or integer features, plot a count plot (histogram).
+    * For object, categorical, boolean, or integer features, plot a count plot
+      (histogram).
 
     :param series: The data series to visualize.
     :param remove_na: If True, ignore NA values when plotting; if False, include them.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
-    :param kwargs: Additional keyword arguments passed to the underlying plotting function.
+    :param kwargs: Additional keyword arguments passed to the underlying
+        plotting function.
     :return: The Axes object with the plot drawn onto it.
     """
     if ax is None:
@@ -52,7 +54,7 @@ def visualize_feature(
 
     ticks_loc = ax.get_xticks()
     ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    ax.set_xticklabels(labels, rotation=45, ha='right')
+    ax.set_xticklabels(labels, rotation=45, ha="right")
 
     if pd.api.types.is_datetime64_any_dtype(feature_series):
         ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
@@ -61,14 +63,14 @@ def visualize_feature(
 
 
 def get_correlated_features(
-        correlation_matrix: pd.DataFrame,
-        features: List[str],
-        target_feature: str,
-        threshold: float = 0.95
+    correlation_matrix: pd.DataFrame,
+    features: List[str],
+    target_feature: str,
+    threshold: float = 0.95,
 ) -> pd.DataFrame:
-    """
-    Calculate features correlated above a threshold and extract a DataFrame with correlations and correlation
-    to the target feature.
+    """Calculate features correlated above a threshold.
+
+    Extract a DataFrame with correlations and correlation to the target feature.
 
     :param correlation_matrix: The correlation matrix.
     :param features: List of feature names to analyze.
@@ -78,30 +80,44 @@ def get_correlated_features(
     """
     target_corr = correlation_matrix[target_feature]
     features_corr = correlation_matrix.loc[features, features]
-    corr_matrix = features_corr.where(np.triu(np.ones(features_corr.shape), k=1).astype(bool))
+    corr_matrix = features_corr.where(
+        np.triu(np.ones(features_corr.shape), k=1).astype(bool)
+    )
     corr_matrix = corr_matrix[~np.isnan(corr_matrix)].stack().reset_index()
     corr_matrix = corr_matrix[corr_matrix[0].abs() >= threshold]
 
     if corr_matrix.empty:
-        warnings.warn(f"Correlation threshold {threshold} was too high. An empty frame was returned", UserWarning)
+        warnings.warn(
+            (
+                f"Correlation threshold {threshold} was too high. "
+                "An empty frame was returned"
+            ),
+            UserWarning,
+        )
         return pd.DataFrame(
-            columns=['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr'])
+            columns=[
+                "level_0",
+                "level_1",
+                "level_0_level_1_corr",
+                "level_0_target_corr",
+                "level_1_target_corr",
+            ]
+        )
 
     corr_matrix["level_0_target_corr"] = target_corr[corr_matrix["level_0"]].values
     corr_matrix["level_1_target_corr"] = target_corr[corr_matrix["level_1"]].values
-    corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index(drop=True)
+    corr_matrix = corr_matrix.rename({0: "level_0_level_1_corr"}, axis=1).reset_index(
+        drop=True
+    )
     return corr_matrix
 
 
 def visualize_correlations(
-        correlation_matrix: pd.DataFrame,
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs
+    correlation_matrix: pd.DataFrame, *, ax: Optional[axes.Axes] = None, **kwargs
 ) -> axes.Axes:
-    """
-    Compute and visualize pairwise correlations of columns, excluding NA/null values.
-    `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
+    """Compute and visualize pairwise correlations of columns, excluding NA/null values.
+
+    `Original Seaborn example <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_.
 
     :param correlation_matrix: The correlation matrix.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
@@ -117,19 +133,21 @@ def visualize_correlations(
 
 
 def plot_correlation_dendrogram(
-        correlation_matrix: pd.DataFrame,
-        cluster_distance_method: Union[str, Callable] = "average",
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs
+    correlation_matrix: pd.DataFrame,
+    cluster_distance_method: Union[str, Callable] = "average",
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
-    """
-    Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
-    `Original code <https://github.com/EthicalML/XAI>`_
+    """Plot a dendrogram of the correlation matrix.
+
+    This shows hierarchically the most correlated variables.
+    `Original code <https://github.com/EthicalML/XAI>`_.
 
     :param correlation_matrix: The correlation matrix.
-    :param cluster_distance_method: Method for calculating the distance between newly formed clusters.
-                                    `Read more here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_
+    :param cluster_distance_method: Method for calculating the distance
+        between newly formed clusters.
+        `Read more here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
     :param kwargs: Additional keyword arguments passed to the dendrogram function.
     :return: The Axes object with the plot drawn onto it.
@@ -145,20 +163,21 @@ def plot_correlation_dendrogram(
 
 
 def plot_features_interaction(
-        data: pd.DataFrame,
-        feature_1: str,
-        feature_2: str,
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs) -> axes.Axes:
-    """
-    Plot the joint distribution between two features.
+    data: pd.DataFrame,
+    feature_1: str,
+    feature_2: str,
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
+) -> axes.Axes:
+    """Plot the joint distribution between two features.
 
     :param data: The input DataFrame, where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
-    :param kwargs: Additional keyword arguments passed to the underlying plotting function.
+    :param kwargs: Additional keyword arguments passed to the underlying
+        plotting function.
     :return: The Axes object with the plot drawn onto it.
     """
     if ax is None:
@@ -183,7 +202,11 @@ def plot_features_interaction(
 
 def is_categorical_like(dtype):
     """Check if the dtype is categorical-like (categorical, boolean, or object)."""
-    return isinstance(dtype, pd.CategoricalDtype) or dtype == bool or dtype == object
+    return (
+        isinstance(dtype, pd.CategoricalDtype)
+        or dtype is bool
+        or dtype is object
+    )
 
 
 def plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
@@ -192,7 +215,9 @@ def plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
 
     if is_categorical_like(dtype2):
-        plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        plot_categorical_vs_categorical(
+            feature_1, feature_2, dup_df, data, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
         plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs)
     else:
@@ -216,8 +241,10 @@ def plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
     dup_df[feature_1] = data[feature_1]
     chart = sns.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
     ticks_loc = chart.get_xticks()  # Get the tick positions
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
+    chart.xaxis.set_major_locator(
+        ticker.FixedLocator(ticks_loc)
+    )  # Explicitly set the tick positions
+    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
 
 
 def plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs):
@@ -238,8 +265,14 @@ def plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kw
     """Plot when both features are categorical-like."""
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
     group_feature_1 = dup_df[feature_1].unique().tolist()
-    ax.hist([dup_df.loc[dup_df[feature_1] == value, feature_2] for value in group_feature_1],
-            label=group_feature_1, **kwargs)
+    ax.hist(
+        [
+            dup_df.loc[dup_df[feature_1] == value, feature_2]
+            for value in group_feature_1
+        ],
+        label=group_feature_1,
+        **kwargs,
+    )
     ax.set_xlabel(feature_1)
     ax.legend(title=feature_2)
 
@@ -250,7 +283,7 @@ def plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwarg
     chart = sns.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
     ticks_loc = chart.get_xticks()
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
+    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
@@ -259,8 +292,10 @@ def plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs
     dup_df[feature_2] = data[feature_2]
     chart = sns.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
     ticks_loc = chart.get_xticks()  # Get the tick positions
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
+    chart.xaxis.set_major_locator(
+        ticker.FixedLocator(ticks_loc)
+    )  # Explicitly set the tick positions
+    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
 
 
 def plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
@@ -271,7 +306,7 @@ def plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
     chart = sns.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
     ticks_loc = chart.get_xticks()
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
+    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
@@ -286,29 +321,27 @@ def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
 
 @plt.FuncFormatter
 def _convert_numbers_to_dates(x, pos):
-    return dates.num2date(x).strftime('%Y-%m-%d %H:%M')
+    return dates.num2date(x).strftime("%Y-%m-%d %H:%M")
 
 
 def extract_statistics_dataframe_per_label(
-        df: pd.DataFrame,
-        feature_name: str,
-        label_name: str
+    df: pd.DataFrame, feature_name: str, label_name: str
 ) -> pd.DataFrame:
-    """
-    Calculate comprehensive statistical metrics for a specified feature grouped by label.
+    """Calculate comprehensive statistical metrics for a feature, grouped by label.
 
-    This method computes various statistical measures for a given numerical feature, broken down by unique
-    values in the specified label column. The statistics include count, null count,
-    mean, standard deviation, min/max values and multiple percentiles.
+    This method computes various statistical measures for a given numerical feature,
+    broken down by unique values in the specified label column. The statistics
+    include count, null count, mean, standard deviation, min/max values,
+    and multiple percentiles.
 
-    :param df: Input pandas DataFrame containing the data
-    :param feature_name: Name of the column to calculate statistics on
-    :param label_name: Name of the column to group by
-    :return: DataFrame with statistical metrics for each unique label value, with columns:
-            - count: Number of non-null observations
-            - null_count: Number of null values
-            - mean: Average value
-            - min: Minimum value
+    :param df: Input pandas DataFrame containing the data.
+    :param feature_name: Name of the column to calculate statistics on.
+    :param label_name: Name of the column to group by.
+    :return: DataFrame with statistical metrics for each unique label value. Columns:
+            - count: Number of non-null observations.
+            - null_count: Number of null values.
+            - mean: Average value.
+            - min: Minimum value.
             - 1_percentile: 1st percentile
             - 5_percentile: 5th percentile
             - 25_percentile: 25th percentile
@@ -348,20 +381,19 @@ def extract_statistics_dataframe_per_label(
     def percentile_99(x):
         return safe_percentile(x, 99)
 
-    return df.groupby(
-        [label_name],
-        observed=True
-    )[feature_name].agg([
-        ("count", "count"),
-        ("null_count", lambda x: x.isnull().sum()),
-        ("mean", "mean"),
-        ("min", "min"),
-        ("1_percentile", percentile_1),
-        ("5_percentile", percentile_5),
-        ("25_percentile", percentile_25),
-        ("median", "median"),
-        ("75_percentile", percentile_75),
-        ("95_percentile", percentile_95),
-        ("99_percentile", percentile_99),
-        ("max", "max")
-    ])
+    return df.groupby([label_name], observed=True)[feature_name].agg(
+        [
+            ("count", "count"),
+            ("null_count", lambda x: x.isnull().sum()),
+            ("mean", "mean"),
+            ("min", "min"),
+            ("1_percentile", percentile_1),
+            ("5_percentile", percentile_5),
+            ("25_percentile", percentile_25),
+            ("median", "median"),
+            ("75_percentile", percentile_75),
+            ("95_percentile", percentile_95),
+            ("99_percentile", percentile_99),
+            ("max", "max"),
+        ]
+    )
