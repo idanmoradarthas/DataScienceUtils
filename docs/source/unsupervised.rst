@@ -19,14 +19,10 @@ The plot_cluster_cardinality function visualizes the number of points in each cl
 
 In the following example, we'll use the iris dataset from scikit-learn and create a simple K-Means algorithm with k=8 to plot how many points go to each cluster::
 
-    from sklearn import datasets
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from ds_utils.unsupervised import plot_cluster_cardinality
 
-    # Load the iris dataset
-    iris = datasets.load_iris()
-    X = iris.data
 
     # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
@@ -53,15 +49,11 @@ identify compact or dispersed clusters.
 
 Here's an example of how to use the plot_cluster_magnitude function::
 
-    from sklearn import datasets
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
     from ds_utils.unsupervised import plot_cluster_magnitude
 
-    # Load the iris dataset
-    iris = datasets.load_iris()
-    X = iris.data
 
     # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
@@ -87,15 +79,12 @@ The plot_magnitude_vs_cardinality function creates a scatter plot of cluster mag
 
 Here's how to use the plot_magnitude_vs_cardinality function::
 
-    from sklearn import datasets
     from matplotlib import pyplot as plt
     from sklearn.cluster import KMeans
     from scipy.spatial.distance import euclidean
     from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 
-    # Load the iris dataset
-    iris = datasets.load_iris()
-    X = iris.data
+
 
     # Create and fit the K-Means model
     estimator = KMeans(n_clusters=8, random_state=42)
@@ -120,14 +109,11 @@ The plot_loss_vs_cluster_number function helps determine the optimal number of c
 
 Here's an example of how to use the plot_loss_vs_cluster_number function::
 
-    from sklearn import datasets
     from matplotlib import pyplot as plt
     from scipy.spatial.distance import euclidean
     from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
-    # Load the iris dataset
-    iris = datasets.load_iris()
-    X = iris.data
+
 
     # Plot loss vs. number of clusters
     plot_loss_vs_cluster_number(X, 3, 20, euclidean)

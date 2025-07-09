@@ -1,4 +1,4 @@
 sphinx==8.2.3
 sphinx_rtd_theme==3.0.2
-sphinx-copybutton
+sphinx-copybutton==0.5.2
 -e .
