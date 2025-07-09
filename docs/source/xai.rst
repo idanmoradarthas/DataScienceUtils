@@ -126,8 +126,14 @@ Let's create a simple decision tree classifier and print its decision paths:
 
 .. code-block:: python
 
+    from sklearn import datasets
     from sklearn.tree import DecisionTreeClassifier
     from ds_utils.xai import generate_decision_paths
+
+    # Load the iris dataset
+    iris = datasets.load_iris()
+    X = iris.data
+    y = iris.target
 
     # Create decision tree classifier object
     clf = DecisionTreeClassifier(random_state=0, max_depth=3)

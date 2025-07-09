@@ -33,8 +33,19 @@ release = Path(__file__).parents[2].joinpath("ds_utils", "__init__.py").read_tex
 extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autodoc"
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx_copybutton"
 ]
+
+# Intersphinx mapping
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'sklearn': ('https://scikit-learn.org/stable/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
