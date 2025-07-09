@@ -252,8 +252,8 @@ A scatter plot of the shared distribution is shown:
 
 One Feature is Numeric and The Other is Categorical
 ---------------------------------------------------
-If one feature is numeric and the other is either an ``object``, a ``category``, or a ``bool``, then a box
-plot is shown. The plot displays the distribution of the numeric feature for each unique value of the categorical feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown, and
+If one feature is numeric and the other is either an ``object``, a ``category``, or a ``bool``, then a boxplot
+is shown. The plot displays the distribution of the numeric feature for each unique value of the categorical feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown, and
 the others are labeled "Other Values".
 
 .. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_categorical.png

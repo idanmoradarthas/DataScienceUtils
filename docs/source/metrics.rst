@@ -139,7 +139,7 @@ And the following image will be shown:
 
 .. image:: ../../tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png
     :align: center
-    :alt: Features Visualization
+    :alt: Plot of Metric Growth per Labeled Instances
 
 *****************************************
 Visualize Accuracy Grouped by Probability
