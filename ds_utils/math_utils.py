@@ -14,7 +14,7 @@ def safe_percentile(
 
     :param x: Input series or numeric numpy array with potentially nullable values.
     :param percentile: Percentile to calculate, must be between 0 and 100.
-    :return: Return None If no valid (non-NA) values are present; Otherwise Calculated percentile value.
+    :return: The calculated percentile value, or None if no valid (non-NA) values are present.
 
     :raise ValueError: If percentile is not between 0 and 100.
     :raise TypeError: If input is not pandas Series or numpy array.

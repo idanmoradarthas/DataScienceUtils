@@ -101,7 +101,7 @@ def visualize_correlations(
 ) -> axes.Axes:
     """
     Compute and visualize pairwise correlations of columns, excluding NA/null values.
-    `Original code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
+    `Original Seaborn code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
     :param correlation_matrix: The correlation matrix.
     :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
@@ -125,7 +125,7 @@ def plot_correlation_dendrogram(
 ) -> axes.Axes:
     """
     Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
-    `Original code <https://github.com/EthicalML/XAI>`_
+    `Original XAI code <https://github.com/EthicalML/XAI>`_
 
     :param correlation_matrix: The correlation matrix.
     :param cluster_distance_method: Method for calculating the distance between newly formed clusters.

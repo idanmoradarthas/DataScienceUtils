@@ -32,12 +32,12 @@ def plot_confusion_matrix(
         **kwargs
 ) -> axes.Axes:
     """
-    Computes and plots confusion matrix, False Positive Rate, False Negative Rate, Accuracy and F1 score of a
+    Computes and plots confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
     classification.
 
     :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
     :param y_pred: array, shape = [n_samples]. Estimated targets as returned by a classifier.
-    :param labels: array, shape = [n_classes]. List of labels used to index the matrix.
+    :param labels: List of labels (strings or integers) used to index the matrix, corresponding to n_classes.
     :param sample_weight: array-like of shape = [n_samples], optional. Optional sample weights for weighting the samples.
     :param annot_kws: dict of key, value mappings, optional. Keyword arguments for ``ax.text``.
     :param cbar: boolean, optional. Whether to draw a colorbar.

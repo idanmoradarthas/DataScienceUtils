@@ -16,16 +16,10 @@ visualizations for data science projects.
 
 # Code Examples and Documentation
 
-**Let's explore some code examples and outputs.**
+This README provides several examples of the package's capabilities. For complete documentation, including more methods and additional examples, please visit:
+**[https://datascienceutils.readthedocs.io/en/stable/](https://datascienceutils.readthedocs.io/en/stable/)**
 
-**You can find the full documentation with all the code examples at:
-[https://datascienceutils.readthedocs.io/en/stable/](https://datascienceutils.readthedocs.io/en/stable/)**
-
-In the documentation, you can find more methods and additional examples.
-
-The API of the package is built to work with the Scikit-Learn API and Matplotlib API. Here are some of the capabilities
-of this
-package:
+The API of the package is built to work with the Scikit-Learn API and Matplotlib API.
 
 ## Metrics
 
@@ -186,8 +180,8 @@ visualize_correlations(correlation_matrix)
 
 ### Plot Correlation Dendrogram
 
-Plot a dendrogram of a correlation matrix. This consists of a chart that shows hierarchically the variables that are
-most correlated by connecting trees. The closer to the right that the connection is, the more correlated the
+Plot a dendrogram of a correlation matrix. This chart hierarchically displays the most correlated variables by
+connecting them in a tree-like structure. The closer to the right that the connection is, the more correlated the
 features are. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
@@ -205,8 +199,7 @@ Plots the joint distribution between two features:
 * If both features are either categorical, boolean, or object, the method plots the shared histogram.
 * If one feature is either categorical, boolean, or object and the other is numeric, the method plots a boxplot chart.
 * If one feature is datetime and the other is numeric or datetime, the method plots a line plot graph.
-* If one feature is datetime and the other is either categorical, boolean, or object, the method plots a violin plot (
-  combination of boxplot and kernel density estimate).
+* If one feature is datetime and the other is either categorical, boolean, or object, the method plots a violin plot (combination of boxplot and kernel density estimate).
 * If both features are numeric, the method plots a scatter graph.
 
 ```python
@@ -502,7 +495,7 @@ better for everyone. Whether you're a seasoned developer or just getting started
 ### Coding Guidelines
 
 We follow the [Python Software Foundation Code of Conduct](http://www.python.org/psf/codeofconduct/) and
-the [Matplotlib Usage Guide](https://matplotlib.org/tutorials/introductory/usage.html#coding-styles). Please adhere to
+the [Matplotlib Coding Guidelines](https://matplotlib.org/stable/devel/coding_guide.html). Please adhere to
 these guidelines in your contributions.
 
 ### Getting Help

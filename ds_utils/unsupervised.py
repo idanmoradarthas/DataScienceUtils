@@ -172,26 +172,6 @@ def plot_loss_vs_cluster_number(
         **kwargs
 ) -> axes.Axes:
     """
-    k-means requires you to decide the number of clusters ``k`` beforehand. This method runs the KMean algorithm and
-    increases the cluster number at each try. The Total magnitude or sum of distance is used as loss.
-
-    Right now the method only works with ``sklearn.cluster.KMeans``.
-
-    :param X: Training instances.
-    :param k_min: The minimum cluster number.
-    :param k_max: The maximum cluster number.
-    :param distance_function: The function used to calculate the distance between an instance to its cluster center.
-            The function receives two ndarrays, one the instance and the second is the center and return a float number
-            representing the distance between them.
-    :param algorithm_parameters: parameters to use for the algorithm. If None, deafult parameters of ``KMeans`` will
-            be used.
-    :param ax: Axes object to draw the plot onto, otherwise uses the current Axes.
-    :param kwargs: other keyword arguments
-
-                   All other keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh()``.
-    :return: Returns the Axes object with the plot drawn onto it.
-    """
-    """
         Plot the Total magnitude (sum of distances) as loss against the number of clusters.
 
         This method runs the KMeans algorithm with increasing cluster numbers and plots the resulting loss.
