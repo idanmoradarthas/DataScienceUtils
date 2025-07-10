@@ -96,7 +96,10 @@ extend-select = [
 # For a full list of available rules, see:
 # https://docs.astral.sh/ruff/rules/
 select = ["E", "F", "W"] # Base set: pycodestyle errors, Pyflakes, pycodestyle warnings
-ignore = []
+ignore = [
+    "D203", # one-blank-line-before-class (conflicts with D211)
+    "D213", # multi-line-summary-second-line (conflicts with D212)
+]
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
