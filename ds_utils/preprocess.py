@@ -27,7 +27,7 @@ def visualize_feature(
 
     :param series: The data series to visualize.
     :param remove_na: If True, ignore NA values when plotting; if False, include them.
-    :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
+    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
     :param kwargs: Additional keyword arguments passed to the underlying plotting function.
     :return: The Axes object with the plot drawn onto it.
     """
@@ -104,7 +104,7 @@ def visualize_correlations(
     `Original Seaborn code <https://seaborn.pydata.org/examples/many_pairwise_correlations.html>`_
 
     :param correlation_matrix: The correlation matrix.
-    :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
+    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
     :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
     :return: The Axes object with the plot drawn onto it.
     """
@@ -130,7 +130,7 @@ def plot_correlation_dendrogram(
     :param correlation_matrix: The correlation matrix.
     :param cluster_distance_method: Method for calculating the distance between newly formed clusters.
                                     `Read more here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>`_
-    :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
+    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
     :param kwargs: Additional keyword arguments passed to the dendrogram function.
     :return: The Axes object with the plot drawn onto it.
     """
@@ -157,7 +157,7 @@ def plot_features_interaction(
     :param data: The input DataFrame, where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
-    :param ax: Axes in which to draw the plot. If None, use the currently-active Axes.
+    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
     :param kwargs: Additional keyword arguments passed to the underlying plotting function.
     :return: The Axes object with the plot drawn onto it.
     """
@@ -167,49 +167,49 @@ def plot_features_interaction(
     dtype1 = data[feature_1].dtype
     dtype2 = data[feature_2].dtype
 
-    if is_categorical_like(dtype1):
-        plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+    if _is_categorical_like(dtype1):
+        _plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
-        plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
-    elif is_categorical_like(dtype2):
-        plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs)
+        _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+    elif _is_categorical_like(dtype2):
+        _plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs)
+        _plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs)
     else:
-        plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
+        _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
 
     return ax
 
 
-def is_categorical_like(dtype):
+def _is_categorical_like(dtype):
     """Check if the dtype is categorical-like (categorical, boolean, or object)."""
     return isinstance(dtype, pd.CategoricalDtype) or dtype == bool or dtype == object
 
 
-def plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
+def _plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is categorical-like."""
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
 
-    if is_categorical_like(dtype2):
-        plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs)
+    if _is_categorical_like(dtype2):
+        _plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs)
     else:
-        plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs)
 
 
-def plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
+def _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is datetime."""
-    if is_categorical_like(dtype2):
-        plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs)
+    if _is_categorical_like(dtype2):
+        _plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs)
     else:
         ax.plot(data[feature_1], data[feature_2], **kwargs)
         ax.set_xlabel(feature_1)
         ax.set_ylabel(feature_2)
 
 
-def plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
+def _plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
     """Plot when the second feature is categorical-like."""
     dup_df = pd.DataFrame()
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
@@ -220,21 +220,21 @@ def plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
 
 
-def plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs):
+def _plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs):
     """Plot when the second feature is datetime."""
     ax.plot(data[feature_2], data[feature_1], **kwargs)
     ax.set_xlabel(feature_2)
     ax.set_ylabel(feature_1)
 
 
-def plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
+def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
     """Plot when both features are numeric."""
     ax.scatter(data[feature_1], data[feature_2], **kwargs)
     ax.set_xlabel(feature_1)
     ax.set_ylabel(feature_2)
 
 
-def plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs):
+def _plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs):
     """Plot when both features are categorical-like."""
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
     group_feature_1 = dup_df[feature_1].unique().tolist()
@@ -244,8 +244,8 @@ def plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kw
     ax.legend(title=feature_2)
 
 
-def plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs):
-    """Plot when the first feature is categorical-like and the second is datetime."""
+def _plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs):
+    """Plot when the first feature is categorical-like, and the second is datetime."""
     dup_df[feature_2] = data[feature_2].apply(dates.date2num)
     chart = sns.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
     ticks_loc = chart.get_xticks()
@@ -254,7 +254,7 @@ def plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwarg
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
-def plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs):
+def _plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs):
     """Plot when the first feature is categorical-like and the second is numeric."""
     dup_df[feature_2] = data[feature_2]
     chart = sns.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
@@ -263,7 +263,7 @@ def plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha='right')
 
 
-def plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
+def _plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
     """Plot when the first feature is datetime and the second is categorical-like."""
     dup_df = pd.DataFrame()
     dup_df[feature_1] = data[feature_1].apply(dates.date2num)
@@ -318,7 +318,7 @@ def extract_statistics_dataframe_per_label(
             - 99_percentile: 99th percentile
             - max: Maximum value
 
-    :raises KeyError: If feature_name or label_name not found in DataFrame
+    :raises KeyError: If feature_name or label_name is not found in DataFrame
     :raises TypeError: If feature_name column is not numeric
     """
     if feature_name not in df.columns:
