@@ -17,14 +17,14 @@ from sklearn.utils import shuffle
 
 
 def plot_confusion_matrix(
-        y_test: np.ndarray,
-        y_pred: np.ndarray,
-        labels: List[Union[str, int]],
-        sample_weight: Optional[List[float]] = None,
-        annot_kws: Optional[Dict] = None,
-        cbar: bool = True,
-        cbar_kws: Optional[Dict] = None,
-        **kwargs,
+    y_test: np.ndarray,
+    y_pred: np.ndarray,
+    labels: List[Union[str, int]],
+    sample_weight: Optional[List[float]] = None,
+    annot_kws: Optional[Dict] = None,
+    cbar: bool = True,
+    cbar_kws: Optional[Dict] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Compute and plot confusion matrix with classification metrics.
 
@@ -59,10 +59,10 @@ def plot_confusion_matrix(
 
 
 def _calc_precision_recall(
-        fn: Union[float, np.ndarray],
-        fp: Union[float, np.ndarray],
-        tn: Union[float, np.ndarray],
-        tp: Union[float, np.ndarray],
+    fn: Union[float, np.ndarray],
+    fp: Union[float, np.ndarray],
+    tn: Union[float, np.ndarray],
+    tp: Union[float, np.ndarray],
 ) -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray], Union[float, np.ndarray], Union[float, np.ndarray]]:
     tpr = tp / (tp + fn)
     tnr = tn / (tn + fp)
@@ -72,7 +72,7 @@ def _calc_precision_recall(
 
 
 def _create_multiclass_confusion_matrix(
-        cnf_matrix: np.ndarray, labels: List[Union[str, int]]
+    cnf_matrix: np.ndarray, labels: List[Union[str, int]]
 ) -> Tuple[pd.DataFrame, Union[float, np.ndarray], Union[float, np.ndarray]]:
     fp = (cnf_matrix.sum(axis=0) - np.diag(cnf_matrix)).astype(float)
     fn = (cnf_matrix.sum(axis=1) - np.diag(cnf_matrix)).astype(float)
@@ -92,7 +92,7 @@ def _create_multiclass_confusion_matrix(
 
 
 def _create_binary_confusion_matrix(
-        cnf_matrix: np.ndarray, labels: List[Union[str, int]]
+    cnf_matrix: np.ndarray, labels: List[Union[str, int]]
 ) -> Tuple[pd.DataFrame, float, float]:
     tn, fp, fn, tp = cnf_matrix.ravel()
     npv, ppv, tnr, tpr = _calc_precision_recall(fn, fp, tn, tp)
@@ -106,17 +106,17 @@ def _create_binary_confusion_matrix(
 
 
 def _plot_confusion_matrix_helper(
-        df: pd.DataFrame,
-        tnr: Union[float, np.ndarray],
-        tpr: Union[float, np.ndarray],
-        labels: List[Union[str, int]],
-        y_pred: np.ndarray,
-        y_test: np.ndarray,
-        sample_weight: Optional[List[float]],
-        annot_kws: Optional[Dict],
-        cbar: bool,
-        cbar_kws: Optional[Dict],
-        kwargs,
+    df: pd.DataFrame,
+    tnr: Union[float, np.ndarray],
+    tpr: Union[float, np.ndarray],
+    labels: List[Union[str, int]],
+    y_pred: np.ndarray,
+    y_test: np.ndarray,
+    sample_weight: Optional[List[float]],
+    annot_kws: Optional[Dict],
+    cbar: bool,
+    cbar_kws: Optional[Dict],
+    kwargs,
 ) -> axes.Axes:
     figure, subplots = plt.subplots(nrows=3, ncols=1, gridspec_kw={"height_ratios": [1, 8, 1]})
     subplots = subplots.flatten()
@@ -142,21 +142,21 @@ def _plot_confusion_matrix_helper(
 
 
 def plot_metric_growth_per_labeled_instances(
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-        X_test: np.ndarray,
-        y_test: np.ndarray,
-        classifiers_dict: Dict[str, ClassifierMixin],
-        n_samples: Optional[List[int]] = None,
-        quantiles: Optional[List[float]] = np.linspace(0.05, 1, 20).tolist(),
-        metric: Callable[[np.ndarray, np.ndarray], float] = accuracy_score,
-        random_state: Optional[Union[int, RandomState]] = None,
-        n_jobs: Optional[int] = None,
-        verbose: int = 0,
-        pre_dispatch: Optional[Union[int, str]] = "2*n_jobs",
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    classifiers_dict: Dict[str, ClassifierMixin],
+    n_samples: Optional[List[int]] = None,
+    quantiles: Optional[List[float]] = np.linspace(0.05, 1, 20).tolist(),
+    metric: Callable[[np.ndarray, np.ndarray], float] = accuracy_score,
+    random_state: Optional[Union[int, RandomState]] = None,
+    n_jobs: Optional[int] = None,
+    verbose: int = 0,
+    pre_dispatch: Optional[Union[int, str]] = "2*n_jobs",
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot learning curves showing metric performance vs training set size.
 
@@ -221,12 +221,12 @@ def plot_metric_growth_per_labeled_instances(
 
 
 def _perform_data_partition_and_evaluation(
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-        X_test: np.ndarray,
-        y_test: np.ndarray,
-        classifier: ClassifierMixin,
-        metric: Callable[[np.ndarray, np.ndarray], float],
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    classifier: ClassifierMixin,
+    metric: Callable[[np.ndarray, np.ndarray], float],
 ) -> float:
     if y_train.shape[1] == 1:
         classifier.fit(X_train, y_train.ravel())
@@ -237,15 +237,15 @@ def _perform_data_partition_and_evaluation(
 
 
 def visualize_accuracy_grouped_by_probability(
-        y_test: np.ndarray,
-        labeled_class: Union[str, int],
-        probabilities: np.ndarray,
-        threshold: float = 0.5,
-        display_breakdown: bool = False,
-        bins: Optional[Union[int, Sequence[float], pd.IntervalIndex]] = None,
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    y_test: np.ndarray,
+    labeled_class: Union[str, int],
+    probabilities: np.ndarray,
+    threshold: float = 0.5,
+    display_breakdown: bool = False,
+    bins: Optional[Union[int, Sequence[float], pd.IntervalIndex]] = None,
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot a stacked bar chart of classifier results by probability bins.
 
@@ -314,21 +314,21 @@ def visualize_accuracy_grouped_by_probability(
 
 
 def plot_roc_curve_with_thresholds_annotations(
-        y_true: np.ndarray,
-        classifiers_names_and_scores_dict: Dict[str, np.ndarray],
-        *,
-        positive_label: Optional[Union[int, float, bool, str]] = None,
-        sample_weight: Optional[np.ndarray] = None,
-        drop_intermediate: bool = True,
-        average: Optional[str] = "macro",
-        max_fpr: Optional[float] = None,
-        multi_class: str = "raise",
-        labels: Optional[np.ndarray] = None,
-        fig: Optional[go.Figure] = None,
-        mode: Optional[str] = "lines+markers",
-        add_random_classifier_line: bool = True,
-        show_legend: bool = True,
-        **kwargs,
+    y_true: np.ndarray,
+    classifiers_names_and_scores_dict: Dict[str, np.ndarray],
+    *,
+    positive_label: Optional[Union[int, float, bool, str]] = None,
+    sample_weight: Optional[np.ndarray] = None,
+    drop_intermediate: bool = True,
+    average: Optional[str] = "macro",
+    max_fpr: Optional[float] = None,
+    multi_class: str = "raise",
+    labels: Optional[np.ndarray] = None,
+    fig: Optional[go.Figure] = None,
+    mode: Optional[str] = "lines+markers",
+    add_random_classifier_line: bool = True,
+    show_legend: bool = True,
+    **kwargs,
 ) -> go.Figure:
     """Plot ROC curves with threshold annotations for multiple classifiers.
 
@@ -417,17 +417,17 @@ def plot_roc_curve_with_thresholds_annotations(
 
 
 def plot_precision_recall_curve_with_thresholds_annotations(
-        y_true: np.ndarray,
-        classifiers_names_and_scores_dict: Dict[str, np.ndarray],
-        *,
-        positive_label: Optional[Union[int, float, bool, str]] = None,
-        sample_weight: Optional[np.ndarray] = None,
-        drop_intermediate: bool = True,
-        fig: Optional[go.Figure] = None,
-        mode: Optional[str] = "lines+markers",
-        add_random_classifier_line: bool = False,
-        show_legend: bool = True,
-        **kwargs,
+    y_true: np.ndarray,
+    classifiers_names_and_scores_dict: Dict[str, np.ndarray],
+    *,
+    positive_label: Optional[Union[int, float, bool, str]] = None,
+    sample_weight: Optional[np.ndarray] = None,
+    drop_intermediate: bool = True,
+    fig: Optional[go.Figure] = None,
+    mode: Optional[str] = "lines+markers",
+    add_random_classifier_line: bool = False,
+    show_legend: bool = True,
+    **kwargs,
 ) -> go.Figure:
     """Plot Precision-Recall curves with threshold annotations for multiple classifiers.
 

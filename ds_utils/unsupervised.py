@@ -49,13 +49,13 @@ def _extract_magnitude(X, labels, cluster_centers, distance_function):
 
 
 def plot_cluster_magnitude(
-        X: np.ndarray,
-        labels: np.ndarray,
-        cluster_centers: np.ndarray,
-        distance_function: Callable[[np.ndarray, np.ndarray], float],
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    X: np.ndarray,
+    labels: np.ndarray,
+    cluster_centers: np.ndarray,
+    distance_function: Callable[[np.ndarray, np.ndarray], float],
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot the Total Point-to-Centroid Distance per cluster as a bar chart.
 
@@ -94,13 +94,13 @@ def plot_cluster_magnitude(
 
 
 def plot_magnitude_vs_cardinality(
-        X: np.ndarray,
-        labels: np.ndarray,
-        cluster_centers: np.ndarray,
-        distance_function: Callable[[np.ndarray, np.ndarray], float],
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    X: np.ndarray,
+    labels: np.ndarray,
+    cluster_centers: np.ndarray,
+    distance_function: Callable[[np.ndarray, np.ndarray], float],
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot magnitude against cardinality as a scatter plot to find anomalous clusters.
 
@@ -150,14 +150,14 @@ def plot_magnitude_vs_cardinality(
 
 
 def plot_loss_vs_cluster_number(
-        X: np.ndarray,
-        k_min: int,
-        k_max: int,
-        distance_function: Callable[[np.ndarray, np.ndarray], float],
-        *,
-        algorithm_parameters: Dict[str, Any] = None,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    X: np.ndarray,
+    k_min: int,
+    k_max: int,
+    distance_function: Callable[[np.ndarray, np.ndarray], float],
+    *,
+    algorithm_parameters: Dict[str, Any] = None,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot the Total magnitude (sum of distances) as loss against the number of clusters.
 

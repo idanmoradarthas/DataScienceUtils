@@ -14,7 +14,7 @@ from ds_utils.math_utils import safe_percentile
 
 
 def visualize_feature(
-        series: pd.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None, **kwargs
+    series: pd.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None, **kwargs
 ) -> axes.Axes:
     """Visualize a feature series.
 
@@ -58,7 +58,7 @@ def visualize_feature(
 
 
 def get_correlated_features(
-        correlation_matrix: pd.DataFrame, features: List[str], target_feature: str, threshold: float = 0.95
+    correlation_matrix: pd.DataFrame, features: List[str], target_feature: str, threshold: float = 0.95
 ) -> pd.DataFrame:
     """Calculate features correlated above a threshold with target correlations.
 
@@ -108,11 +108,11 @@ def visualize_correlations(correlation_matrix: pd.DataFrame, *, ax: Optional[axe
 
 
 def plot_correlation_dendrogram(
-        correlation_matrix: pd.DataFrame,
-        cluster_distance_method: Union[str, Callable] = "average",
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    correlation_matrix: pd.DataFrame,
+    cluster_distance_method: Union[str, Callable] = "average",
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot a dendrogram of the correlation matrix, showing hierarchically the most correlated variables.
 
@@ -136,7 +136,7 @@ def plot_correlation_dendrogram(
 
 
 def plot_features_interaction(
-        data: pd.DataFrame, feature_1: str, feature_2: str, *, ax: Optional[axes.Axes] = None, **kwargs
+    data: pd.DataFrame, feature_1: str, feature_2: str, *, ax: Optional[axes.Axes] = None, **kwargs
 ) -> axes.Axes:
     """Plot the joint distribution between two features.
 
@@ -170,9 +170,9 @@ def plot_features_interaction(
 def _is_categorical_like(dtype):
     """Check if the dtype is categorical-like (categorical, boolean, or object)."""
     return (
-            isinstance(dtype, pd.CategoricalDtype)
-            or pd.api.types.is_bool_dtype(dtype)
-            or pd.api.types.is_object_dtype(dtype)
+        isinstance(dtype, pd.CategoricalDtype)
+        or pd.api.types.is_bool_dtype(dtype)
+        or pd.api.types.is_object_dtype(dtype)
     )
 
 

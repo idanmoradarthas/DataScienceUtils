@@ -13,13 +13,13 @@ from sklearn.tree import _tree as sklearn_tree, export_graphviz
 
 
 def _recurse(
-        node: int,
-        depth: int,
-        tree: sklearn_tree.Tree,
-        feature_name: List[str],
-        class_names: Optional[List[str]],
-        output: StringIO,
-        indent_char: str,
+    node: int,
+    depth: int,
+    tree: sklearn_tree.Tree,
+    feature_name: List[str],
+    class_names: Optional[List[str]],
+    output: StringIO,
+    indent_char: str,
 ):
     indent = indent_char * depth
     if tree.feature[node] != sklearn_tree.TREE_UNDEFINED:
@@ -41,11 +41,11 @@ def _recurse(
 
 
 def generate_decision_paths(
-        classifier: BaseDecisionTree,
-        feature_names: Optional[List[str]] = None,
-        class_names: Optional[List[str]] = None,
-        tree_name: Optional[str] = None,
-        indent_char: str = "\t",
+    classifier: BaseDecisionTree,
+    feature_names: Optional[List[str]] = None,
+    class_names: Optional[List[str]] = None,
+    tree_name: Optional[str] = None,
+    indent_char: str = "\t",
 ) -> str:
     """Generate decision rules as text from a decision tree.
 
@@ -78,12 +78,12 @@ def generate_decision_paths(
 
 
 def draw_tree(
-        tree: BaseDecisionTree,
-        feature_names: Optional[List[str]] = None,
-        class_names: Optional[List[str]] = None,
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    tree: BaseDecisionTree,
+    feature_names: Optional[List[str]] = None,
+    class_names: Optional[List[str]] = None,
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot a graph of the decision tree for easy interpretation.
 
@@ -137,11 +137,11 @@ def draw_dot_data(dot_data: str, *, ax: Optional[axes.Axes] = None, **kwargs) ->
 
 
 def plot_features_importance(
-        feature_names: Union[np.ndarray, List[str]],
-        feature_importance: Union[np.ndarray, List[float]],
-        *,
-        ax: Optional[axes.Axes] = None,
-        **kwargs,
+    feature_names: Union[np.ndarray, List[str]],
+    feature_importance: Union[np.ndarray, List[float]],
+    *,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
     """Plot feature importance as a bar chart.
 

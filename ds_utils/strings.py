@@ -16,14 +16,14 @@ def _tokenize(text_tags: str) -> List[str]:
 
 
 def append_tags_to_frame(
-        X_train: pd.DataFrame,
-        X_test: pd.DataFrame,
-        field_name: str,
-        prefix: str = "",
-        max_features: Optional[int] = 500,
-        min_df: Union[int, float] = 1,
-        lowercase: bool = False,
-        tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
+    X_train: pd.DataFrame,
+    X_test: pd.DataFrame,
+    field_name: str,
+    prefix: str = "",
+    max_features: Optional[int] = 500,
+    min_df: Union[int, float] = 1,
+    lowercase: bool = False,
+    tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Extract tags from a given field and append them to the dataframe.
 
@@ -79,10 +79,10 @@ def append_tags_to_frame(
 
 
 def extract_significant_terms_from_subset(
-        data_frame: pd.DataFrame,
-        subset_data_frame: pd.DataFrame,
-        field_name: str,
-        vectorizer: CountVectorizer = CountVectorizer(encoding="utf-8", lowercase=True, max_features=500),
+    data_frame: pd.DataFrame,
+    subset_data_frame: pd.DataFrame,
+    field_name: str,
+    vectorizer: CountVectorizer = CountVectorizer(encoding="utf-8", lowercase=True, max_features=500),
 ) -> pd.Series:
     """Return interesting or unusual occurrences of terms in a subset.
 
