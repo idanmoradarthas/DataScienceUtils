@@ -23,14 +23,7 @@ copyright = f"{datetime.date.today().year}, Idan Morad"
 author = "Idan Morad"
 
 # The full version, including alpha/beta/rc tags
-release = (
-    Path(__file__)
-    .parents[2]
-    .joinpath("ds_utils", "__init__.py")
-    .read_text()
-    .split("=")[1]
-    .strip()
-)
+release = Path(__file__).parents[2].joinpath("ds_utils", "__init__.py").read_text().split("=")[1].strip()
 
 # -- General configuration ---------------------------------------------------
 
