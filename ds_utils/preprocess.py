@@ -169,7 +169,9 @@ def plot_features_interaction(
 
 def _is_categorical_like(dtype):
     """Check if the dtype is categorical-like (categorical, boolean, or object)."""
-    return isinstance(dtype, pd.CategoricalDtype) or dtype == bool or dtype == object
+    return (isinstance(dtype, pd.CategoricalDtype) or
+            pd.api.types.is_bool_dtype(dtype) or
+            pd.api.types.is_object_dtype(dtype))
 
 
 def _plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
