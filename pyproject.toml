@@ -63,7 +63,7 @@ dependencies = [
     "pytest-xdist==3.6.1",
     "pytest-mpl==0.17.0",
     "kaleido==1.0.0",
-    "ruff===0.12.2"
+    "ruff===0.12.4"
 ]
 
 [tool.hatch.envs.test.env-vars]

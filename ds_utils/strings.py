@@ -1,3 +1,5 @@
+"""String manipulation utilities for data science tasks."""
+
 import re
 from typing import List, Tuple, Optional, Callable, Union
 
@@ -21,10 +23,9 @@ def append_tags_to_frame(
         max_features: Optional[int] = 500,
         min_df: Union[int, float] = 1,
         lowercase: bool = False,
-        tokenizer: Optional[Callable[[str], List[str]]] = _tokenize
+        tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Extract tags from a given field and append them to the dataframe.
+    """Extract tags from a given field and append them to the dataframe.
 
     :param X_train: Pandas DataFrame with the train features.
     :param X_test: Pandas DataFrame with the test features.
@@ -33,7 +34,7 @@ def append_tags_to_frame(
     :param max_features: Maximum number of tag names to consider. Default is 500. This helps limit the number of
                          new columns created, especially useful for datasets with a large number of unique tags.
     :param min_df: When building the tag name set, ignore tags with a document frequency strictly
-                   lower than the given threshold. If float, the parameter represents a proportion
+                   lower than the given threshold. If min_df is a float, the parameter represents a proportion
                    of documents. If integer, it represents absolute counts. Default is 1. This helps filter out
                    rare tags.
     :param lowercase: Convert all characters to lowercase before tokenizing the tag names. Default is False. Set to
@@ -42,10 +43,17 @@ def append_tags_to_frame(
                       preprocessing and n-grams generation steps. Default splits by ",", and
                       retains alphanumeric characters with special characters "_", "$", and "-".
     :return: The train and test DataFrames with tags appended.
-    :raise KeyError: if the one of the frames is missing columns.
+    :raise KeyError: if one of the frames is missing columns.
     """
-    vectorizer = CountVectorizer(binary=True, tokenizer=tokenizer, encoding="utf-8", lowercase=lowercase,
-                                 min_df=min_df, max_features=max_features, token_pattern=None)
+    vectorizer = CountVectorizer(
+        binary=True,
+        tokenizer=tokenizer,
+        encoding="utf-8",
+        lowercase=lowercase,
+        min_df=min_df,
+        max_features=max_features,
+        token_pattern=None,
+    )
 
     if X_train.empty:
         return pd.DataFrame(), pd.DataFrame()
@@ -64,27 +72,26 @@ def append_tags_to_frame(
     x_train_reduced = X_train.drop(columns=[field_name])
     x_test_reduced = X_test.drop(columns=[field_name])
 
-    return (pd.merge(x_train_reduced, x_train_tags, left_index=True, right_index=True, how="left"),
-            pd.merge(x_test_reduced, x_test_tags, left_index=True, right_index=True, how="left"))
+    return (
+        pd.merge(x_train_reduced, x_train_tags, left_index=True, right_index=True, how="left"),
+        pd.merge(x_test_reduced, x_test_tags, left_index=True, right_index=True, how="left"),
+    )
 
 
 def extract_significant_terms_from_subset(
         data_frame: pd.DataFrame,
         subset_data_frame: pd.DataFrame,
         field_name: str,
-        vectorizer: CountVectorizer = CountVectorizer(encoding="utf-8",
-                                                      lowercase=True,
-                                                      max_features=500)
+        vectorizer: CountVectorizer = CountVectorizer(encoding="utf-8", lowercase=True, max_features=500),
 ) -> pd.Series:
-    """
-    Return interesting or unusual occurrences of terms in a subset.
+    """Return interesting or unusual occurrences of terms in a subset.
 
     Based on the elasticsearch significant_text aggregation:
     https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html#_scripted
 
     :param data_frame: The full dataset.
     :param subset_data_frame: The subset partition data over which the scoring will be calculated.
-                              Can be filtered by feature or other boolean criteria.
+                              It can be filtered by feature or other boolean criteria.
     :param field_name: The feature to parse.
     :param vectorizer: Text count vectorizer which converts a collection of text to a matrix of token counts.
                        See more info here:
