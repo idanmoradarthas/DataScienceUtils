@@ -42,6 +42,8 @@ def plot_confusion_matrix(
     :param kwargs: other keyword arguments. All other keyword arguments are passed
                    to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the matrix drawn onto it.
+
+    :raises ValueError: If number of labels is lower than 2.
     """
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
@@ -158,7 +160,7 @@ def plot_metric_growth_per_labeled_instances(
     ax: Optional[axes.Axes] = None,
     **kwargs,
 ) -> axes.Axes:
-    """Plot learning curves showing metric performance vs training set size.
+    """Plot learning curves showing metric performance vs. training set size.
 
     Receives train and test sets, and plots the change in the given metric with increasing numbers of trained
     instances.
@@ -181,6 +183,8 @@ def plot_metric_growth_per_labeled_instances(
     :param ax: matplotlib Axes object, optional. The axes to plot on.
     :param kwargs: additional keyword arguments to be passed to the plot function.
     :return: The Axes object with the plot drawn onto it.
+
+    :raises ValueError: If both n_samples and quantiles are None.
     """
     if ax is None:
         _, ax = plt.subplots()
