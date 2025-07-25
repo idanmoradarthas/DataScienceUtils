@@ -14,6 +14,7 @@ BASELINE_DIR = Path(__file__).parent / "baseline_images" / "test_xai"
 
 @pytest.fixture
 def decision_tree_generate_decision_paths(mocker):
+    """Fixture for a mocked decision tree for testing generate_decision_paths."""
     mock_tree = mocker.Mock()
     mock_tree.tree_.feature = np.array([3, -2, 3, 2, -2, -2, 2, -2, -2])
     mock_tree.tree_.threshold = np.array([0.80000001, -2.0, 1.75, 4.95000005, -2.0, -2.0, 4.85000014, -2.0, -2.0])
@@ -38,6 +39,7 @@ def decision_tree_generate_decision_paths(mocker):
 
 @pytest.fixture
 def decision_tree_draw_tree(mocker):
+    """Fixture for a mocked decision tree for testing draw_tree."""
     mock = mocker.Mock()
     mock.tree_.node_count = 17
     mock.tree_.children_left = np.array([1, -1, 3, 4, 5, -1, -1, 8, -1, 10, -1, -1, 13, 14, -1, -1, -1])
@@ -147,8 +149,6 @@ def decision_tree_draw_tree(mocker):
     # Add the __sklearn_tags__ method that returns the mock_tags object
     mock.__sklearn_tags__ = mocker.Mock(return_value=mock_tags)
 
-    # Add some fitted attributes to make the estimator appear fitted
-    # mock.feature_importances_ = np.random.Generator(4)
     mock.n_features_ = 4
 
     return mock
@@ -156,6 +156,7 @@ def decision_tree_draw_tree(mocker):
 
 @pytest.fixture
 def importance():
+    """Fixture for sample feature importances."""
     return [
         0.047304175084187376,
         0.011129476233187116,
@@ -246,6 +247,7 @@ def importance():
 
 @pytest.fixture
 def features():
+    """Fixture for sample feature names."""
     return [
         "x1",
         "x2",
@@ -336,13 +338,14 @@ def features():
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
+    """Set up and tear down for each test in this module."""
     yield
     plt.cla()
     plt.close(plt.gcf())
 
 
 @pytest.mark.parametrize(
-    "tree_name, expected_name",
+    ("tree_name", "expected_name"),
     [
         ("iris_tree", "def iris_tree(petal width (cm), petal length (cm)):"),
         (None, "def tree(petal width (cm), petal length (cm)):"),
@@ -350,6 +353,7 @@ def setup_teardown():
     ids=["default", "no_tree_name"],
 )
 def test_print_decision_paths(tree_name, expected_name, decision_tree_generate_decision_paths):
+    """Test generation of decision paths from a tree."""
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(
             decision_tree_generate_decision_paths,
@@ -406,6 +410,7 @@ def test_print_decision_paths(tree_name, expected_name, decision_tree_generate_d
 
 
 def test_print_decision_paths_no_feature_names(decision_tree_generate_decision_paths):
+    """Test decision path generation when feature_names are not provided."""
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(
             decision_tree_generate_decision_paths, None, ["setosa", "versicolor", "virginica"], "iris_tree", "  "
@@ -456,6 +461,7 @@ def test_print_decision_paths_no_feature_names(decision_tree_generate_decision_p
 
 
 def test_print_decision_paths_no_class_names(decision_tree_generate_decision_paths):
+    """Test decision path generation when class_names are not provided."""
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.export_text instead"):
         result = generate_decision_paths(
             decision_tree_generate_decision_paths,
@@ -511,6 +517,7 @@ def test_print_decision_paths_no_class_names(decision_tree_generate_decision_pat
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=53)
 def test_draw_tree(decision_tree_draw_tree):
+    """Test drawing a decision tree."""
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
         draw_tree(
             decision_tree_draw_tree,
@@ -522,6 +529,7 @@ def test_draw_tree(decision_tree_draw_tree):
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=54)
 def test_draw_tree_exists_ax(decision_tree_draw_tree):
+    """Test drawing a decision tree on an existing Axes object."""
     fig, ax = plt.subplots()
     ax.set_title("My ax")
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
@@ -538,6 +546,7 @@ def test_draw_tree_exists_ax(decision_tree_draw_tree):
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
 def test_draw_dot_data():
+    """Test drawing a graph from DOT data."""
     dot_data = (
         "digraph D{\n"
         "\tA [shape=diamond]\n"
@@ -557,6 +566,7 @@ def test_draw_dot_data():
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
 def test_draw_dot_data_exist_ax():
+    """Test drawing a graph from DOT data on an existing Axes object."""
     dot_data = (
         "digraph D{\n"
         "\tA [shape=diamond]\n"
@@ -579,11 +589,13 @@ def test_draw_dot_data_exist_ax():
 
 
 def test_draw_dot_data_empty_input():
+    """Test draw_dot_data raises ValueError for empty input string."""
     with pytest.raises(ValueError, match="dot_data must not be empty"):
         draw_dot_data("")
 
 
 def test_draw_dot_data_invalid_input(mocker):
+    """Test draw_dot_data raises ValueError for invalid DOT data."""
     mock_pydotplus = mocker.patch("ds_utils.xai.pydotplus")
     mock_pydotplus.graph_from_dot_data.side_effect = Exception("Invalid dot data")
 
@@ -593,6 +605,7 @@ def test_draw_dot_data_invalid_input(mocker):
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 def test_plot_features_importance(importance, features):
+    """Test plotting feature importance."""
     plot_features_importance(features, importance)
 
     figure = plt.gcf()
@@ -602,6 +615,7 @@ def test_plot_features_importance(importance, features):
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 def test_plot_features_importance_exists_ax(importance, features):
+    """Test plotting feature importance on an existing Axes object."""
     fig, ax = plt.subplots()
 
     ax.set_title("My ax")
