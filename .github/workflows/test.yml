@@ -41,6 +41,10 @@ jobs:
         run: |
           python -m hatch env create test
           python -m hatch run test:run
+      - name: Run Ruff Formatter Check
+        run: python -m hatch run test:ruff format --check .
+      - name: Run Ruff Linter
+        run: python -m hatch run test:ruff check .
       - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

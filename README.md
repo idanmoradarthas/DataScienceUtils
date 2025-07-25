@@ -504,6 +504,19 @@ If you're new to open source or need any help, don't hesitate to ask questions i
 the [issues](https://github.com/idanmoradarthas/DataScienceUtils/issues) section or reach out to the
 maintainers. We're here to help!
 
+### Code Quality
+
+This project uses [Ruff](https://github.com/astral-sh/ruff) for linting and code formatting.
+Contributors are encouraged to use it to ensure code quality and consistency.
+You can check your code by running:
+
+```bash
+ruff check .
+ruff format .
+```
+
+These checks are also part of our CI pipeline.
+
 ### Why Contribute?
 
 - **Improve your skills**: Gain experience working on a real-world project.
