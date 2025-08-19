@@ -7,8 +7,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, axes, dates, ticker
+from numpy.random import RandomState
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import squareform
+from sklearn.base import TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 
 from ds_utils.math_utils import safe_percentile
 
@@ -352,3 +358,108 @@ def extract_statistics_dataframe_per_label(df: pd.DataFrame, feature_name: str, 
             ("max", "max"),
         ]
     )
+
+
+def compute_mutual_information(
+    df: pd.DataFrame,
+    features: List[str],
+    label_col: str,
+    *,
+    n_neighbors: int = 3,
+    random_state: Optional[Union[int, RandomState]] = None,
+    n_jobs: Optional[int] = None,
+    numerical_imputer: TransformerMixin = SimpleImputer(strategy="mean"),
+    discrete_imputer: TransformerMixin = SimpleImputer(strategy="most_frequent"),
+) -> pd.DataFrame:
+    """Compute mutual information scores between features and a target label.
+
+    This function calculates mutual information scores for specified features with respect to a target
+    label column. Features are automatically categorized as numerical or discrete (boolean/categorical)
+    and preprocessed accordingly before computing mutual information.
+
+    Mutual information measures the mutual dependence between two variables - higher scores indicate
+    stronger relationships between the feature and the target label.
+
+    :param df: Input pandas DataFrame containing the features and label
+    :param features: List of column names to compute mutual information for
+    :param label_col: Name of the target label column
+    :param n_neighbors: Number of neighbors to use for MI estimation for continuous variables. Higher values
+                        reduce variance of the estimation, but could introduce a bias.
+    :param random_state: Random state for reproducible results. Can be int or RandomState instance
+    :param n_jobs: The number of jobs to use for computing the mutual information. The parallelization is done
+                   on the columns. `None` means 1 unless in a `joblib.parallel_backend` context. ``-1`` means
+                   using all processors.
+    :param numerical_imputer: Sklearn-compatible transformer for numerical features (default: mean imputation)
+    :param discrete_imputer: Sklearn-compatible transformer for discrete features (default: most frequent imputation)
+    :return: DataFrame with columns 'feature_name' and 'mi_score', sorted by MI score (descending)
+
+    :raises KeyError: If any feature or label_col is not found in DataFrame
+    :raises ValueError: If features list is empty or label_col contains non-finite values
+    """
+    # Input validation
+    if not features:
+        raise ValueError("features list cannot be empty")
+
+    if label_col not in df.columns:
+        raise KeyError(f"Label column '{label_col}' not found in DataFrame")
+
+    missing_features = [f for f in features if f not in df.columns]
+    if missing_features:
+        raise KeyError(f"Features not found in DataFrame: {missing_features}")
+
+    if df[label_col].isnull().all():
+        raise ValueError(f"Label column '{label_col}' contains only null values")
+
+    # Identify feature types
+    numerical_features = df[features].select_dtypes(include=[np.number]).columns.tolist()
+    boolean_features = df[features].select_dtypes(include=[bool]).columns.tolist()
+    categorical_features = df[features].select_dtypes(include=["object", "category"]).columns.tolist()
+
+    # Create preprocessing pipelines
+    numerical_transformer = Pipeline(steps=[("imputer", numerical_imputer)], memory=None, verbose=False)
+    discrete_transformer = Pipeline(steps=[("imputer", discrete_imputer)], memory=None, verbose=False)
+
+    # Setup column transformer
+    transformers = []
+    if numerical_features:
+        transformers.append(("num", numerical_transformer, numerical_features))
+    if boolean_features or categorical_features:
+        transformers.append(("discrete", discrete_transformer, boolean_features + categorical_features))
+
+    preprocessor = ColumnTransformer(
+        transformers=transformers,
+        remainder="drop",  # Drop any features not explicitly handled
+        sparse_threshold=0,
+        n_jobs=n_jobs,
+        transformer_weights=None,
+        verbose=False,
+        verbose_feature_names_out=True,
+    )
+
+    # Create discrete features mask for mutual_info_classif
+    discrete_features_mask = [False] * len(numerical_features) + [True] * (
+        len(boolean_features) + len(categorical_features)
+    )
+
+    # Apply preprocessing
+    x_preprocessed = preprocessor.fit_transform(df[features])
+    y = df[label_col].fillna(df[label_col].mode()[0] if not df[label_col].mode().empty else 0)
+
+    # Compute mutual information scores
+    mi_scores = mutual_info_classif(
+        X=x_preprocessed,
+        y=y,
+        n_neighbors=n_neighbors,
+        copy=True,
+        random_state=random_state,
+        n_jobs=n_jobs,
+        discrete_features=discrete_features_mask,
+    )
+
+    # Create ordered feature names list matching the preprocessed data
+    ordered_feature_names = numerical_features + boolean_features + categorical_features
+
+    # Create results DataFrame
+    mi_df = pd.DataFrame({"feature_name": ordered_feature_names, "mi_score": mi_scores})
+
+    return mi_df.sort_values(by="mi_score", ascending=False)
