@@ -15,6 +15,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OrdinalEncoder
 
 from ds_utils.math_utils import safe_percentile
 
@@ -370,6 +371,7 @@ def compute_mutual_information(
     n_jobs: Optional[int] = None,
     numerical_imputer: TransformerMixin = SimpleImputer(strategy="mean"),
     discrete_imputer: TransformerMixin = SimpleImputer(strategy="most_frequent"),
+    discrete_encoder: TransformerMixin = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
 ) -> pd.DataFrame:
     """Compute mutual information scores between features and a target label.
 
@@ -391,6 +393,8 @@ def compute_mutual_information(
                    using all processors.
     :param numerical_imputer: Sklearn-compatible transformer for numerical features (default: mean imputation)
     :param discrete_imputer: Sklearn-compatible transformer for discrete features (default: most frequent imputation)
+    :param discrete_encoder: Sklearn-compatible transformer for encoding discrete features (default: ordinal encoding
+                            with unknown value handling)
     :return: DataFrame with columns 'feature_name' and 'mi_score', sorted by MI score (descending)
 
     :raises KeyError: If any feature or label_col is not found in DataFrame
@@ -417,7 +421,9 @@ def compute_mutual_information(
 
     # Create preprocessing pipelines
     numerical_transformer = Pipeline(steps=[("imputer", numerical_imputer)], memory=None, verbose=False)
-    discrete_transformer = Pipeline(steps=[("imputer", discrete_imputer)], memory=None, verbose=False)
+    discrete_transformer = Pipeline(
+        steps=[("imputer", discrete_imputer), ("encoder", discrete_encoder)], memory=None, verbose=False
+    )
 
     # Setup column transformer
     transformers = []
@@ -441,9 +447,12 @@ def compute_mutual_information(
         len(boolean_features) + len(categorical_features)
     )
 
+    # Create ordered feature names list matching the preprocessed data
+    ordered_feature_names = numerical_features + boolean_features + categorical_features
+
     # Apply preprocessing
-    x_preprocessed = preprocessor.fit_transform(df[features])
-    y = df[label_col].fillna(df[label_col].mode()[0] if not df[label_col].mode().empty else 0)
+    x_preprocessed = preprocessor.fit_transform(df[ordered_feature_names])
+    y = df[label_col]
 
     # Compute mutual information scores
     mi_scores = mutual_info_classif(
@@ -456,10 +465,7 @@ def compute_mutual_information(
         discrete_features=discrete_features_mask,
     )
 
-    # Create ordered feature names list matching the preprocessed data
-    ordered_feature_names = numerical_features + boolean_features + categorical_features
-
     # Create results DataFrame
     mi_df = pd.DataFrame({"feature_name": ordered_feature_names, "mi_score": mi_scores})
 
-    return mi_df.sort_values(by="mi_score", ascending=False)
+    return mi_df.sort_values(by="mi_score", ascending=False).reset_index(drop=True)
