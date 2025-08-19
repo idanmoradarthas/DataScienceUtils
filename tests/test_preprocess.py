@@ -15,6 +15,7 @@ from ds_utils.preprocess import (
     visualize_feature,
     get_correlated_features,
     extract_statistics_dataframe_per_label,
+    compute_mutual_information,
 )
 
 RESOURCES_PATH = Path(__file__).parent / "resources"
@@ -346,3 +347,60 @@ def test_extract_statistics_dataframe_per_label_exceptions(sample_df, feature_na
     """Test exceptions for extract_statistics_dataframe_per_label."""
     with pytest.raises(exception, match=message):
         extract_statistics_dataframe_per_label(sample_df, feature_name, label_name)
+
+
+def test_compute_mutual_information(data_1m):
+    """Test basic functionality for compute_mutual_information."""
+    df = data_1m.copy()
+    features = df.columns.tolist()
+    rng = np.random.default_rng(seed=42)
+    df["target"] = rng.choice(["class_1", "class_2", "class_3"], size=len(df))
+
+    expected = pd.DataFrame(
+        [
+            ["x3", 0.001766052134277718],
+            ["x2", 0.001479947096839851],
+            ["x1", 0.0009494384943877776],
+            ["x8", 0.00036423417047570794],
+            ["x4", 0.00014870988232429383],
+            ["x5", 0.00013023297539671574],
+            ["x7", 9.545793450264087e-05],
+            ["x10", 3.387523951139948e-06],
+            ["x12", 7.467128754767849e-07],
+            ["x6", 0.0],
+            ["x9", 0.0],
+            ["x11", 0.0],
+        ],
+        columns=["feature_name", "mi_score"],
+    )
+    results = compute_mutual_information(df, features, "target", random_state=42)
+    pd.testing.assert_frame_equal(expected, results)
+
+
+def test_compute_mutual_information_empty_features_list():
+    """Test compute_mutual_information with empty features list."""
+    df = pd.DataFrame({"feature1": [1, 2, 3, 4, 5], "target": [0, 1, 0, 1, 0]})
+    with pytest.raises(ValueError, match="features list cannot be empty"):
+        compute_mutual_information(df, [], "target")
+
+
+def test_compute_mutual_information_missing_label_column():
+    """Test compute_mutual_information with missing label column."""
+    df = pd.DataFrame({"num_high_corr": [1, 2, 3, 4, 5], "target": [0, 1, 0, 1, 0]})
+    with pytest.raises(KeyError, match="Label column 'nonexistent' not found"):
+        compute_mutual_information(df, ["num_high_corr"], "nonexistent")
+
+
+def test_compute_mutual_information_missing_feature_columns():
+    """Test compute_mutual_information with missing feature columns."""
+    df = pd.DataFrame({"num_high_corr": [1, 2, 3, 4, 5], "target": [0, 1, 0, 1, 0]})
+    with pytest.raises(KeyError, match="Features not found in DataFrame: \\['nonexistent1', 'nonexistent2'\\]"):
+        compute_mutual_information(df, ["num_high_corr", "nonexistent1", "nonexistent2"], "target")
+
+
+def test_compute_mutual_information_all_null_target():
+    """Test compute_mutual_information when target column has only null values."""
+    df = pd.DataFrame({"feature1": [1, 2, 3, 4, 5], "target": [np.nan, np.nan, np.nan, np.nan, np.nan]})
+
+    with pytest.raises(ValueError, match="Label column 'target' contains only null values"):
+        compute_mutual_information(df, ["feature1"], "target")

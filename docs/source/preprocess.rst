@@ -391,3 +391,45 @@ This comprehensive set of statistics helps in understanding the distribution of 
 - Understanding data skewness per category
 - Detecting potential data quality issues
 - Making informed decisions about feature engineering strategies
+
+**************************
+Compute Mutual Information
+**************************
+
+This method computes the mutual information between each feature and a specified target variable. Mutual information measures the dependency between two variables, with a higher value indicating a stronger relationship.
+
+Use this when you want to:
+
+* Identify the most informative features for a classification task.
+* Perform feature selection based on the relevance of each feature to the target.
+* Gain insight into the underlying relationships within your data, which can guide feature engineering.
+
+.. autofunction:: preprocess::compute_mutual_information
+
+Code Example
+============
+This example uses a sample DataFrame to demonstrate the calculation of mutual information.
+
+Here's how to use the code::
+
+    import pandas as pd
+    from ds_utils.preprocess import compute_mutual_information
+
+    sample_df = pd.DataFrame({
+        "value": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
+        "category": ["A", "A", "A", "B", "B", "B", "C", "C", "C", "C"],
+        "text_col": ["x", "y", "z", "x", "y", "z", "x", "y", "z", "x"],
+    })
+    target = "category"
+    mutual_information_df = compute_mutual_information(sample_df, target)
+    print(mutual_information_df)
+
+The following table will be the output:
+
++----------+--------------------+
+| feature  | mutual_information |
++==========+====================+
+| value    | 0.046              |
++----------+--------------------+
+| text_col | 0.941              |
++----------+--------------------+

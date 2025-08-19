@@ -241,6 +241,35 @@ extract_statistics_dataframe_per_label(
 | B        | 2     | 0          | 225.0 | 150 | 150.0        | 150.0        | 150.0         | 225.0  | 300.0         | 300.0         | 300.0         | 300.0 |
 | C        | 2     | 0          | 212.5 | 175 | 175.0        | 175.0        | 175.0         | 212.5  | 250.0         | 250.0         | 250.0         | 250.0 |
 
+### Compute Mutual Information
+
+This method computes mutual information scores between features and a target label. Mutual information measures the mutual dependence between two variables - higher scores indicate stronger relationships between features and the target label. Features are automatically categorized as numerical or discrete and preprocessed accordingly.
+
+Use this method when you want to:
+- Identify which features have the strongest relationship with your target variable
+- Perform feature selection based on statistical dependence
+- Understand feature importance from an information theory perspective
+- Compare the predictive value of different types of features
+
+```python
+from ds_utils.preprocess import compute_mutual_information
+
+# Compute mutual information scores for all features
+mi_scores = compute_mutual_information(
+    df=df,
+    features=['feature1', 'feature2', 'feature3'],
+    label_col='target',
+    random_state=42
+)
+```
+The result will be a DataFrame sorted by MI score (descending):
+
+| feature_name | mi_score |
+|--------------|----------|
+| feature1     | 0.245    |
+| feature3     | 0.182    |
+| feature2     | 0.091    |
+
 ## Strings
 
 ### Append Tags to Frame
