@@ -92,8 +92,9 @@ def visualize_feature(
     feature_series = series.dropna() if remove_na else series
 
     if pd.api.types.is_float_dtype(feature_series):
-        ax = _plot_clean_violin_distribution(feature_series, include_outliers, outlier_iqr_multiplier, ax, **kwargs)
-        labels = ax.get_xticks()
+        ax = _plot_clean_violin_distribution(
+            feature_series, include_outliers, outlier_iqr_multiplier, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(feature_series):
         feature_series.value_counts().sort_index().plot(kind="line", ax=ax, **kwargs)
         labels = ax.get_xticks()
@@ -105,9 +106,11 @@ def visualize_feature(
         ax.set_title(f"{feature_series.name} ({feature_series.dtype})")
         ax.set_xlabel("")
 
-    ticks_loc = ax.get_xticks()
-    ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    ax.set_xticklabels(labels, rotation=45, ha="right")
+    # Skip tick relabeling for float (violin) plots where x-ticks are hidden
+    if not pd.api.types.is_float_dtype(feature_series):
+        ticks_loc = ax.get_xticks()
+        ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
+        ax.set_xticklabels(labels, rotation=45, ha="right")
 
     if pd.api.types.is_datetime64_any_dtype(feature_series):
         ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
