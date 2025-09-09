@@ -2,20 +2,20 @@
 
 from pathlib import Path
 
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from matplotlib import pyplot as plt
 
 from ds_utils.math_utils import safe_percentile
 from ds_utils.preprocess import (
-    visualize_correlations,
-    plot_features_interaction,
-    plot_correlation_dendrogram,
-    visualize_feature,
-    get_correlated_features,
-    extract_statistics_dataframe_per_label,
     compute_mutual_information,
+    extract_statistics_dataframe_per_label,
+    get_correlated_features,
+    plot_correlation_dendrogram,
+    plot_features_interaction,
+    visualize_correlations,
+    visualize_feature,
 )
 
 RESOURCES_PATH = Path(__file__).parent / "resources"
@@ -91,6 +91,13 @@ def test_visualize_feature_float_exist_ax(loan_data):
     assert ax.get_title() == "My ax"
     fig.set_size_inches(10, 8)
     return fig
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_float_exclude_outliers(loan_data):
+    """Test visualize_feature function with outliers excluded."""
+    visualize_feature(loan_data["emp_length_int"], include_outliers=False, outlier_iqr_multiplier=0.01)
+    return plt.gcf()
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)

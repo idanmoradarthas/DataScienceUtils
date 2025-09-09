@@ -1,15 +1,15 @@
 """Data preprocessing utilities."""
 
+from typing import Callable, List, Optional, Union
 import warnings
-from typing import Optional, Union, Callable, List
 
+from matplotlib import axes, dates, pyplot as plt, ticker
 import numpy as np
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt, axes, dates, ticker
 from numpy.random import RandomState
-from scipy.cluster.hierarchy import linkage, dendrogram
+import pandas as pd
+from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
+import seaborn as sns
 from sklearn.base import TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import mutual_info_classif
@@ -20,19 +20,70 @@ from sklearn.preprocessing import OrdinalEncoder
 from ds_utils.math_utils import safe_percentile
 
 
-def visualize_feature(
-    series: pd.Series, remove_na: bool = False, *, ax: Optional[axes.Axes] = None, **kwargs
+def _plot_clean_violin_distribution(
+    series: pd.Series, include_outliers: bool, outlier_iqr_multiplier: float, ax: Optional[axes.Axes] = None, **kwargs
 ) -> axes.Axes:
-    """Visualize a feature series.
+    """Plot a violin distribution for a numeric series with optional outlier trimming.
 
-    * For float features, plot a distribution plot.
-    * For datetime features, plot a line plot of progression over time.
-    * For object, categorical, boolean, or integer features, plot a count plot (histogram).
+    When ``include_outliers`` is False, values outside the IQR fence are removed
+    before plotting. The fence is defined as
+    [Q1 - k * IQR, Q3 + k * IQR], where ``k`` is ``outlier_iqr_multiplier``, and
+    the bounds are clipped to the observed min/max of the series.
+
+    :param series: Numeric series to visualize. NA handling is expected upstream.
+    :param include_outliers: Whether to include values outside the IQR fence.
+    :param outlier_iqr_multiplier: Multiplier ``k`` used to compute the IQR fence.
+    :param ax: Matplotlib Axes to draw on. If None, callers should provide one upstream.
+    :param kwargs: Additional keyword arguments passed to ``seaborn.violinplot``.
+    :return: The Axes object with the violin plot.
+    """
+    if include_outliers:
+        series_plot = series.copy()
+    else:
+        q1 = series.quantile(0.25)
+        q3 = series.quantile(0.75)
+        min_series_value = series.min()
+        max_series_value = series.max()
+        iqr = q3 - q1
+        lower_bound = max(min_series_value, q1 - outlier_iqr_multiplier * iqr)
+        upper_bound = min(max_series_value, q3 + outlier_iqr_multiplier * iqr)
+        series_plot = series[(series >= lower_bound) & (series <= upper_bound)]
+
+    sns.violinplot(y=series_plot, hue=None, legend=False, ax=ax, **kwargs)
+
+    ax.set_xticks([])
+    ax.set_ylabel("Values")
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+    return ax
+
+
+def visualize_feature(
+    series: pd.Series,
+    remove_na: bool = False,
+    *,
+    include_outliers: bool = True,
+    outlier_iqr_multiplier: float = 1.5,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
+) -> axes.Axes:
+    """Visualize a pandas Series using an appropriate plot based on dtype.
+
+    Behavior by dtype:
+    - Float: draw a violin distribution. If ``include_outliers`` is False, values
+      outside the IQR fence [Q1 - k*IQR, Q3 + k*IQR] with ``k=outlier_iqr_multiplier``
+      are trimmed prior to plotting.
+    - Datetime: draw a line plot of value counts over time (sorted by index).
+    - Object/categorical/bool/int: draw a count plot. Extremely high-cardinality
+      series may be reduced to their top categories internally.
 
     :param series: The data series to visualize.
-    :param remove_na: If True, ignore NA values when plotting; if False, include them.
-    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
-    :param kwargs: Additional keyword arguments passed to the underlying plotting function.
+    :param remove_na: If True, plot with NA values removed; otherwise include them.
+    :param include_outliers: Whether to include outliers for float features.
+    :param outlier_iqr_multiplier: IQR multiplier used to trim outliers for float features.
+    :param ax: Axes in which to draw the plot. If None, a new one is created.
+    :param kwargs: Extra keyword arguments forwarded to the underlying plotting function
+                   (``seaborn.violinplot``, ``Series.plot``, or ``seaborn.countplot``).
     :return: The Axes object with the plot drawn onto it.
     """
     if ax is None:
@@ -41,7 +92,7 @@ def visualize_feature(
     feature_series = series.dropna() if remove_na else series
 
     if pd.api.types.is_float_dtype(feature_series):
-        sns.histplot(feature_series, ax=ax, kde=True, **kwargs)
+        ax = _plot_clean_violin_distribution(feature_series, include_outliers, outlier_iqr_multiplier, ax, **kwargs)
         labels = ax.get_xticks()
     elif pd.api.types.is_datetime64_any_dtype(feature_series):
         feature_series.value_counts().sort_index().plot(kind="line", ax=ax, **kwargs)
