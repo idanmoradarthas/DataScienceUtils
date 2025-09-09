@@ -32,7 +32,7 @@ jobs:
       - name: Install graphviz binaries & Chromium for Windows (${{ runner.arch }})
         if: runner.os == 'Windows'
         run: |
-          choco install -y graphviz chromium tcl
+          choco install -y graphviz chromium
       - name: Install graphviz binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
         run: brew install graphviz
