@@ -235,17 +235,17 @@ def _is_categorical_like(dtype):
     )
 
 
-def _plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
+def _plot_categorical_feature1(categorical_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is categorical-like."""
     dup_df = pd.DataFrame()
-    dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
+    dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
 
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_categorical(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_datetime(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
     else:
-        _plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
 
 
 def _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):

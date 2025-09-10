@@ -18,10 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Set TCL/TK Environment Variables
+        if: runner.os == 'Windows'
+        run: |
+          echo "TCL_LIBRARY=${{ steps.setup-python.outputs.pythonLocation }}\\tcl\\tcl8.6" >> $env:GITHUB_ENV
+          echo "TK_LIBRARY=${{ steps.setup-python.outputs.pythonLocation }}\\tcl\\tk8.6" >> $env:GITHUB_ENV
+        shell: powershell
       - name: Install hatch and coveralls
         run: pip install hatch hatchling coveralls
       - name: Install graphviz binaries for Linux (${{ runner.arch }})
