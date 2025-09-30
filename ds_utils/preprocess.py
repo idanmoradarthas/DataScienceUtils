@@ -250,6 +250,7 @@ def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
     ax.set_xlabel(datetime_feature)
     ax.set_ylabel(other_feature)
 
+
 def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
