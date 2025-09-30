@@ -47,7 +47,7 @@ def _plot_clean_violin_distribution(
         iqr = q3 - q1
         lower_bound = max(min_series_value, q1 - outlier_iqr_multiplier * iqr)
         upper_bound = min(max_series_value, q3 + outlier_iqr_multiplier * iqr)
-        series_plot = series[(series >= lower_bound) & (series <= upper_bound)]
+        series_plot = series[(series >= lower_bound) & (series <= upper_bound)].copy()
 
     sns.violinplot(y=series_plot, hue=None, legend=False, ax=ax, **kwargs)
 
@@ -195,15 +195,37 @@ def plot_correlation_dendrogram(
 
 
 def plot_features_interaction(
-    data: pd.DataFrame, feature_1: str, feature_2: str, *, ax: Optional[axes.Axes] = None, **kwargs
+    data: pd.DataFrame,
+    feature_1: str,
+    feature_2: str,
+    *,
+    include_outliers: bool = True,
+    outlier_iqr_multiplier: float = 1.5,
+    ax: Optional[axes.Axes] = None,
+    **kwargs,
 ) -> axes.Axes:
-    """Plot the joint distribution between two features.
+    """Plot the joint distribution between two features using type-aware defaults.
 
-    :param data: The input DataFrame, where each feature is a column.
+    Behavior by dtypes of ``feature_1`` and ``feature_2``:
+    - If both are numeric: scatter plot.
+    - If one is datetime and the other numeric: line/scatter over time.
+    - If both are categorical-like: overlaid histograms per category.
+    - If one is categorical-like and the other numeric: violin plot by category.
+
+    For the categorical-vs-numeric case, you can optionally trim outliers from the
+    numeric feature using an IQR fence [Q1 - k*IQR, Q3 + k*IQR], where ``k`` is
+    controlled by ``outlier_iqr_multiplier``.
+
+    :param data: The input DataFrame where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
-    :param ax: Axes in which to draw the plot. If None, use the currently active Axes.
-    :param kwargs: Additional keyword arguments passed to the underlying plotting function.
+    :param include_outliers: Whether to include values outside the IQR fence for
+                             categorical-vs-numeric violin plots (default True).
+    :param outlier_iqr_multiplier: Multiplier ``k`` for the IQR fence when trimming
+                                   outliers in categorical-vs-numeric plots (default 1.5).
+    :param ax: Axes in which to draw the plot. If None, a new one is created.
+    :param kwargs: Additional keyword arguments forwarded to the underlying plotting
+                   functions (e.g., ``seaborn.violinplot``, ``Axes.scatter``, ``Axes.plot``).
     :return: The Axes object with the plot drawn onto it.
     """
     if ax is None:
@@ -213,11 +235,20 @@ def plot_features_interaction(
     dtype2 = data[feature_2].dtype
 
     if _is_categorical_like(dtype1):
-        _plot_categorical_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+        _plot_categorical_feature1(
+            feature_1,
+            feature_2,
+            data,
+            dtype2,
+            include_outliers,
+            outlier_iqr_multiplier,
+            ax,
+            **kwargs,
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
         _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
     elif _is_categorical_like(dtype2):
-        _plot_categorical_vs_numeric(feature_2, feature_1, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
         _plot_xy(feature_2, feature_1, data, ax, **kwargs)
     else:
@@ -235,14 +266,31 @@ def _is_categorical_like(dtype):
     )
 
 
-def _plot_categorical_feature1(categorical_feature, feature_2, data, dtype2, ax, **kwargs):
+def _plot_categorical_feature1(
+    categorical_feature,
+    feature_2,
+    data,
+    dtype2,
+    include_outliers,
+    outlier_iqr_multiplier,
+    ax,
+    **kwargs,
+):
     """Plot when the first feature is categorical-like."""
     if _is_categorical_like(dtype2):
         _plot_categorical_vs_categorical(categorical_feature, feature_2, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
         _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
     else:
-        _plot_categorical_vs_numeric(categorical_feature, feature_2, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(
+            categorical_feature,
+            feature_2,
+            data,
+            outlier_iqr_multiplier,
+            include_outliers,
+            ax,
+            **kwargs,
+        )
 
 
 def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
@@ -284,8 +332,9 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
 def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
     """Plot when one feature is categorical-like and the other is datetime.
 
-    This unified function expects the categorical feature name first and the
-    datetime feature name second.
+    Draws a violin plot across time buckets on the x-axis with categories on the
+    y-axis. This unified function expects the categorical feature name first and
+    the datetime feature name second.
     """
     dup_df = pd.DataFrame()
     dup_df[datetime_feature] = data[datetime_feature].apply(dates.date2num)
@@ -297,15 +346,43 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, a
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
-def _plot_categorical_vs_numeric(categorical_feature, numeric_feature, data, ax, **kwargs):
-    """Plot when the first feature is categorical-like and the second is numeric."""
+def _plot_categorical_vs_numeric(
+    categorical_feature,
+    numeric_feature,
+    data,
+    outlier_iqr_multiplier,
+    include_outliers,
+    ax,
+    **kwargs,
+):
+    """Plot when the first feature is categorical-like and the second is numeric.
+
+    Renders a violin plot of the numeric feature for each category. When
+    ``include_outliers`` is False, numeric values outside the IQR fence
+    [Q1 - k*IQR, Q3 + k*IQR] are trimmed, where ``k`` is ``outlier_iqr_multiplier``.
+    """
     dup_df = pd.DataFrame()
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
     dup_df[numeric_feature] = data[numeric_feature]
-    chart = sns.boxplot(x=categorical_feature, y=numeric_feature, data=dup_df, ax=ax, **kwargs)
-    ticks_loc = chart.get_xticks()  # Get the tick positions
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
+
+    if include_outliers:
+        df_plot = dup_df.copy()
+    else:
+        q1 = dup_df[numeric_feature].quantile(0.25)
+        q3 = dup_df[numeric_feature].quantile(0.75)
+        min_series_value = dup_df[numeric_feature].min()
+        max_series_value = dup_df[numeric_feature].max()
+        iqr = q3 - q1
+        lower_bound = max(min_series_value, q1 - outlier_iqr_multiplier * iqr)
+        upper_bound = min(max_series_value, q3 + outlier_iqr_multiplier * iqr)
+        df_plot = dup_df[(dup_df[numeric_feature] >= lower_bound) & (dup_df[numeric_feature] <= upper_bound)].copy()
+
+    sns.violinplot(x=categorical_feature, y=numeric_feature, hue=categorical_feature, data=df_plot, ax=ax, **kwargs)
+
+    ax.set_xlabel(categorical_feature.replace("_", " ").title())
+    ax.set_ylabel(numeric_feature.replace("_", " ").title())
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    return ax
 
 
 def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
