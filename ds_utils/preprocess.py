@@ -217,9 +217,9 @@ def plot_features_interaction(
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
         _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
     elif _is_categorical_like(dtype2):
-        _plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(feature_2, feature_1, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs)
+        _plot_xy(feature_2, feature_1, data, ax, **kwargs)
     else:
         _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
 
@@ -237,43 +237,25 @@ def _is_categorical_like(dtype):
 
 def _plot_categorical_feature1(categorical_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is categorical-like."""
-    dup_df = pd.DataFrame()
-    dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
-
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_categorical(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_categorical(categorical_feature, feature_2, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_categorical_vs_datetime(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
     else:
-        _plot_categorical_vs_numeric(categorical_feature, feature_2, dup_df, data, ax, **kwargs)
+        _plot_categorical_vs_numeric(categorical_feature, feature_2, data, ax, **kwargs)
 
 
-def _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs):
+def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
+    ax.plot(data[datetime_feature], data[other_feature], **kwargs)
+    ax.set_xlabel(datetime_feature)
+    ax.set_ylabel(other_feature)
+
+def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
-        _plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs)
+        _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
     else:
-        ax.plot(data[feature_1], data[feature_2], **kwargs)
-        ax.set_xlabel(feature_1)
-        ax.set_ylabel(feature_2)
-
-
-def _plot_categorical_feature2(feature_1, feature_2, data, ax, **kwargs):
-    """Plot when the second feature is categorical-like."""
-    dup_df = pd.DataFrame()
-    dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-    dup_df[feature_1] = data[feature_1]
-    chart = sns.boxplot(x=feature_2, y=feature_1, data=dup_df, ax=ax, **kwargs)
-    ticks_loc = chart.get_xticks()  # Get the tick positions
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-
-
-def _plot_datetime_feature2(feature_1, feature_2, data, ax, **kwargs):
-    """Plot when the second feature is datetime."""
-    ax.plot(data[feature_2], data[feature_1], **kwargs)
-    ax.set_xlabel(feature_2)
-    ax.set_ylabel(feature_1)
+        _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
 
 
 def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
@@ -283,8 +265,10 @@ def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
     ax.set_ylabel(feature_2)
 
 
-def _plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **kwargs):
+def _plot_categorical_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
     """Plot when both features are categorical-like."""
+    dup_df = pd.DataFrame()
+    dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
     group_feature_1 = dup_df[feature_1].unique().tolist()
     ax.hist(
@@ -296,35 +280,31 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, dup_df, data, ax, **k
     ax.legend(title=feature_2)
 
 
-def _plot_categorical_vs_datetime(feature_1, feature_2, dup_df, data, ax, **kwargs):
-    """Plot when the first feature is categorical-like, and the second is datetime."""
-    dup_df[feature_2] = data[feature_2].apply(dates.date2num)
-    chart = sns.violinplot(x=feature_2, y=feature_1, data=dup_df, ax=ax)
+def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
+    """Plot when one feature is categorical-like and the other is datetime.
+
+    This unified function expects the categorical feature name first and the
+    datetime feature name second.
+    """
+    dup_df = pd.DataFrame()
+    dup_df[datetime_feature] = data[datetime_feature].apply(dates.date2num)
+    dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
+    chart = sns.violinplot(x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs)
     ticks_loc = chart.get_xticks()
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
-def _plot_categorical_vs_numeric(feature_1, feature_2, dup_df, data, ax, **kwargs):
+def _plot_categorical_vs_numeric(categorical_feature, numeric_feature, data, ax, **kwargs):
     """Plot when the first feature is categorical-like and the second is numeric."""
-    dup_df[feature_2] = data[feature_2]
-    chart = sns.boxplot(x=feature_1, y=feature_2, data=dup_df, ax=ax, **kwargs)
+    dup_df = pd.DataFrame()
+    dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
+    dup_df[numeric_feature] = data[numeric_feature]
+    chart = sns.boxplot(x=categorical_feature, y=numeric_feature, data=dup_df, ax=ax, **kwargs)
     ticks_loc = chart.get_xticks()  # Get the tick positions
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))  # Explicitly set the tick positions
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-
-
-def _plot_datetime_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
-    """Plot when the first feature is datetime and the second is categorical-like."""
-    dup_df = pd.DataFrame()
-    dup_df[feature_1] = data[feature_1].apply(dates.date2num)
-    dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-    chart = sns.violinplot(x=feature_1, y=feature_2, data=dup_df, ax=ax)
-    ticks_loc = chart.get_xticks()
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-    ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
 
 
 def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
