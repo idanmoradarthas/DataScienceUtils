@@ -92,9 +92,7 @@ def visualize_feature(
     feature_series = series.dropna() if remove_na else series
 
     if pd.api.types.is_float_dtype(feature_series):
-        ax = _plot_clean_violin_distribution(
-            feature_series, include_outliers, outlier_iqr_multiplier, ax, **kwargs
-        )
+        ax = _plot_clean_violin_distribution(feature_series, include_outliers, outlier_iqr_multiplier, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(feature_series):
         feature_series.value_counts().sort_index().plot(kind="line", ax=ax, **kwargs)
         labels = ax.get_xticks()
