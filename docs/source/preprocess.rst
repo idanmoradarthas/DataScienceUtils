@@ -38,7 +38,7 @@ For each different type of feature, a different graph will be generated:
 
 Float
 -----
-A distribution plot is shown:
+A violin plot is shown:
 
 .. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float.png
     :align: center
@@ -77,33 +77,7 @@ Integer:
     :align: center
     :alt: Visualize Feature Integer
 
-Looping Over All the Features
------------------------------
-This code example shows how to construct a loop to visualize all features::
-
-    import pandas as pd
-    from matplotlib import pyplot as plt
-    from ds_utils.preprocess import visualize_feature
-
-    loan_frame = pd.read_csv('path/to/dataset', encoding="latin1", nrows=11000, parse_dates=["issue_d"])
-    loan_frame = loan_frame.drop("id", axis=1)
-
-    fig, axes = plt.subplots(5, 2, figsize=(18, 30))
-    axes = axes.flatten()
-
-    for i, feature in enumerate(loan_frame.columns):
-        if i < len(axes):
-            visualize_feature(loan_frame[feature], ax=axes[i])
-
-    fig.delaxes(axes[9])
-    plt.subplots_adjust(hspace=0.5)
-    plt.show()
-
-The following image will be shown:
-
-.. image:: images/loop_visualize_feature_example.png
-    :align: center
-    :alt: Features Visualization
+ 
 
 ***********************
 Get Correlated Features
