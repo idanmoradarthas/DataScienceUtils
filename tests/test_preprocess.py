@@ -226,6 +226,7 @@ def test_plot_relashionship_between_features_numeric_categorical_without_outlier
     plt.gcf().set_size_inches(14, 9)
     return plt.gcf()
 
+
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_plot_correlation_dendrogram(data_1m, use_existing_ax):
