@@ -38,7 +38,7 @@ For each different type of feature, a different graph will be generated:
 
 Float
 -----
-A distribution plot is shown:
+A violin plot is shown:
 
 .. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float.png
     :align: center
@@ -77,33 +77,7 @@ Integer:
     :align: center
     :alt: Visualize Feature Integer
 
-Looping Over All the Features
------------------------------
-This code example shows how to construct a loop to visualize all features::
-
-    import pandas as pd
-    from matplotlib import pyplot as plt
-    from ds_utils.preprocess import visualize_feature
-
-    loan_frame = pd.read_csv('path/to/dataset', encoding="latin1", nrows=11000, parse_dates=["issue_d"])
-    loan_frame = loan_frame.drop("id", axis=1)
-
-    fig, axes = plt.subplots(5, 2, figsize=(18, 30))
-    axes = axes.flatten()
-
-    for i, feature in enumerate(loan_frame.columns):
-        if i < len(axes):
-            visualize_feature(loan_frame[feature], ax=axes[i])
-
-    fig.delaxes(axes[9])
-    plt.subplots_adjust(hspace=0.5)
-    plt.show()
-
-The following image will be shown:
-
-.. image:: images/loop_visualize_feature_example.png
-    :align: center
-    :alt: Features Visualization
+ 
 
 ***********************
 Get Correlated Features
@@ -252,8 +226,8 @@ A scatter plot of the shared distribution is shown:
 
 One Feature is Numeric and The Other is Categorical
 ---------------------------------------------------
-If one feature is numeric and the other is either an ``object``, a ``category``, or a ``bool``, then a boxplot
-is shown. The plot displays the distribution of the numeric feature for each unique value of the categorical feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown, and
+If one feature is numeric and the other is either an ``object``, a ``category``, or a ``bool``, then a violin plot
+is shown. A violin plot combines a box plot with a kernel density estimate, displaying the distribution of the numeric feature for each unique value of the categorical feature. If the categorical feature has more than 10 unique values, then the 10 most common values are shown, and
 the others are labeled "Other Values".
 
 .. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_categorical.png
@@ -299,37 +273,6 @@ Here is an example for a boolean feature plot:
 .. image:: ../../tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool_default.png
     :align: center
     :alt: Datetime Series and Boolean
-
-Looping One Feature over The Others
------------------------------------
-This code example shows how to construct a loop to display the relationship of one feature with all the others::
-
-    import pandas as pd
-    from matplotlib import pyplot as plt
-    from ds_utils.preprocess import plot_features_interaction
-
-    data_1M = pd.read_csv('path/to/dataset')
-
-    fig, axes = plt.subplots(6, 2, figsize=(16, 25))
-    axes = axes.flatten()
-
-    feature_1 = "x1"
-    other_features = ["x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12"]
-
-    for i, feature in enumerate(other_features):
-        if i < len(axes):
-            axes[i].set_title(f"{feature_1} vs. {feature}")
-            plot_features_interaction(feature_1, feature, data_1M, ax=axes[i])
-
-    fig.delaxes(axes[11])
-    fig.subplots_adjust(hspace=0.7)
-    plt.show()
-
-The following image will be shown:
-
-.. image:: images/loop_plot_features_relationship_example.png
-    :align: center
-    :alt: Looping One Feature over The Others
 
 Choosing the Right Visualization
 ================================
