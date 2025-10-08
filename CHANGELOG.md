@@ -1,6 +1,27 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2025-10-08
+
+### Added
+
+- **Mutual Information Scoring**: Added `compute_mutual_information` method to preprocessing module for feature selection and analysis.
+- **Enhanced Visualization**: Replaced box plots with violin plots for numeric vs categorical feature interactions in `plot_features_interaction`.
+- **Development Tools**: Integrated Ruff for code linting and formatting.
+- **Deployment**: Added bash conda deployment script for improved CI/CD.
+
+### Changed
+
+- **Build System**: Migrated from tox to hatch for better dependency management and testing.
+- **Visualization**: Enhanced feature interaction plotting with improved outlier handling and IQR multiplier controls.
+- **Documentation**: Improved documentation across multiple modules for better clarity and usability.
+- **Dependencies**: Updated package dependencies.
+
+### Fixed
+
+- Fixed sklearn tags problem in mocking tests.
+- Minor fixes and improvements across the codebase.
+
 ## [1.8.1] - 2025-01-08
 
 ### Added
