@@ -138,6 +138,19 @@ def test_visualize_feature_datetime_invalid_first_day():
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_datetime_missing_days_adds_columns():
+    """Ensure heatmap adds missing weekday columns when some days are absent in data."""
+    dates_mon = pd.date_range("2024-01-01", periods=4, freq="W-MON")
+    dates_tue = pd.date_range("2024-01-02", periods=4, freq="W-TUE")
+    combined = np.concatenate([dates_mon.values, dates_tue.values])
+    series = pd.Series(pd.to_datetime(combined), name="test_dates").sort_values().reset_index(drop=True)
+
+    visualize_feature(series, first_day_of_week="Monday")
+    plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
