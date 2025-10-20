@@ -58,6 +58,54 @@ def _plot_clean_violin_distribution(
     return ax
 
 
+def _plot_datetime_heatmap(feature_series: pd.Series, first_day_of_week: str, ax: axes.Axes, **kwargs) -> axes.Axes:
+    """Plot a 2D heatmap for datetime features showing day-of-week vs year-week patterns.
+
+    :param feature_series: The datetime series to visualize.
+    :param first_day_of_week: First day of the week for the heatmap X-axis.
+    :param ax: Matplotlib Axes to draw on.
+    :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
+    :return: The Axes object with the heatmap.
+    """
+    # Validate first_day_of_week parameter
+    valid_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    if first_day_of_week not in valid_days:
+        raise ValueError(f"first_day_of_week must be one of {valid_days}, got '{first_day_of_week}'")
+
+    # Create day of week order starting with first_day_of_week
+    day_index = valid_days.index(first_day_of_week)
+    day_order = valid_days[day_index:] + valid_days[:day_index]
+
+    # Create DataFrame with date, day of week, year, and week number
+    df = (
+        feature_series.to_frame("date")
+        .assign(
+            day_of_week=lambda x: x["date"].dt.day_name(),
+            year=lambda x: x["date"].dt.year,
+            week_number=lambda x: x["date"].dt.isocalendar().week,
+        )
+        .assign(year_week=lambda x: x["year"].astype(str) + "-W" + x["week_number"].astype(str).str.zfill(2))
+        .groupby(["year_week", "day_of_week"])
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    # Ensure all days of the week are present as columns, reordered according to day_order
+    for day in day_order:
+        if day not in df.columns:
+            df[day] = 0
+
+    # Reorder columns to match day_order (columns = day of week, rows = year-week)
+    df = df.reindex(columns=day_order)
+
+    # Create heatmap with annotations to show numbers in cells
+    sns.heatmap(df, cmap="Blues", ax=ax, annot=True, fmt="d", **kwargs)
+    ax.set_xlabel("Day of Week")
+    ax.set_ylabel("Year-Week")
+
+    return ax
+
+
 def visualize_feature(
     series: pd.Series,
     remove_na: bool = False,
@@ -118,8 +166,6 @@ def visualize_feature(
         ticks_loc = ax.get_xticks()
         ax.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
         ax.set_xticklabels(labels, rotation=45, ha="right")
-
-    # Note: datetime plots now use heatmaps and handle their own formatting
 
     return ax
 
@@ -405,54 +451,6 @@ def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
 @plt.FuncFormatter
 def _convert_numbers_to_dates(x, pos):
     return dates.num2date(x).strftime("%Y-%m-%d %H:%M")
-
-
-def _plot_datetime_heatmap(feature_series: pd.Series, first_day_of_week: str, ax: axes.Axes, **kwargs) -> axes.Axes:
-    """Plot a 2D heatmap for datetime features showing day-of-week vs year-week patterns.
-
-    :param feature_series: The datetime series to visualize.
-    :param first_day_of_week: First day of the week for the heatmap X-axis.
-    :param ax: Matplotlib Axes to draw on.
-    :param kwargs: Additional keyword arguments passed to seaborn's heatmap function.
-    :return: The Axes object with the heatmap.
-    """
-    # Validate first_day_of_week parameter
-    valid_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    if first_day_of_week not in valid_days:
-        raise ValueError(f"first_day_of_week must be one of {valid_days}, got '{first_day_of_week}'")
-
-    # Create day of week order starting with first_day_of_week
-    day_index = valid_days.index(first_day_of_week)
-    day_order = valid_days[day_index:] + valid_days[:day_index]
-
-    # Create DataFrame with date, day of week, year, and week number
-    df = (
-        feature_series.to_frame("date")
-        .assign(
-            day_of_week=lambda x: x["date"].dt.day_name(),
-            year=lambda x: x["date"].dt.year,
-            week_number=lambda x: x["date"].dt.isocalendar().week,
-        )
-        .assign(year_week=lambda x: x["year"].astype(str) + "-W" + x["week_number"].astype(str).str.zfill(2))
-        .groupby(["year_week", "day_of_week"])
-        .size()
-        .unstack(fill_value=0)
-    )
-
-    # Ensure all days of the week are present as columns, reordered according to day_order
-    for day in day_order:
-        if day not in df.columns:
-            df[day] = 0
-
-    # Reorder columns to match day_order (columns = day of week, rows = year-week)
-    df = df.reindex(columns=day_order)
-
-    # Create heatmap with annotations to show numbers in cells
-    sns.heatmap(df, cmap="Blues", ax=ax, annot=True, fmt="d", **kwargs)
-    ax.set_xlabel("Day of Week")
-    ax.set_ylabel("Year-Week")
-
-    return ax
 
 
 def extract_statistics_dataframe_per_label(df: pd.DataFrame, feature_name: str, label_name: str) -> pd.DataFrame:
