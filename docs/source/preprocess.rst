@@ -46,7 +46,13 @@ A violin plot is shown:
 
 Datetime Series
 ---------------
-A line plot is shown:
+Datetime features are visualized as a 2D heatmap that shows weekly patterns:
+
+- X-axis: Day of the week (configurable first day via ``first_day_of_week``)
+- Y-axis: Year-week (e.g., ``2024-W52``, ``2025-W01``)
+- Cell values: Count of records for that day/week (numbers are annotated)
+
+Default (week starts on Monday):
 
 .. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_datetime.png
     :align: center

@@ -130,14 +130,23 @@ fig.show()
 
 Receives a feature and visualizes its values on a graph:
 
-* If the feature is float, the method plots the distribution plot.
-* If the feature is datetime, the method plots a line plot of progression over time.
+* If the feature is float, the method plots a violin distribution. You can optionally exclude outliers using the IQR fence method.
+* If the feature is datetime, the method plots a 2D heatmap showing day-of-week vs year-week patterns, making weekly and yearly trends immediately visible.
 * If the feature is object, categorical, boolean, or integer, the method plots a count plot (histogram).
 
 ```python
 from ds_utils.preprocess import visualize_feature
 
+# Basic usage
 visualize_feature(X_train["feature"])
+
+# For float features, you can control outlier handling
+visualize_feature(X_train["float_feature"], include_outliers=True)  # Default
+visualize_feature(X_train["float_feature"], include_outliers=False, outlier_iqr_multiplier=1.5)
+
+# For datetime features, you can specify the first day of the week
+visualize_feature(X_train["datetime_feature"], first_day_of_week="Monday")  # Default
+visualize_feature(X_train["datetime_feature"], first_day_of_week="Sunday")
 ```
 
 | Feature Type      | Plot                                                                                                                                                                             |

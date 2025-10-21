@@ -121,6 +121,36 @@ def test_visualize_feature_remove_na(loan_data):
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_datetime_heatmap_sunday_start(loan_data):
+    """Test visualize_feature with datetime data starting week on Sunday."""
+    visualize_feature(loan_data["issue_d"], first_day_of_week="Sunday")
+    plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+def test_visualize_feature_datetime_invalid_first_day():
+    """Test visualize_feature with invalid first_day_of_week parameter."""
+    dates = pd.date_range("2023-01-01", "2023-12-31", freq="D")
+    series = pd.Series(dates, name="test_dates")
+
+    with pytest.raises(ValueError, match="first_day_of_week must be one of"):
+        visualize_feature(series, first_day_of_week="InvalidDay")
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_datetime_missing_days_adds_columns():
+    """Ensure heatmap adds missing weekday columns when some days are absent in data."""
+    dates_mon = pd.date_range("2024-01-01", periods=4, freq="W-MON")
+    dates_tue = pd.date_range("2024-01-02", periods=4, freq="W-TUE")
+    combined = np.concatenate([dates_mon.values, dates_tue.values])
+    series = pd.Series(pd.to_datetime(combined), name="test_dates").sort_values().reset_index(drop=True)
+
+    visualize_feature(series, first_day_of_week="Monday")
+    plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
