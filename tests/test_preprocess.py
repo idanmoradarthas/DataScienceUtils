@@ -65,21 +65,57 @@ def setup_teardown():
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize(
     "feature",
-    ["emp_length_int", "issue_d", "loan_condition_cat", "income_category", "home_ownership", "purpose"],
-    ids=["float", "datetime", "int", "object", "category", "category_more_than_10_categories"],
+    ["emp_length_int", "issue_d", "loan_condition_cat"],
+    ids=["float", "datetime", "int"],
 )
-def test_visualize_feature(loan_data, feature, request):
-    """Test visualize_feature function for different feature types."""
-    if request.node.callspec.id == "object":
-        visualize_feature(loan_data[feature], order=["Low", "Medium", "High"])
-    else:
-        visualize_feature(loan_data[feature])
+def test_visualize_feature_float_datetime_int(loan_data, feature, request):
+    """Test visualize_feature function for float, datetime and int features."""
+    visualize_feature(loan_data[feature])
 
-    if request.node.callspec.id in ["datetime", "object", "category"]:
+    if request.node.callspec.id in ["datetime"]:
         plt.gcf().set_size_inches(10, 8)
-    elif request.node.callspec.id == "category_more_than_10_categories":
-        plt.gcf().set_size_inches(11, 14)
+    return plt.gcf()
 
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    ("feature", "show_counts"),
+    [
+        ("income_category", True),
+        ("home_ownership", True),
+        ("purpose", True),
+        ("income_category", False),
+        ("home_ownership", False),
+        ("purpose", False),
+    ],
+    ids=[
+        "object_show_counts",
+        "category_show_counts",
+        "category_more_than_10_categories_show_counts",
+        "object_no_show_counts",
+        "category_no_show_counts",
+        "category_more_than_10_categories_no_show_counts",
+    ],
+)
+def test_visualize_feature_object(loan_data, feature, show_counts, request):
+    """Test visualize_feature function for object and category features."""
+    if request.node.callspec.id in ["object_show_counts", "object_no_show_counts"]:
+        visualize_feature(loan_data[feature], order=["Low", "Medium", "High"], show_counts=show_counts)
+    else:
+        visualize_feature(loan_data[feature], show_counts=show_counts)
+
+    if request.node.callspec.id in [
+        "object_show_counts",
+        "category_show_counts",
+        "object_no_show_counts",
+        "category_no_show_counts",
+    ]:
+        plt.gcf().set_size_inches(10, 9)
+    elif request.node.callspec.id in [
+        "category_more_than_10_categories_show_counts",
+        "category_more_than_10_categories_no_show_counts",
+    ]:
+        plt.gcf().set_size_inches(11, 14)
     return plt.gcf()
 
 

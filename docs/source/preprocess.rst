@@ -40,7 +40,7 @@ Float
 -----
 A violin plot is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_float.png
     :align: center
     :alt: Visualize Feature Float
 
@@ -54,7 +54,7 @@ Datetime features are visualized as a 2D heatmap that shows weekly patterns:
 
 Default (week starts on Monday):
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_datetime.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_datetime.png
     :align: center
     :alt: Visualize Feature Datetime Series
 
@@ -67,7 +67,7 @@ Categorical / Object:
 If the categorical / object feature has more than 10 unique values, the 10 most common values are shown, and
 the others are labeled "Other Values".
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_category_more_than_10_categories.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_object_category_more_than_10_categories_show_counts.png
     :align: center
     :alt: Visualize Feature Categorical
 
@@ -79,7 +79,7 @@ Boolean:
 
 Integer:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_int.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_int.png
     :align: center
     :alt: Visualize Feature Integer
 
