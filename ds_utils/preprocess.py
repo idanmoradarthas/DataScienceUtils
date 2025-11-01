@@ -113,6 +113,7 @@ def visualize_feature(
     include_outliers: bool = True,
     outlier_iqr_multiplier: float = 1.5,
     first_day_of_week: str = "Monday",
+    show_counts: bool = True,
     ax: Optional[axes.Axes] = None,
     **kwargs,
 ) -> axes.Axes:
@@ -135,6 +136,7 @@ def visualize_feature(
     :param first_day_of_week: First day of the week for the heatmap X-axis. Must be one of
                               "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday".
                               Default is "Monday".
+    :param show_counts: If True, display count values on top of bars in count plots. Default is True.
     :param ax: Axes in which to draw the plot. If None, a new one is created.
     :param kwargs: Extra keyword arguments forwarded to the underlying plotting function
                    (``seaborn.violinplot``, ``seaborn.heatmap``, or ``seaborn.countplot``).
@@ -151,7 +153,29 @@ def visualize_feature(
         ax = _plot_datetime_heatmap(feature_series, first_day_of_week, ax, **kwargs)
         labels = ax.get_xticklabels()
     else:
-        sns.countplot(x=_copy_series_or_keep_top_10(feature_series), ax=ax, **kwargs)
+        # Use pandas/matplotlib instead of seaborn for count plots
+        series_to_plot = _copy_series_or_keep_top_10(feature_series)
+        value_counts = series_to_plot.value_counts().sort_index()
+
+        # Create bar plot using matplotlib
+        bars = ax.bar(range(len(value_counts)), value_counts.values, **kwargs)
+        ax.set_xticks(range(len(value_counts)))
+        ax.set_xticklabels(value_counts.index)
+        ax.set_ylabel("Count")
+
+        # Add count labels if requested
+        if show_counts:
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    height,
+                    f"{int(height):,}",
+                    ha="center",
+                    va="bottom",
+                    fontweight="bold",
+                )
+
         labels = ax.get_xticklabels()
 
     if not ax.get_title():
