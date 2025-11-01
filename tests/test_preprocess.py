@@ -104,11 +104,12 @@ def test_visualize_feature_float_exclude_outliers(loan_data):
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
-def test_visualize_feature_bool(loan_data):
+@pytest.mark.parametrize("show_counts", [True, False], ids=["show_counts", "no_show_counts"])
+def test_visualize_feature_bool(loan_data, show_counts):
     """Test visualize_feature function for boolean data."""
     loan_dup = pd.DataFrame()
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: term == " 36 months").astype("bool")
-    visualize_feature(loan_dup["term 36 months"], order=["True", "False"])
+    visualize_feature(loan_dup["term 36 months"], order=["True", "False"], show_counts=show_counts)
     return plt.gcf()
 
 

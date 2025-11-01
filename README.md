@@ -155,7 +155,7 @@ visualize_feature(X_train["datetime_feature"], first_day_of_week="Sunday")
 | Integer           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_int.png)                              |
 | Datetime          | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_datetime.png)                         |
 | Category / Object | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_category_more_than_10_categories.png) |
-| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_bool.png)                             |
+| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_bool_show_counts.png)                             |
 
 ### Get Correlated Features
 

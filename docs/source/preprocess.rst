@@ -73,7 +73,7 @@ the others are labeled "Other Values".
 
 Boolean:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_bool.png
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_bool_show_counts.png
     :align: center
     :alt: Visualize Feature Boolean
 

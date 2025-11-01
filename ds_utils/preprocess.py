@@ -162,7 +162,6 @@ def visualize_feature(
         ax = _plot_datetime_heatmap(feature_series, first_day_of_week, ax, **kwargs)
         labels = ax.get_xticklabels()
     else:
-        # Use pandas/matplotlib instead of seaborn for count plots
         series_to_plot = _copy_series_or_keep_top_10(feature_series)
         value_counts = series_to_plot.value_counts().sort_index()
 
