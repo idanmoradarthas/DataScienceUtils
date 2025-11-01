@@ -70,12 +70,15 @@ def setup_teardown():
 )
 def test_visualize_feature(loan_data, feature, request):
     """Test visualize_feature function for different feature types."""
-    visualize_feature(loan_data[feature])
+    if request.node.callspec.id == "object":
+        visualize_feature(loan_data[feature], order=["Low", "Medium", "High"])
+    else:
+        visualize_feature(loan_data[feature])
 
     if request.node.callspec.id in ["datetime", "object", "category"]:
         plt.gcf().set_size_inches(10, 8)
     elif request.node.callspec.id == "category_more_than_10_categories":
-        plt.gcf().set_size_inches(11, 11)
+        plt.gcf().set_size_inches(11, 14)
 
     return plt.gcf()
 
@@ -105,7 +108,7 @@ def test_visualize_feature_bool(loan_data):
     """Test visualize_feature function for boolean data."""
     loan_dup = pd.DataFrame()
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: term == " 36 months").astype("bool")
-    visualize_feature(loan_dup["term 36 months"])
+    visualize_feature(loan_dup["term 36 months"], order=["True", "False"])
     return plt.gcf()
 
 
