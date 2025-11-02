@@ -65,18 +65,57 @@ def setup_teardown():
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize(
     "feature",
-    ["emp_length_int", "issue_d", "loan_condition_cat", "income_category", "home_ownership", "purpose"],
-    ids=["float", "datetime", "int", "object", "category", "category_more_than_10_categories"],
+    ["emp_length_int", "issue_d", "loan_condition_cat"],
+    ids=["float", "datetime", "int"],
 )
-def test_visualize_feature(loan_data, feature, request):
-    """Test visualize_feature function for different feature types."""
+def test_visualize_feature_float_datetime_int(loan_data, feature, request):
+    """Test visualize_feature function for float, datetime and int features."""
     visualize_feature(loan_data[feature])
 
-    if request.node.callspec.id in ["datetime", "object", "category"]:
-        plt.gcf().set_size_inches(10, 8)
-    elif request.node.callspec.id == "category_more_than_10_categories":
-        plt.gcf().set_size_inches(11, 11)
+    if request.node.callspec.id in ["datetime"]:
+        plt.gcf().set_size_inches(10, 11)
+    return plt.gcf()
 
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    ("feature", "show_counts"),
+    [
+        ("income_category", True),
+        ("home_ownership", True),
+        ("purpose", True),
+        ("income_category", False),
+        ("home_ownership", False),
+        ("purpose", False),
+    ],
+    ids=[
+        "object_show_counts",
+        "category_show_counts",
+        "category_more_than_10_categories_show_counts",
+        "object_no_show_counts",
+        "category_no_show_counts",
+        "category_more_than_10_categories_no_show_counts",
+    ],
+)
+def test_visualize_feature_object(loan_data, feature, show_counts, request):
+    """Test visualize_feature function for object and category features."""
+    if request.node.callspec.id in ["object_show_counts", "object_no_show_counts"]:
+        visualize_feature(loan_data[feature], order=["Low", "Medium", "High"], show_counts=show_counts)
+    else:
+        visualize_feature(loan_data[feature], show_counts=show_counts)
+
+    if request.node.callspec.id in [
+        "object_show_counts",
+        "category_show_counts",
+        "object_no_show_counts",
+        "category_no_show_counts",
+    ]:
+        plt.gcf().set_size_inches(10, 9)
+    elif request.node.callspec.id in [
+        "category_more_than_10_categories_show_counts",
+        "category_more_than_10_categories_no_show_counts",
+    ]:
+        plt.gcf().set_size_inches(11, 14)
     return plt.gcf()
 
 
@@ -101,11 +140,12 @@ def test_visualize_feature_float_exclude_outliers(loan_data):
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
-def test_visualize_feature_bool(loan_data):
+@pytest.mark.parametrize("show_counts", [True, False], ids=["show_counts", "no_show_counts"])
+def test_visualize_feature_bool(loan_data, show_counts):
     """Test visualize_feature function for boolean data."""
     loan_dup = pd.DataFrame()
     loan_dup["term 36 months"] = loan_data["term"].apply(lambda term: term == " 36 months").astype("bool")
-    visualize_feature(loan_dup["term 36 months"])
+    visualize_feature(loan_dup["term 36 months"], order=["True", "False"], show_counts=show_counts)
     return plt.gcf()
 
 
@@ -147,6 +187,32 @@ def test_visualize_feature_datetime_missing_days_adds_columns():
 
     visualize_feature(series, first_day_of_week="Monday")
     plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("order", ["count_desc", "count_asc", "alpha_asc", "alpha_desc"])
+def test_visualize_feature_object_order(loan_data, order):
+    """Test visualize_feature function with different order parameters."""
+    visualize_feature(loan_data["purpose"], order=order)
+    plt.gcf().set_size_inches(11, 14)
+    return plt.gcf()
+
+
+def test_visualize_feature_object_order_error():
+    """Test visualize_feature function with an invalid order parameter."""
+    with pytest.raises(ValueError, match="Invalid order string: 'invalid_order'. Must be one of: "):
+        visualize_feature(pd.Series(["A", "B", "C"]), order="invalid_order")
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    "order", [["High", "Low", "Medium"], ["Medium", "High", "Low"]], ids=["high_low_medium", "medium_high_low"]
+)
+def test_visualize_feature_object_order_list(loan_data, order):
+    """Test visualize_feature function with a list of order parameters."""
+    visualize_feature(loan_data["income_category"], order=order)
+    plt.gcf().set_size_inches(11, 14)
     return plt.gcf()
 
 

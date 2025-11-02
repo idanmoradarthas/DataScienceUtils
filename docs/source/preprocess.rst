@@ -6,82 +6,116 @@ The preprocess module contains methods for data preprocessing before training. T
 *****************
 Visualize Feature
 *****************
-This method provides a quick visualization of individual features, offering insights into their distribution and characteristics. Use this when you want to:
+
+This method provides a quick visualization of individual features, offering insights
+into their distribution and characteristics. Use this when you want to:
 
 - Understand the distribution of numerical features
 - Identify the most common categories in categorical features
 - Observe trends in time series data
 - Detect potential outliers or unusual patterns
 
-These insights can guide feature engineering, help in identifying data quality issues, and inform the choice of preprocessing steps or model types.
+These insights can guide feature engineering, help in identifying data quality issues,
+and inform the choice of preprocessing steps or model types.
 
 .. autofunction:: preprocess::visualize_feature
 
 Code Example
 ============
-This example uses a small sample from a dataset available on `Kaggle <https://www.kaggle.com/mrferozi/loan-data-for-dummy-bank>`_, which contains loan data from a dummy bank.
 
-Here's how to use the code::
+This example uses a small sample from a dataset available on
+`Kaggle <https://www.kaggle.com/mrferozi/loan-data-for-dummy-bank>`_,
+which contains loan data from a dummy bank.
+
+.. code-block:: python
 
     import pandas as pd
     from matplotlib import pyplot as plt
     from ds_utils.preprocess import visualize_feature
 
-    loan_frame = pd.read_csv('path/to/dataset', encoding="latin1", nrows=11000, parse_dates=["issue_d"])
+    loan_frame = pd.read_csv(
+        'path/to/dataset',
+        encoding="latin1",
+        nrows=11000,
+        parse_dates=["issue_d"]
+    )
     loan_frame = loan_frame.drop("id", axis=1)
 
+    # Basic usage
     visualize_feature(loan_frame["some_feature"])
+
+    # Handle NA values (removes them before plotting)
+    visualize_feature(loan_frame["feature_with_nas"], remove_na=True)
+
+    # For float features, control outliers
+    visualize_feature(
+        loan_frame["float_feature"],
+        include_outliers=False,
+        outlier_iqr_multiplier=1.5
+    )
+
+    # For datetime features, customize week start
+    visualize_feature(loan_frame["datetime_feature"], first_day_of_week="Sunday")
+
+    # For categorical / object / boolean / int, customize order and counts
+    visualize_feature(loan_frame["category_feature"], show_counts=False)          # hide count labels
+    visualize_feature(loan_frame["category_feature"], order="count_desc")        # sort by descending count
+    visualize_feature(loan_frame["category_feature"], order=["High", "Medium", "Low"])  # explicit order
 
     plt.show()
 
-For each different type of feature, a different graph will be generated:
+For each different type of feature a different graph will be generated:
 
 Float
 -----
+
 A violin plot is shown:
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float.png
-    :align: center
-    :alt: Visualize Feature Float
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_float.png
+   :align: center
+   :alt: Visualize Feature Float
 
 Datetime Series
 ---------------
-Datetime features are visualized as a 2D heatmap that shows weekly patterns:
 
-- X-axis: Day of the week (configurable first day via ``first_day_of_week``)
-- Y-axis: Year-week (e.g., ``2024-W52``, ``2025-W01``)
-- Cell values: Count of records for that day/week (numbers are annotated)
+Datetime features are visualized as a 2-D heatmap that shows weekly patterns:
+
+- **X-axis** - Day of the week (configurable first day via ``first_day_of_week``)
+- **Y-axis** - Year-week (e.g., ``2024-W52``, ``2025-W01``)
+- **Cell values** - Count of records for that day/week (numbers are annotated)
 
 Default (week starts on Monday):
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_datetime.png
-    :align: center
-    :alt: Visualize Feature Datetime Series
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_datetime.png
+   :align: center
+   :alt: Visualize Feature Datetime Series
 
 Object, Categorical, Boolean or Integer
 ---------------------------------------
+
 A count plot is shown.
 
-Categorical / Object:
+**Categorical / Object**
 
-If the categorical / object feature has more than 10 unique values, the 10 most common values are shown, and
-the others are labeled "Other Values".
+If the categorical / object feature has more than 10 unique values, the 10 most common
+values are shown and the rest are labelled “Other Values”. Use the ``order`` parameter
+to control sorting (e.g., ``"count_desc"`` or a list of category names).
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_category_more_than_10_categories.png
-    :align: center
-    :alt: Visualize Feature Categorical
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_object_category_more_than_10_categories_show_counts.png
+   :align: center
+   :alt: Visualize Feature Categorical
 
-Boolean:
+**Boolean**
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_bool.png
-    :align: center
-    :alt: Visualize Feature Boolean
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_bool_show_counts.png
+   :align: center
+   :alt: Visualize Feature Boolean
 
-Integer:
+**Integer**
 
-.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_int.png
-    :align: center
-    :alt: Visualize Feature Integer
+.. image:: ../../tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_int.png
+   :align: center
+   :alt: Visualize Feature Integer
 
  
 
