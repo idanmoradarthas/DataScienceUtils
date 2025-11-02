@@ -73,7 +73,7 @@ def test_visualize_feature_float_datetime_int(loan_data, feature, request):
     visualize_feature(loan_data[feature])
 
     if request.node.callspec.id in ["datetime"]:
-        plt.gcf().set_size_inches(10, 8)
+        plt.gcf().set_size_inches(10, 11)
     return plt.gcf()
 
 
