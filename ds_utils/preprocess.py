@@ -106,6 +106,64 @@ def _plot_datetime_heatmap(feature_series: pd.Series, first_day_of_week: str, ax
     return ax
 
 
+def _plot_count_bar(
+    value_counts: pd.Series, order: Optional[Union[List[str], str]], show_counts: bool, ax: axes.Axes, **kwargs
+) -> axes.Axes:
+    """Plot a bar chart for categorical data with optional ordering and count labels.
+
+    :param value_counts: Series containing value counts to plot
+    :param order: Order specification for categories (None, string, or list)
+    :param show_counts: Whether to display count values on top of bars
+    :param ax: Axes to draw on
+    :param kwargs: Additional arguments passed to ax.bar
+    :return: The Axes object with the bar plot
+    """
+    # Apply ordering based on the order parameter
+    if order is None:
+        value_counts = value_counts.sort_index()
+    elif isinstance(order, str):
+        if order == "count_desc":
+            value_counts = value_counts.sort_values(ascending=False)
+        elif order == "count_asc":
+            value_counts = value_counts.sort_values(ascending=True)
+        elif order == "alpha_asc":
+            value_counts = value_counts.sort_index(ascending=True)
+        elif order == "alpha_desc":
+            value_counts = value_counts.sort_index(ascending=False)
+        else:
+            raise ValueError(
+                f"Invalid order string: '{order}'. Must be one of: 'count_desc', 'count_asc', 'alpha_asc', 'alpha_desc'"
+            )
+    elif isinstance(order, list):
+        # Filter to only include categories present in the data
+        valid_order = [cat for cat in order if cat in value_counts.index]
+        # Add any missing categories from value_counts that weren't in order
+        missing_cats = [cat for cat in value_counts.index if cat not in valid_order]
+        full_order = valid_order + missing_cats
+        value_counts = value_counts.reindex(full_order)
+
+    # Create bar plot using matplotlib
+    bars = ax.bar(range(len(value_counts)), value_counts.values, **kwargs)
+    ax.set_xticks(range(len(value_counts)))
+    ax.set_xticklabels(value_counts.index)
+    ax.set_ylabel("Count")
+
+    # Add count labels if requested
+    if show_counts:
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height,
+                f"{int(height):,}",
+                ha="center",
+                va="bottom",
+                fontweight="bold",
+            )
+
+    return ax
+
+
 def visualize_feature(
     series: pd.Series,
     remove_na: bool = False,
@@ -164,51 +222,7 @@ def visualize_feature(
     else:
         series_to_plot = _copy_series_or_keep_top_10(feature_series)
         value_counts = series_to_plot.value_counts().sort_index()
-
-        # Apply ordering based on the order parameter
-        if order is None:
-            value_counts = value_counts.sort_index()
-        elif isinstance(order, str):
-            if order == "count_desc":
-                value_counts = value_counts.sort_values(ascending=False)
-            elif order == "count_asc":
-                value_counts = value_counts.sort_values(ascending=True)
-            elif order == "alpha_asc":
-                value_counts = value_counts.sort_index(ascending=True)
-            elif order == "alpha_desc":
-                value_counts = value_counts.sort_index(ascending=False)
-            else:
-                raise ValueError(
-                    f"Invalid order string: '{order}'. Must be one of: "
-                    "'count_desc', 'count_asc', 'alpha_asc', 'alpha_desc'"
-                )
-        elif isinstance(order, list):
-            # Filter to only include categories present in the data
-            valid_order = [cat for cat in order if cat in value_counts.index]
-            # Add any missing categories from value_counts that weren't in order
-            missing_cats = [cat for cat in value_counts.index if cat not in valid_order]
-            full_order = valid_order + missing_cats
-            value_counts = value_counts.reindex(full_order)
-
-        # Create bar plot using matplotlib
-        bars = ax.bar(range(len(value_counts)), value_counts.values, **kwargs)
-        ax.set_xticks(range(len(value_counts)))
-        ax.set_xticklabels(value_counts.index)
-        ax.set_ylabel("Count")
-
-        # Add count labels if requested
-        if show_counts:
-            for bar in bars:
-                height = bar.get_height()
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2.0,
-                    height,
-                    f"{int(height):,}",
-                    ha="center",
-                    va="bottom",
-                    fontweight="bold",
-                )
-
+        ax = _plot_count_bar(value_counts, order, show_counts, ax, **kwargs)
         labels = ax.get_xticklabels()
 
     if not ax.get_title():
