@@ -198,6 +198,11 @@ def test_visualize_feature_object_order(loan_data, order):
     plt.gcf().set_size_inches(11, 14)
     return plt.gcf()
 
+def test_visualize_feature_object_order_error():
+    """Test visualize_feature function with an invalid order parameter."""
+    with pytest.raises(ValueError, match="Invalid order string: 'invalid_order'. Must be one of: "):
+        visualize_feature(pd.Series(["A", "B", "C"]), order="invalid_order")
+
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
