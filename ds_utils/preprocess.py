@@ -167,12 +167,10 @@ def visualize_feature(
 
         # Apply ordering based on the order parameter
         if order is None:
-            # Default: sort by index
             value_counts = value_counts.sort_index()
         elif isinstance(order, str):
             if order == "count_desc":
-                # Already in descending order from value_counts()
-                pass
+                value_counts = value_counts.sort_values(ascending=False)
             elif order == "count_asc":
                 value_counts = value_counts.sort_values(ascending=True)
             elif order == "alpha_asc":

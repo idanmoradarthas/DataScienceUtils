@@ -191,6 +191,15 @@ def test_visualize_feature_datetime_missing_days_adds_columns():
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("order", ["count_desc", "count_asc", "alpha_asc", "alpha_desc"])
+def test_visualize_feature_object_order(loan_data, order):
+    """Test visualize_feature function with different order parameters."""
+    visualize_feature(loan_data["purpose"], order=order)
+    plt.gcf().set_size_inches(11, 14)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""
