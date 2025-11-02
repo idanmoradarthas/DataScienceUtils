@@ -132,13 +132,16 @@ Receives a feature and visualizes its values on a graph:
 
 * If the feature is float, the method plots a violin distribution. You can optionally exclude outliers using the IQR fence method.
 * If the feature is datetime, the method plots a 2D heatmap showing day-of-week vs year-week patterns, making weekly and yearly trends immediately visible.
-* If the feature is object, categorical, boolean, or integer, the method plots a count plot (histogram).
+* If the feature is object, categorical, boolean, or integer, the method plots a count plot (histogram). For high-cardinality features (>10 unique values), it shows the top 10 with "Other values". You can customize sorting with `order` (e.g., by count or alphabetically) and toggle count labels with `show_counts`.
 
 ```python
 from ds_utils.preprocess import visualize_feature
 
 # Basic usage
 visualize_feature(X_train["feature"])
+
+# Handle NA values (removes them before plotting)
+visualize_feature(X_train["feature_with_nas"], remove_na=True)
 
 # For float features, you can control outlier handling
 visualize_feature(X_train["float_feature"], include_outliers=True)  # Default
@@ -147,6 +150,12 @@ visualize_feature(X_train["float_feature"], include_outliers=False, outlier_iqr_
 # For datetime features, you can specify the first day of the week
 visualize_feature(X_train["datetime_feature"], first_day_of_week="Monday")  # Default
 visualize_feature(X_train["datetime_feature"], first_day_of_week="Sunday")
+
+# For categorical/object/boolean/int features, customize order and counts
+visualize_feature(X_train["category_feature"], show_counts=True)  # Default, shows count labels on bars
+visualize_feature(X_train["category_feature"], show_counts=False)  # Hides count labels
+visualize_feature(X_train["category_feature"], order="count_desc")  # Sort by descending count
+visualize_feature(X_train["category_feature"], order=["High", "Medium", "Low"])  # Explicit category order
 ```
 
 | Feature Type      | Plot                                                                                                                                                                             |
