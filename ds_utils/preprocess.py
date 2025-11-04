@@ -197,12 +197,14 @@ def visualize_feature(
                               Default is "Monday".
     :param show_counts: If True, display count values on top of bars in count plots. Default is True.
     :param order: Order to plot categorical levels in count plots. Can be:
+
                   - None: Use default sorting (index order after value_counts)
                   - "count_desc": Sort by count in descending order (most frequent first)
                   - "count_asc": Sort by count in ascending order (least frequent first)
                   - "alpha_asc": Sort alphabetically in ascending order
                   - "alpha_desc": Sort alphabetically in descending order
                   - List: Explicit list of category names in desired order
+
                   Only applies to categorical/object/bool/int features.
     :param ax: Axes in which to draw the plot. If None, a new one is created.
     :param kwargs: Extra keyword arguments forwarded to the underlying plotting function
