@@ -217,6 +217,17 @@ def test_visualize_feature_object_order_list(loan_data, order):
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_visualize_feature_object_null_values(loan_data):
+    """Test visualize_feature function with null values in an object feature."""
+    series = pd.concat(
+        [loan_data["income_category"], pd.Series([np.nan] * 500, name="income_category")], ignore_index=True
+    )
+    visualize_feature(series, remove_na=False)
+    plt.gcf().set_size_inches(8, 7)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("use_existing_ax", [False, True], ids=["default", "exist_ax"])
 def test_visualize_correlations(data_1m, use_existing_ax):
     """Test visualize_correlations function with and without existing axes."""

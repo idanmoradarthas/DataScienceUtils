@@ -106,6 +106,15 @@ def _plot_datetime_heatmap(feature_series: pd.Series, first_day_of_week: str, ax
     return ax
 
 
+def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
+    if pd.api.types.is_bool_dtype(series):
+        return series.map({True: "True", False: "False"})
+    if len(series.unique()) > 10:
+        top10 = series.value_counts().nlargest(10).index
+        return series.map(lambda x: x if x in top10 else "Other values")
+    return series
+
+
 def _plot_count_bar(
     value_counts: pd.Series, order: Optional[Union[List[str], str]], show_counts: bool, ax: axes.Axes, **kwargs
 ) -> axes.Axes:
@@ -223,7 +232,7 @@ def visualize_feature(
         labels = ax.get_xticklabels()
     else:
         series_to_plot = _copy_series_or_keep_top_10(feature_series)
-        value_counts = series_to_plot.value_counts().sort_index()
+        value_counts = series_to_plot.value_counts(dropna=remove_na).sort_index()
         ax = _plot_count_bar(value_counts, order, show_counts, ax, **kwargs)
         labels = ax.get_xticklabels()
 
@@ -510,15 +519,6 @@ def _plot_categorical_vs_numeric(
     ax.set_ylabel(numeric_feature.replace("_", " ").title())
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     return ax
-
-
-def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
-    if series.dtype == bool:
-        return series.map({True: "True", False: "False"})
-    if len(series.unique()) > 10:
-        top10 = series.value_counts().nlargest(10).index
-        return series.map(lambda x: x if x in top10 else "Other values")
-    return series
 
 
 @plt.FuncFormatter
