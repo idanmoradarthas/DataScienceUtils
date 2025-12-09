@@ -371,7 +371,7 @@ def plot_features_interaction(
     dtype2 = data[feature_2].dtype
 
     if _is_categorical_like(dtype1):
-        _plot_categorical_feature1(
+        ax = _plot_categorical_feature1(
             feature_1,
             feature_2,
             data,
@@ -382,13 +382,15 @@ def plot_features_interaction(
             **kwargs,
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
-        _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+        ax = _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
     elif _is_categorical_like(dtype2):
-        _plot_categorical_vs_numeric(feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs)
+        ax = _plot_categorical_vs_numeric(
+            feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_xy(feature_2, feature_1, data, ax, **kwargs)
+        ax = _plot_xy(feature_2, feature_1, data, ax, **kwargs)
     else:
-        _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
+        ax = _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
 
     return ax
 
@@ -414,11 +416,11 @@ def _plot_categorical_feature1(
 ):
     """Plot when the first feature is categorical-like."""
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_categorical(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_categorical(categorical_feature, feature_2, data, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
     else:
-        _plot_categorical_vs_numeric(
+        ax = _plot_categorical_vs_numeric(
             categorical_feature,
             feature_2,
             data,
@@ -427,20 +429,23 @@ def _plot_categorical_feature1(
             ax,
             **kwargs,
         )
+    return ax
 
 
 def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
     ax.plot(data[datetime_feature], data[other_feature], **kwargs)
     ax.set_xlabel(datetime_feature)
     ax.set_ylabel(other_feature)
+    return ax
 
 
 def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
     else:
-        _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+    return ax
 
 
 def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
@@ -448,6 +453,7 @@ def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
     ax.scatter(data[feature_1], data[feature_2], **kwargs)
     ax.set_xlabel(feature_1)
     ax.set_ylabel(feature_2)
+    return ax
 
 
 def _plot_categorical_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
@@ -455,14 +461,13 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-    group_feature_1 = dup_df[feature_1].unique().tolist()
-    ax.hist(
-        [dup_df.loc[dup_df[feature_1] == value, feature_2] for value in group_feature_1],
-        label=group_feature_1,
-        **kwargs,
-    )
-    ax.set_xlabel(feature_1)
-    ax.legend(title=feature_2)
+
+    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2])
+
+    sns.heatmap(crosstab, annot=True, fmt="d", **kwargs)
+    ax.set_xlabel(feature_2)
+    ax.set_ylabel(feature_1)
+    return ax
 
 
 def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
@@ -480,6 +485,7 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, a
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+    return ax
 
 
 def _plot_categorical_vs_numeric(

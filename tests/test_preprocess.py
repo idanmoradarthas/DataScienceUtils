@@ -287,7 +287,7 @@ def test_plot_relationship_between_features(feature1, feature2, data_fixture, re
     elif request.node.callspec.id == "numeric_boolean":
         plt.gcf().set_size_inches(8, 7)
     elif request.node.callspec.id == "both_categorical":
-        plt.gcf().set_size_inches(9, 5)
+        plt.gcf().set_size_inches(12, 5)
     elif request.node.callspec.id in ["datetime_numeric", "datetime_numeric_reverse"]:
         plt.gcf().set_size_inches(18, 8)
     elif request.node.callspec.id in ["datetime_categorical", "datetime_categorical_reverse"]:
