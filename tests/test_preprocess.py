@@ -260,7 +260,6 @@ def test_visualize_correlations(data_1m, use_existing_ax):
         ("issue_d", "issue_d", "loan_data"),
         ("issue_d", "home_ownership", "loan_data"),
         ("home_ownership", "issue_d", "loan_data"),
-        ("x12", "x12", "data_1m"),
     ],
     ids=[
         "both_numeric",
@@ -274,7 +273,6 @@ def test_visualize_correlations(data_1m, use_existing_ax):
         "datetime_datetime",
         "datetime_categorical",
         "datetime_categorical_reverse",
-        "both_bool",
     ],
 )
 def test_plot_relationship_between_features(feature1, feature2, data_fixture, request):
@@ -287,12 +285,22 @@ def test_plot_relationship_between_features(feature1, feature2, data_fixture, re
     elif request.node.callspec.id == "numeric_boolean":
         plt.gcf().set_size_inches(8, 7)
     elif request.node.callspec.id == "both_categorical":
-        plt.gcf().set_size_inches(9, 5)
+        plt.gcf().set_size_inches(12, 5)
     elif request.node.callspec.id in ["datetime_numeric", "datetime_numeric_reverse"]:
         plt.gcf().set_size_inches(18, 8)
     elif request.node.callspec.id in ["datetime_categorical", "datetime_categorical_reverse"]:
         plt.gcf().set_size_inches(10, 11.5)
 
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_relationship_between_features_both_bool(loan_data):
+    """Test interaction plot for two boolean features."""
+    data = pd.DataFrame()
+    data["is_home_ownership_rent"] = loan_data["home_ownership"] == "RENT"
+    data["is_low_interest_payments"] = loan_data["interest_payments"] == "Low"
+    plot_features_interaction(data, "is_home_ownership_rent", "is_low_interest_payments")
     return plt.gcf()
 
 
@@ -331,6 +339,24 @@ def test_plot_relashionship_between_features_numeric_categorical_without_outlier
     """Test interaction plot for two numeric features without outliers."""
     plot_features_interaction(data_1m, "x1", "x7", include_outliers=False, outlier_iqr_multiplier=0.01)
     plt.gcf().set_size_inches(14, 9)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(("feature1", "feature2"), [("x7", "x10"), ("x10", "x12")], ids=["both", "bool"])
+def test_plot_features_interaction_show_ratios_categorical(feature1, feature2, data_1m):
+    """Test plotting categorical features interactions with ratios."""
+    plot_features_interaction(data_1m, feature1, feature2, show_ratios=True)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_show_ratios_bool(loan_data):
+    """Test plotting boolean features interactions with ratios."""
+    data = pd.DataFrame()
+    data["is_home_ownership_rent"] = loan_data["home_ownership"] == "RENT"
+    data["is_low_interest_payments"] = loan_data["interest_payments"] == "Low"
+    plot_features_interaction(data, "is_home_ownership_rent", "is_low_interest_payments", show_ratios=True)
     return plt.gcf()
 
 

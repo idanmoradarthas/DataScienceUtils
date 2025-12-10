@@ -337,6 +337,7 @@ def plot_features_interaction(
     *,
     include_outliers: bool = True,
     outlier_iqr_multiplier: float = 1.5,
+    show_ratios: bool = False,
     ax: Optional[axes.Axes] = None,
     **kwargs,
 ) -> axes.Axes:
@@ -359,6 +360,9 @@ def plot_features_interaction(
                              categorical-vs-numeric violin plots (default True).
     :param outlier_iqr_multiplier: Multiplier ``k`` for the IQR fence when trimming
                                    outliers in categorical-vs-numeric plots (default 1.5).
+    :param show_ratios: If True, display ratios (proportions) instead of absolute counts
+                        for categorical vs categorical plots. Only applies when both
+                        features are categorical-like (default False).
     :param ax: Axes in which to draw the plot. If None, a new one is created.
     :param kwargs: Additional keyword arguments forwarded to the underlying plotting
                    functions (e.g., ``seaborn.violinplot``, ``Axes.scatter``, ``Axes.plot``).
@@ -371,24 +375,27 @@ def plot_features_interaction(
     dtype2 = data[feature_2].dtype
 
     if _is_categorical_like(dtype1):
-        _plot_categorical_feature1(
+        ax = _plot_categorical_feature1(
             feature_1,
             feature_2,
             data,
             dtype2,
             include_outliers,
             outlier_iqr_multiplier,
+            show_ratios,
             ax,
             **kwargs,
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
-        _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+        ax = _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
     elif _is_categorical_like(dtype2):
-        _plot_categorical_vs_numeric(feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs)
+        ax = _plot_categorical_vs_numeric(
+            feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_xy(feature_2, feature_1, data, ax, **kwargs)
+        ax = _plot_xy(feature_2, feature_1, data, ax, **kwargs)
     else:
-        _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
+        ax = _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
 
     return ax
 
@@ -409,16 +416,17 @@ def _plot_categorical_feature1(
     dtype2,
     include_outliers,
     outlier_iqr_multiplier,
+    show_ratios,
     ax,
     **kwargs,
 ):
     """Plot when the first feature is categorical-like."""
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_categorical(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_categorical(categorical_feature, feature_2, data, show_ratios, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
     else:
-        _plot_categorical_vs_numeric(
+        ax = _plot_categorical_vs_numeric(
             categorical_feature,
             feature_2,
             data,
@@ -427,20 +435,23 @@ def _plot_categorical_feature1(
             ax,
             **kwargs,
         )
+    return ax
 
 
 def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
     ax.plot(data[datetime_feature], data[other_feature], **kwargs)
     ax.set_xlabel(datetime_feature)
     ax.set_ylabel(other_feature)
+    return ax
 
 
 def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
-        _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
     else:
-        _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+    return ax
 
 
 def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
@@ -448,21 +459,33 @@ def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
     ax.scatter(data[feature_1], data[feature_2], **kwargs)
     ax.set_xlabel(feature_1)
     ax.set_ylabel(feature_2)
+    return ax
 
 
-def _plot_categorical_vs_categorical(feature_1, feature_2, data, ax, **kwargs):
+def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, ax, **kwargs):
     """Plot when both features are categorical-like."""
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
-    group_feature_1 = dup_df[feature_1].unique().tolist()
-    ax.hist(
-        [dup_df.loc[dup_df[feature_1] == value, feature_2] for value in group_feature_1],
-        label=group_feature_1,
-        **kwargs,
-    )
-    ax.set_xlabel(feature_1)
-    ax.legend(title=feature_2)
+
+    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2])
+
+    if show_ratios:
+        total = crosstab.sum().sum()
+        crosstab_display = crosstab / total
+        fmt = ".3f"
+    else:
+        crosstab_display = crosstab
+        fmt = "d"
+
+    sns.heatmap(crosstab_display, annot=True, fmt=fmt, ax=ax, **kwargs)
+    ax.set_xlabel(feature_2)
+    ax.set_ylabel(feature_1)
+
+    if show_ratios:
+        ax.set_title(f"{feature_1} vs {feature_2} (Proportions)")
+
+    return ax
 
 
 def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
@@ -480,6 +503,7 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, a
     chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
     ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+    return ax
 
 
 def _plot_categorical_vs_numeric(
