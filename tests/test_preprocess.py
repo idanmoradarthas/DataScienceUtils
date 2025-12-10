@@ -260,7 +260,6 @@ def test_visualize_correlations(data_1m, use_existing_ax):
         ("issue_d", "issue_d", "loan_data"),
         ("issue_d", "home_ownership", "loan_data"),
         ("home_ownership", "issue_d", "loan_data"),
-        ("x12", "x12", "data_1m"),
     ],
     ids=[
         "both_numeric",
@@ -274,7 +273,6 @@ def test_visualize_correlations(data_1m, use_existing_ax):
         "datetime_datetime",
         "datetime_categorical",
         "datetime_categorical_reverse",
-        "both_bool",
     ],
 )
 def test_plot_relationship_between_features(feature1, feature2, data_fixture, request):
@@ -294,6 +292,16 @@ def test_plot_relationship_between_features(feature1, feature2, data_fixture, re
         plt.gcf().set_size_inches(10, 11.5)
 
     return plt.gcf()
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_relationship_between_features_both_bool(loan_data):
+    """Test interaction plot for two boolean features."""
+    data = pd.DataFrame()
+    data["is_home_ownership_rent"] = loan_data["home_ownership"] == 'RENT'
+    data["is_low_interest_payments"] = loan_data["interest_payments"] == 'Low'
+    plot_features_interaction(data, "is_home_ownership_rent", "is_low_interest_payments")
+    return plt.gcf()
+
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
