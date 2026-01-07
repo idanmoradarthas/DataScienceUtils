@@ -402,7 +402,7 @@ def plot_features_interaction(
             feature_2, feature_1, plot_data, outlier_iqr_multiplier, include_outliers, remove_na, ax, **kwargs
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        ax = _plot_datetime_vs_numeric (feature_2, feature_1, plot_data, remove_na, ax, **kwargs)
+        ax = _plot_datetime_vs_numeric(feature_2, feature_1, plot_data, remove_na, ax, **kwargs)
     else:
         ax = _plot_numeric_features(feature_1, feature_2, plot_data, remove_na, ax, **kwargs)
 
@@ -451,7 +451,7 @@ def _plot_categorical_feature1(
     return ax
 
 
-def _plot_datetime_vs_numeric (datetime_feature, other_feature, data, remove_na, ax, **kwargs):
+def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, ax, **kwargs):
     """Plot datetime vs numeric feature."""
     ax.plot(data[datetime_feature], data[other_feature], **kwargs)
     ax.set_xlabel(datetime_feature)
@@ -464,7 +464,7 @@ def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, remove_na
     if _is_categorical_like(dtype2):
         ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, remove_na, ax, **kwargs)
     else:
-        ax = _plot_datetime_vs_numeric (datetime_feature, feature_2, data, remove_na, ax, **kwargs)
+        ax = _plot_datetime_vs_numeric(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     return ax
 
 
