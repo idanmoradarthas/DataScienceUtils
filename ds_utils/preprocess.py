@@ -566,11 +566,25 @@ def _plot_categorical_vs_numeric(
     ax,
     **kwargs,
 ):
-    """Plot when the first feature is categorical-like and the second is numeric."""
+    """Plot when the first feature is categorical-like and the second is numeric.
+
+    Renders a violin plot of the numeric feature for each category. When
+    ``include_outliers`` is False, numeric values outside the IQR fence
+    [Q1 - k*IQR, Q3 + k*IQR] are trimmed, where ``k`` is ``outlier_iqr_multiplier``.
+
+    When ``remove_na`` is False, missing values are handled as follows:
+    - Missing categorical values get a "Missing" category
+    - Missing numeric values are shown with rug plots at the bottom of each category
+    """
     dup_df = pd.DataFrame()
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
     dup_df[numeric_feature] = data[numeric_feature]
 
+    # Handle missing categorical values by adding "Missing" category
+    if not remove_na and dup_df[categorical_feature].isna().any():
+        dup_df[categorical_feature] = dup_df[categorical_feature].fillna("Missing")
+
+    # Apply outlier filtering if requested
     if include_outliers:
         df_plot = dup_df.copy()
     else:
@@ -583,7 +597,48 @@ def _plot_categorical_vs_numeric(
         upper_bound = min(max_series_value, q3 + outlier_iqr_multiplier * iqr)
         df_plot = dup_df[(dup_df[numeric_feature] >= lower_bound) & (dup_df[numeric_feature] <= upper_bound)].copy()
 
-    sns.violinplot(x=categorical_feature, y=numeric_feature, hue=categorical_feature, data=df_plot, ax=ax, **kwargs)
+    # Create main violin plot (only with non-NA numeric values)
+    df_plot_complete = df_plot.dropna(subset=[numeric_feature])
+    sns.violinplot(
+        x=categorical_feature, y=numeric_feature, hue=categorical_feature, data=df_plot_complete, ax=ax, **kwargs
+    )
+
+    # If remove_na is False, add rug plots for missing numeric values
+    if not remove_na:
+        missing_numeric = df_plot[df_plot[numeric_feature].isna()]
+        if len(missing_numeric) > 0:
+            # Get the y-axis limits to place rug marks at the bottom
+            y_min = ax.get_ylim()[0]
+
+            # Get unique categories and their x-axis positions
+            categories = df_plot_complete[categorical_feature].unique()
+            cat_to_pos = {cat: i for i, cat in enumerate(categories)}
+
+            # Plot rug marks for each category that has missing numeric values
+            for cat in missing_numeric[categorical_feature].unique():
+                if cat in cat_to_pos:
+                    count = len(missing_numeric[missing_numeric[categorical_feature] == cat])
+                    x_pos = cat_to_pos[cat]
+
+                    # Add small horizontal jitter for visibility when there are multiple missing values
+                    jitter = np.random.uniform(-0.1, 0.1, count)
+
+                    ax.scatter(
+                        [x_pos] * count + jitter,
+                        [y_min] * count,
+                        marker="|",
+                        s=100,
+                        alpha=0.6,
+                        color="red",
+                        linewidths=2,
+                        label=f"{numeric_feature} missing"
+                        if cat == missing_numeric[categorical_feature].unique()[0]
+                        else "",
+                    )
+
+            # Add legend if we plotted any missing values
+            if len(missing_numeric) > 0:
+                ax.legend(loc="best", framealpha=0.9)
 
     ax.set_xlabel(categorical_feature.replace("_", " ").title())
     ax.set_ylabel(numeric_feature.replace("_", " ").title())
