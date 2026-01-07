@@ -335,6 +335,7 @@ def plot_features_interaction(
     feature_1: str,
     feature_2: str,
     *,
+    remove_na: bool = False,
     include_outliers: bool = True,
     outlier_iqr_multiplier: float = 1.5,
     show_ratios: bool = False,
@@ -356,6 +357,8 @@ def plot_features_interaction(
     :param data: The input DataFrame where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
+    :param remove_na: If False (default), keep all data and visualize missingness patterns.
+                      If True, remove rows where either feature is NA before plotting.
     :param include_outliers: Whether to include values outside the IQR fence for
                              categorical-vs-numeric violin plots (default True).
     :param outlier_iqr_multiplier: Multiplier ``k`` for the IQR fence when trimming
@@ -371,6 +374,11 @@ def plot_features_interaction(
     if ax is None:
         _, ax = plt.subplots()
 
+    if remove_na:
+        plot_data = data[[feature_1, feature_2]].dropna()
+    else:
+        plot_data = data[[feature_1, feature_2]].copy()
+
     dtype1 = data[feature_1].dtype
     dtype2 = data[feature_2].dtype
 
@@ -378,24 +386,25 @@ def plot_features_interaction(
         ax = _plot_categorical_feature1(
             feature_1,
             feature_2,
-            data,
+            plot_data,
             dtype2,
             include_outliers,
             outlier_iqr_multiplier,
             show_ratios,
+            remove_na,
             ax,
             **kwargs,
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
-        ax = _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+        ax = _plot_datetime_feature1(feature_1, feature_2, plot_data, dtype2, remove_na, ax, **kwargs)
     elif _is_categorical_like(dtype2):
         ax = _plot_categorical_vs_numeric(
-            feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs
+            feature_2, feature_1, plot_data, outlier_iqr_multiplier, include_outliers, remove_na, ax, **kwargs
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        ax = _plot_xy(feature_2, feature_1, data, ax, **kwargs)
+        ax = _plot_xy(feature_2, feature_1, plot_data, remove_na, ax, **kwargs)
     else:
-        ax = _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
+        ax = _plot_numeric_features(feature_1, feature_2, plot_data, remove_na, ax, **kwargs)
 
     return ax
 
@@ -417,14 +426,17 @@ def _plot_categorical_feature1(
     include_outliers,
     outlier_iqr_multiplier,
     show_ratios,
+    remove_na,
     ax,
     **kwargs,
 ):
     """Plot when the first feature is categorical-like."""
     if _is_categorical_like(dtype2):
-        ax = _plot_categorical_vs_categorical(categorical_feature, feature_2, data, show_ratios, ax, **kwargs)
+        ax = _plot_categorical_vs_categorical(
+            categorical_feature, feature_2, data, show_ratios, remove_na, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, remove_na, ax, **kwargs)
     else:
         ax = _plot_categorical_vs_numeric(
             categorical_feature,
@@ -432,43 +444,86 @@ def _plot_categorical_feature1(
             data,
             outlier_iqr_multiplier,
             include_outliers,
+            remove_na,
             ax,
             **kwargs,
         )
     return ax
 
 
-def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
+def _plot_xy(datetime_feature, other_feature, data, remove_na, ax, **kwargs):
+    """Plot datetime vs numeric feature."""
     ax.plot(data[datetime_feature], data[other_feature], **kwargs)
     ax.set_xlabel(datetime_feature)
     ax.set_ylabel(other_feature)
     return ax
 
 
-def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
+def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, remove_na, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
-        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, remove_na, ax, **kwargs)
     else:
-        ax = _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_xy(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     return ax
 
 
-def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
-    """Plot when both features are numeric."""
-    ax.scatter(data[feature_1], data[feature_2], **kwargs)
+def _plot_numeric_features(feature_1, feature_2, data, remove_na, ax, **kwargs):
+    """Plot when both features are numeric.
+
+    If remove_na is False, adds marginal rug plots showing where missing values occur.
+    """
+    # Get complete cases for main scatter plot
+    complete_data = data.dropna(subset=[feature_1, feature_2])
+
+    ax.scatter(complete_data[feature_1], complete_data[feature_2], **kwargs)
     ax.set_xlabel(feature_1)
     ax.set_ylabel(feature_2)
+
+    # Add marginal rug plots for missing values if not removed
+    if not remove_na:
+        # Cases where feature_1 is present but feature_2 is missing
+        missing_f2 = data[data[feature_2].isna() & data[feature_1].notna()]
+        if len(missing_f2) > 0:
+            y_min = ax.get_ylim()[0]
+            ax.scatter(
+                missing_f2[feature_1],
+                [y_min] * len(missing_f2),
+                marker="|",
+                s=100,
+                alpha=0.5,
+                color="red",
+                label=f"{feature_2} missing",
+            )
+
+        # Cases where feature_2 is present but feature_1 is missing
+        missing_f1 = data[data[feature_1].isna() & data[feature_2].notna()]
+        if len(missing_f1) > 0:
+            x_min = ax.get_xlim()[0]
+            ax.scatter(
+                [x_min] * len(missing_f1),
+                missing_f1[feature_2],
+                marker="_",
+                s=100,
+                alpha=0.5,
+                color="orange",
+                label=f"{feature_1} missing",
+            )
+
+        # Add legend if there are any missing values
+        if len(missing_f2) > 0 or len(missing_f1) > 0:
+            ax.legend(loc="best", framealpha=0.9)
+
     return ax
 
 
-def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, ax, **kwargs):
+def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, remove_na, ax, **kwargs):
     """Plot when both features are categorical-like."""
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
 
-    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2])
+    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=remove_na)
 
     if show_ratios:
         total = crosstab.sum().sum()
@@ -488,13 +543,8 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, ax
     return ax
 
 
-def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
-    """Plot when one feature is categorical-like and the other is datetime.
-
-    Draws a violin plot across time buckets on the x-axis with categories on the
-    y-axis. This unified function expects the categorical feature name first and
-    the datetime feature name second.
-    """
+def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, remove_na, ax, **kwargs):
+    """Plot when one feature is categorical-like and the other is datetime."""
     dup_df = pd.DataFrame()
     dup_df[datetime_feature] = data[datetime_feature].apply(dates.date2num)
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
@@ -512,15 +562,11 @@ def _plot_categorical_vs_numeric(
     data,
     outlier_iqr_multiplier,
     include_outliers,
+    remove_na,
     ax,
     **kwargs,
 ):
-    """Plot when the first feature is categorical-like and the second is numeric.
-
-    Renders a violin plot of the numeric feature for each category. When
-    ``include_outliers`` is False, numeric values outside the IQR fence
-    [Q1 - k*IQR, Q3 + k*IQR] are trimmed, where ``k`` is ``outlier_iqr_multiplier``.
-    """
+    """Plot when the first feature is categorical-like and the second is numeric."""
     dup_df = pd.DataFrame()
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
     dup_df[numeric_feature] = data[numeric_feature]
