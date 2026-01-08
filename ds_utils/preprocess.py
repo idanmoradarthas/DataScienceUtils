@@ -518,12 +518,32 @@ def _plot_numeric_features(feature_1, feature_2, data, remove_na, ax, **kwargs):
 
 
 def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, remove_na, ax, **kwargs):
-    """Plot when both features are categorical-like."""
+    """Plot when both features are categorical-like.
+
+    When remove_na is False, missing values are handled by:
+    - Adding a "Missing" category for any NaN values in either feature
+    - Including these in the crosstab/heatmap display
+
+    When remove_na is True, rows with missing values in either feature are excluded.
+    """
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
 
-    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=remove_na)
+    # Handle missing values based on remove_na parameter
+    if not remove_na:
+        # Replace NaN with "Missing" category for both features
+        if dup_df[feature_1].isna().any():
+            dup_df[feature_1] = dup_df[feature_1].fillna("Missing")
+        if dup_df[feature_2].isna().any():
+            dup_df[feature_2] = dup_df[feature_2].fillna("Missing")
+
+        # Create crosstab with all values (including "Missing" categories)
+        crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=False)
+    else:
+        # Remove rows where either feature is missing
+        dup_df = dup_df.dropna(subset=[feature_1, feature_2])
+        crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=True)
 
     if show_ratios:
         total = crosstab.sum().sum()
