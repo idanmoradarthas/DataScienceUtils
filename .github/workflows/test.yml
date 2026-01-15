@@ -17,47 +17,62 @@ jobs:
         python-version: [ "3.10", "3.11", "3.12", "3.13" ]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        id: setup-python
-        uses: actions/setup-python@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
       - name: Set TCL/TK Environment Variables
         if: runner.os == 'Windows'
         run: |
-          echo "TCL_LIBRARY=${{ steps.setup-python.outputs.pythonLocation }}\\tcl\\tcl8.6" >> $env:GITHUB_ENV
-          echo "TK_LIBRARY=${{ steps.setup-python.outputs.pythonLocation }}\\tcl\\tk8.6" >> $env:GITHUB_ENV
+          $pythonLocation = uv python find ${{ matrix.python-version }}
+          $pythonDir = Split-Path $pythonLocation
+          echo "TCL_LIBRARY=$pythonDir\tcl\tcl8.6" >> $env:GITHUB_ENV
+          echo "TK_LIBRARY=$pythonDir\tcl\tk8.6" >> $env:GITHUB_ENV
           echo "MPLBACKEND=Agg" >> $env:GITHUB_ENV
         shell: powershell
-      - name: Install hatch and coveralls
-        run: pip install hatch hatchling coveralls
+
       - name: Install graphviz binaries for Linux (${{ runner.arch }})
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get -y install graphviz
+
       - name: Install graphviz binaries & Chromium for Windows (${{ runner.arch }})
         if: runner.os == 'Windows'
-        run: |
-          choco install -y graphviz chromium
+        run: choco install -y graphviz chromium
+
       - name: Install graphviz binaries for macOS (${{ runner.arch }})
         if: runner.os == 'macOS'
         run: brew install graphviz
+
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
       - name: Run tests
-        run: |
-          python -m hatch env create test
-          python -m hatch run test:run
+        run: uv run pytest --mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=xml -n auto
+        env:
+          PYTHONPATH: "."
+          OMP_NUM_THREADS: "1"
+          DISPLAY: ":99"
+
       - name: Run Ruff Formatter Check
-        run: python -m hatch run test:ruff format --check .
+        run: uvx ruff format --check .
+
       - name: Run Ruff Linter
-        run: python -m hatch run test:ruff check .
+        run: uvx ruff check .
+
       - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.os }}-python-${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
-        run: coveralls --service=github
+        run: uvx coveralls --service=github
 
   coveralls:
     needs: test
