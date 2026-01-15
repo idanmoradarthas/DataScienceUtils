@@ -63,32 +63,13 @@ test = [
     "pytest-xdist==3.8.0",
     "pytest-mpl==0.18.0",
     "kaleido==1.2.0",
-    "ruff==0.14.8",
-    "coveralls>=4.0.1"
+    "ruff==0.14.8"
 ]
 dev = [
     "build==1.3.0",
     "twine==6.2.0",
 ]
 
-[tool.hatch.envs.test]
-dependencies = [
-]
-
-[tool.hatch.envs.test.env-vars]
-PYTHONPATH = "."
-OMP_NUM_THREADS = "1"
-DISPLAY = ":99"
-
-[tool.hatch.envs.test.scripts]
-run = "pytest {args:--mpl --cov-config=.coveragerc --cov=ds_utils --cov-report=xml -n auto}"
-ruff = "python -m ruff {args:.}"
-
-[tool.hatch.envs.dev]
-dependencies = [
-    "build==1.3.0",
-    "twine==6.2.0",
-]
 
 [tool.uv]
 dev-dependencies = [
@@ -100,7 +81,6 @@ dev-dependencies = [
     "pytest-mpl==0.18.0",
     "kaleido==1.2.0",
     "ruff==0.14.8",
-    "coveralls>=4.0.1",
     "build==1.3.0",
     "twine==6.2.0",
 ]
