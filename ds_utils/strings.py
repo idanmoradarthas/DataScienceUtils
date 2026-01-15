@@ -1,10 +1,12 @@
 """String manipulation utilities for data science tasks."""
 
 import re
+from collections import Counter
 from typing import List, Tuple, Optional, Callable, Union
 
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer
 
 
 def _tokenize(text_tags: str) -> List[str]:
@@ -45,29 +47,52 @@ def append_tags_to_frame(
     :return: The train and test DataFrames with tags appended.
     :raise KeyError: if one of the frames is missing columns.
     """
-    vectorizer = CountVectorizer(
-        binary=True,
-        tokenizer=tokenizer,
-        encoding="utf-8",
-        lowercase=lowercase,
-        min_df=min_df,
-        max_features=max_features,
-        token_pattern=None,
-    )
-
     if X_train.empty:
         return pd.DataFrame(), pd.DataFrame()
 
     x_train_filled = X_train[field_name].fillna("")
-    x_test_filled = X_test[field_name].fillna("")
 
-    x_train_count_matrix = vectorizer.fit_transform(x_train_filled)
-    x_test_count_matrix = vectorizer.transform(x_test_filled)
+    # Tokenize the training data
+    if lowercase:
+        train_tags = x_train_filled.str.lower().apply(tokenizer)
+    else:
+        train_tags = x_train_filled.apply(tokenizer)
 
-    feature_names = [prefix + tag_name for tag_name in vectorizer.get_feature_names_out()]
+    # Calculate document frequency
+    doc_freq = Counter(tag for tags_list in train_tags for tag in set(tags_list))
 
-    x_train_tags = pd.DataFrame(x_train_count_matrix.toarray(), columns=feature_names, index=X_train.index)
-    x_test_tags = pd.DataFrame(x_test_count_matrix.toarray(), columns=feature_names, index=X_test.index)
+    # Filter by min_df
+    if isinstance(min_df, int):
+        tags_to_keep = {tag for tag, freq in doc_freq.items() if freq >= min_df}
+    else:  # float
+        min_doc_count = min_df * len(X_train)
+        tags_to_keep = {tag for tag, freq in doc_freq.items() if freq >= min_doc_count}
+
+    # Select top max_features by frequency
+    if max_features is not None:
+        # Sort tags by frequency (and alphabetically for ties)
+        top_tags = sorted(tags_to_keep, key=lambda tag: (-doc_freq[tag], tag))[:max_features]
+        tags_to_keep = set(top_tags)
+
+    # Filter the tokenized tags to only include those in tags_to_keep
+    train_tags_filtered = train_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
+
+    # Use MultiLabelBinarizer to create the binary matrix
+    mlb = MultiLabelBinarizer(classes=sorted(list(tags_to_keep)))
+    x_train_binarized = mlb.fit_transform(train_tags_filtered)
+
+    # Prepare test data
+    if lowercase:
+        test_tags = X_test[field_name].fillna("").str.lower().apply(tokenizer)
+    else:
+        test_tags = X_test[field_name].fillna("").apply(tokenizer)
+    test_tags_filtered = test_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
+    x_test_binarized = mlb.transform(test_tags_filtered)
+
+    # Create DataFrames for the binarized tags
+    feature_names = [prefix + tag_name for tag_name in mlb.classes_]
+    x_train_tags = pd.DataFrame(x_train_binarized, columns=feature_names, index=X_train.index)
+    x_test_tags = pd.DataFrame(x_test_binarized, columns=feature_names, index=X_test.index)
 
     x_train_reduced = X_train.drop(columns=[field_name])
     x_test_reduced = X_test.drop(columns=[field_name])
