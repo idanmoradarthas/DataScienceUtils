@@ -52,26 +52,45 @@ def append_tags_to_frame(
     lowercase: bool = False,
     tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Extract tags from a given field and append them to the dataframe.
+    """Extracts tags from a column and appends them as binarized features to the dataframe.
+
+    This function processes a specified column in the train and test dataframes that contains tags.
+    It supports columns with either string-based tags (e.g., "tag1,tag2") or list-based tags
+    (e.g., ["tag1", "tag2"]). The function identifies a vocabulary of tags from the training data,
+    filters them based on frequency, and then creates new binary columns for each tag.
+
+    Supported Input Types for the Tags Column:
+    - str: Comma-separated tags. The default tokenizer splits by comma, trims whitespace, and removes
+           non-alphanumeric characters (except "_", "$", "-"). Empty strings are treated as having no tags.
+    - List[str]: A pre-tokenized list of tags. Empty lists are treated as having no tags.
+    - NaN/None: Handled as empty.
+
+    Tokenization Rules (for string inputs):
+    - The default tokenizer splits the input string by commas (",").
+    - Whitespace around tags is automatically trimmed.
+    - Duplicate tags within the same string (e.g., "tag1,tag1") are treated as a single occurrence for that row.
+    - Casing is preserved unless `lowercase=True`.
+
+    `min_df` Behavior:
+    - This parameter filters out tags that are not frequent enough in the training data.
+    - If `int`: The absolute minimum number of rows a tag must appear in to be included.
+    - If `float` (between 0.0 and 1.0): The minimum fraction of rows a tag must appear in.
+    - This filtering is applied *before* the final vocabulary is selected and binarized.
+
+    Column Naming Logic:
+    - The `prefix` argument is prepended to each tag to form the new column names.
+    - Example: With `prefix="tag_"` and a tag "python", the resulting column will be "tag_python".
 
     :param X_train: Pandas DataFrame with the train features.
     :param X_test: Pandas DataFrame with the test features.
-    :param field_name: The feature to parse. The field can contain either comma-separated strings
-                       (e.g., "tag1,tag2,tag3") or lists of tags (e.g., ["tag1", "tag2", "tag3"]).
-    :param prefix: The prefix for new tag features.
-    :param max_features: Maximum number of tag names to consider. Default is 500. This helps limit the number of
-                         new columns created, especially useful for datasets with a large number of unique tags.
-    :param min_df: When building the tag name set, ignore tags with a document frequency strictly
-                   lower than the given threshold. If min_df is a float, the parameter represents a proportion
-                   of documents. If integer, it represents absolute counts. Default is 1. This helps filter out
-                   rare tags.
-    :param lowercase: Convert all characters to lowercase before tokenizing the tag names. Default is False. Set to
-                      True if you want case-insensitive tag matching.
-    :param tokenizer: Callable to override the string tokenization step while preserving the
-                      preprocessing and n-grams generation steps. Default splits by ",", and
-                      retains alphanumeric characters with special characters "_", "$", and "-".
-    :return: The train and test DataFrames with tags appended.
-    :raise KeyError: if one of the frames is missing columns.
+    :param field_name: The name of the column to parse for tags.
+    :param prefix: A string prefix for the new binarized tag columns.
+    :param max_features: The maximum number of tags to include, based on frequency. Default is 500.
+    :param min_df: The minimum document frequency for a tag to be included. Can be an int or a float. Default is 1.
+    :param lowercase: If True, all tags are converted to lowercase. Default is False.
+    :param tokenizer: A custom function to tokenize string inputs. Defaults to an internal tokenizer.
+    :return: A tuple containing the transformed train and test DataFrames.
+    :raise KeyError: If `field_name` is not in the input dataframes.
     """
     if X_train.empty:
         return pd.DataFrame(), pd.DataFrame()
