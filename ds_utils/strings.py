@@ -137,9 +137,7 @@ def append_tags_to_frame(
     # Create DataFrames for the binarized tags
     feature_names = [prefix + tag_name for tag_name in mlb.classes_]
     if sparse:
-        x_train_tags = pd.DataFrame.sparse.from_spmatrix(
-            x_train_binarized, index=X_train.index, columns=feature_names
-        )
+        x_train_tags = pd.DataFrame.sparse.from_spmatrix(x_train_binarized, index=X_train.index, columns=feature_names)
         x_test_tags = pd.DataFrame.sparse.from_spmatrix(x_test_binarized, index=X_test.index, columns=feature_names)
     else:
         x_train_tags = pd.DataFrame(x_train_binarized, columns=feature_names, index=X_train.index)
