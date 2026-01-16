@@ -193,6 +193,21 @@ def test_append_tags_to_frame_with_nan_values():
     pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
 
 
+def test_append_tags_to_frame_sparse_output():
+    """Test that sparse=True returns a sparse DataFrame."""
+    X_train = pd.DataFrame({"tags": [["AI", "ML"], ["DeepLearning"]]})
+    X_test = pd.DataFrame({"tags": [["ML"]]})
+
+    X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", sparse=True)
+
+    assert isinstance(X_train_result.dtypes["DeepLearning"], pd.SparseDtype)
+    assert isinstance(X_test_result.dtypes["ML"], pd.SparseDtype)
+    assert X_train_result.loc[0, "AI"] == 1
+    assert X_train_result.loc[0, "ML"] == 1
+    assert X_train_result.loc[1, "DeepLearning"] == 1
+    assert X_test_result.loc[0, "ML"] == 1
+
+
 @pytest.mark.parametrize(
     ("corpus", "subset_indices", "expected"),
     [

@@ -50,6 +50,7 @@ def append_tags_to_frame(
     max_features: Optional[int] = 500,
     min_df: Union[int, float] = 1,
     lowercase: bool = False,
+    sparse: bool = False,
     tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Extract tags from a column and append them as binarized features to the dataframe.
@@ -81,6 +82,10 @@ def append_tags_to_frame(
     - The `prefix` argument is prepended to each tag to form the new column names.
     - Example: With `prefix="tag_"` and a tag "python", the resulting column will be "tag_python".
 
+    Column Ordering:
+    - The generated tag columns are always sorted alphabetically, ensuring a deterministic and stable
+      order that can be relied upon for feature alignment in downstream modeling.
+
     :param X_train: Pandas DataFrame with the train features.
     :param X_test: Pandas DataFrame with the test features.
     :param field_name: The name of the column to parse for tags.
@@ -88,6 +93,7 @@ def append_tags_to_frame(
     :param max_features: The maximum number of tags to include, based on frequency. Default is 500.
     :param min_df: The minimum document frequency for a tag to be included. Can be an int or a float. Default is 1.
     :param lowercase: If True, all tags are converted to lowercase. Default is False.
+    :param sparse: If True, returns a DataFrame with sparse columns. Default is False.
     :param tokenizer: A custom function to tokenize string inputs. Defaults to an internal tokenizer.
     :return: A tuple containing the transformed train and test DataFrames.
     :raise KeyError: If `field_name` is not in the input dataframes.
@@ -120,7 +126,7 @@ def append_tags_to_frame(
     train_tags_filtered = train_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
 
     # Use MultiLabelBinarizer to create the binary matrix
-    mlb = MultiLabelBinarizer(classes=sorted(list(tags_to_keep)))
+    mlb = MultiLabelBinarizer(classes=sorted(list(tags_to_keep)), sparse_output=sparse)
     x_train_binarized = mlb.fit_transform(train_tags_filtered)
 
     # Prepare test data (handles both strings and lists)
@@ -130,8 +136,14 @@ def append_tags_to_frame(
 
     # Create DataFrames for the binarized tags
     feature_names = [prefix + tag_name for tag_name in mlb.classes_]
-    x_train_tags = pd.DataFrame(x_train_binarized, columns=feature_names, index=X_train.index)
-    x_test_tags = pd.DataFrame(x_test_binarized, columns=feature_names, index=X_test.index)
+    if sparse:
+        x_train_tags = pd.DataFrame.sparse.from_spmatrix(
+            x_train_binarized, index=X_train.index, columns=feature_names
+        )
+        x_test_tags = pd.DataFrame.sparse.from_spmatrix(x_test_binarized, index=X_test.index, columns=feature_names)
+    else:
+        x_train_tags = pd.DataFrame(x_train_binarized, columns=feature_names, index=X_train.index)
+        x_test_tags = pd.DataFrame(x_test_binarized, columns=feature_names, index=X_test.index)
 
     x_train_reduced = X_train.drop(columns=[field_name])
     x_test_reduced = X_test.drop(columns=[field_name])
