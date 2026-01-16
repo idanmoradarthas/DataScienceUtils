@@ -17,6 +17,22 @@ def _tokenize(text_tags: str) -> List[str]:
     return tags
 
 
+def _prepare_tags(
+    series: pd.Series,
+    lowercase: bool,
+    tokenizer: Callable[[str], List[str]],
+    tags_filter: Optional[set] = None,
+) -> pd.Series:
+    if lowercase:
+        tags = series.str.lower().apply(tokenizer)
+    else:
+        tags = series.apply(tokenizer)
+
+    if tags_filter is not None:
+        return tags.apply(lambda t: [tag for tag in t if tag in tags_filter])
+    return tags
+
+
 def append_tags_to_frame(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
@@ -53,10 +69,7 @@ def append_tags_to_frame(
     x_train_filled = X_train[field_name].fillna("")
 
     # Tokenize the training data
-    if lowercase:
-        train_tags = x_train_filled.str.lower().apply(tokenizer)
-    else:
-        train_tags = x_train_filled.apply(tokenizer)
+    train_tags = _prepare_tags(x_train_filled, lowercase, tokenizer)
 
     # Calculate document frequency
     doc_freq = Counter(tag for tags_list in train_tags for tag in set(tags_list))
@@ -70,23 +83,19 @@ def append_tags_to_frame(
 
     # Select top max_features by frequency
     if max_features is not None:
-        # Sort tags by frequency (and alphabetically for ties)
+        # Sort by frequency (descending), then alphabetically for deterministic ordering
         top_tags = sorted(tags_to_keep, key=lambda tag: (-doc_freq[tag], tag))[:max_features]
         tags_to_keep = set(top_tags)
 
     # Filter the tokenized tags to only include those in tags_to_keep
-    train_tags_filtered = train_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
+    train_tags_filtered = _prepare_tags(x_train_filled, lowercase, tokenizer, tags_to_keep)
 
     # Use MultiLabelBinarizer to create the binary matrix
     mlb = MultiLabelBinarizer(classes=sorted(list(tags_to_keep)))
     x_train_binarized = mlb.fit_transform(train_tags_filtered)
 
     # Prepare test data
-    if lowercase:
-        test_tags = X_test[field_name].fillna("").str.lower().apply(tokenizer)
-    else:
-        test_tags = X_test[field_name].fillna("").apply(tokenizer)
-    test_tags_filtered = test_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
+    test_tags_filtered = _prepare_tags(X_test[field_name].fillna(""), lowercase, tokenizer, tags_to_keep)
     x_test_binarized = mlb.transform(test_tags_filtered)
 
     # Create DataFrames for the binarized tags

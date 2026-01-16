@@ -48,6 +48,22 @@ def test_append_tags_to_frame(x_train, x_test, expected_train, expected_test):
     pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
 
 
+def test_append_tags_to_frame_with_empty_tags_to_keep():
+    """Test append_tags_to_frame when all tags are filtered out."""
+    x_train = pd.DataFrame(
+        [{"article_name": "1", "article_tags": "ds,ml"}, {"article_name": "2", "article_tags": "dl"}]
+    )
+    x_test = pd.DataFrame([{"article_name": "3", "article_tags": "py"}])
+
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_", min_df=2)
+
+    expected_train = pd.DataFrame([{"article_name": "1"}, {"article_name": "2"}])
+    expected_test = pd.DataFrame([{"article_name": "3"}])
+
+    pd.testing.assert_frame_equal(expected_train, x_train_with_tags, check_like=True)
+    pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
+
+
 @pytest.mark.parametrize(
     ("x_train", "x_test"),
     [
