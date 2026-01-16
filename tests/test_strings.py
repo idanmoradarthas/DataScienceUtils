@@ -66,9 +66,7 @@ def test_append_tags_to_frame_with_empty_tags_to_keep():
 
 def test_append_tags_to_frame_with_list_column():
     """Test that list columns work correctly."""
-    X_train = pd.DataFrame(
-        {"tags": [["AI", "ML"], ["DeepLearning", "NLP"], ["AI"]], "feature1": [1, 2, 3]}
-    )
+    X_train = pd.DataFrame({"tags": [["AI", "ML"], ["DeepLearning", "NLP"], ["AI"]], "feature1": [1, 2, 3]})
     X_test = pd.DataFrame({"tags": [["ML", "NLP"], ["AI"]], "feature1": [4, 5]})
 
     X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", prefix="tag_")
@@ -114,9 +112,7 @@ def test_append_tags_to_frame_lowercase_with_lists():
     X_train = pd.DataFrame({"tags": [["AI", "ml"], ["DeepLearning"]], "feature1": [1, 2]})
     X_test = pd.DataFrame({"tags": [["AI"], ["ML"]], "feature1": [3, 4]})
 
-    X_train_result, X_test_result = append_tags_to_frame(
-        X_train, X_test, "tags", prefix="tag_", lowercase=True
-    )
+    X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", prefix="tag_", lowercase=True)
 
     # With lowercase=True, AI and ai should be the same feature
     assert "tag_ai" in X_train_result.columns

@@ -18,8 +18,7 @@ def _tokenize(text_tags: str) -> List[str]:
 
 
 def _normalize_tags(value, tokenizer, lowercase):
-    """
-    Normalize tag input to a list of strings.
+    """Normalize tag input to a list of strings.
 
     Handles both string inputs (which need tokenization) and list inputs
     (which are already tokenized).
