@@ -17,19 +17,29 @@ def _tokenize(text_tags: str) -> List[str]:
     return tags
 
 
-def _prepare_tags(
-    series: pd.Series,
-    lowercase: bool,
-    tokenizer: Callable[[str], List[str]],
-    tags_filter: Optional[set] = None,
-) -> pd.Series:
-    if lowercase:
-        tags = series.str.lower().apply(tokenizer)
-    else:
-        tags = series.apply(tokenizer)
+def _normalize_tags(value, tokenizer, lowercase):
+    """
+    Normalize tag input to a list of strings.
 
-    if tags_filter is not None:
-        return tags.apply(lambda t: [tag for tag in t if tag in tags_filter])
+    Handles both string inputs (which need tokenization) and list inputs
+    (which are already tokenized).
+
+    :param value: Either a string to tokenize or a list of tags
+    :param tokenizer: Tokenizer function to use for string inputs
+    :param lowercase: Whether to convert to lowercase
+    :return: List of normalized tag strings
+    """
+    tags = []
+    if isinstance(value, str):
+        if value:  # non-empty string
+            tags = tokenizer(value)
+    elif isinstance(value, list):
+        tags = value
+
+    # Apply lowercase if requested
+    if lowercase:
+        tags = [tag.lower() if isinstance(tag, str) else str(tag).lower() for tag in tags]
+
     return tags
 
 
@@ -47,7 +57,8 @@ def append_tags_to_frame(
 
     :param X_train: Pandas DataFrame with the train features.
     :param X_test: Pandas DataFrame with the test features.
-    :param field_name: The feature to parse.
+    :param field_name: The feature to parse. The field can contain either comma-separated strings
+                       (e.g., "tag1,tag2,tag3") or lists of tags (e.g., ["tag1", "tag2", "tag3"]).
     :param prefix: The prefix for new tag features.
     :param max_features: Maximum number of tag names to consider. Default is 500. This helps limit the number of
                          new columns created, especially useful for datasets with a large number of unique tags.
@@ -68,8 +79,8 @@ def append_tags_to_frame(
 
     x_train_filled = X_train[field_name].fillna("")
 
-    # Tokenize the training data
-    train_tags = _prepare_tags(x_train_filled, lowercase, tokenizer)
+    # Tokenize the training data (handles both strings and lists)
+    train_tags = x_train_filled.apply(lambda x: _normalize_tags(x, tokenizer, lowercase))
 
     # Calculate document frequency
     doc_freq = Counter(tag for tags_list in train_tags for tag in set(tags_list))
@@ -88,14 +99,15 @@ def append_tags_to_frame(
         tags_to_keep = set(top_tags)
 
     # Filter the tokenized tags to only include those in tags_to_keep
-    train_tags_filtered = _prepare_tags(x_train_filled, lowercase, tokenizer, tags_to_keep)
+    train_tags_filtered = train_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
 
     # Use MultiLabelBinarizer to create the binary matrix
     mlb = MultiLabelBinarizer(classes=sorted(list(tags_to_keep)))
     x_train_binarized = mlb.fit_transform(train_tags_filtered)
 
-    # Prepare test data
-    test_tags_filtered = _prepare_tags(X_test[field_name].fillna(""), lowercase, tokenizer, tags_to_keep)
+    # Prepare test data (handles both strings and lists)
+    test_tags = X_test[field_name].fillna("").apply(lambda x: _normalize_tags(x, tokenizer, lowercase))
+    test_tags_filtered = test_tags.apply(lambda tags: [tag for tag in tags if tag in tags_to_keep])
     x_test_binarized = mlb.transform(test_tags_filtered)
 
     # Create DataFrames for the binarized tags

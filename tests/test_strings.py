@@ -64,6 +64,70 @@ def test_append_tags_to_frame_with_empty_tags_to_keep():
     pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
 
 
+def test_append_tags_to_frame_with_list_column():
+    """Test that list columns work correctly."""
+    X_train = pd.DataFrame(
+        {"tags": [["AI", "ML"], ["DeepLearning", "NLP"], ["AI"]], "feature1": [1, 2, 3]}
+    )
+    X_test = pd.DataFrame({"tags": [["ML", "NLP"], ["AI"]], "feature1": [4, 5]})
+
+    X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", prefix="tag_")
+
+    # Verify expected columns exist
+    assert "tag_AI" in X_train_result.columns
+    assert "tag_ML" in X_train_result.columns
+    assert "tag_DeepLearning" in X_train_result.columns
+    assert "tag_NLP" in X_train_result.columns
+
+    # Verify binary values
+    assert X_train_result.loc[0, "tag_AI"] == 1
+    assert X_train_result.loc[0, "tag_ML"] == 1
+    assert X_train_result.loc[1, "tag_DeepLearning"] == 1
+
+
+def test_append_tags_to_frame_with_empty_lists():
+    """Test that empty lists are handled correctly."""
+    X_train = pd.DataFrame({"tags": [["AI"], [], ["ML"]], "feature1": [1, 2, 3]})
+    X_test = pd.DataFrame({"tags": [[], ["AI"]], "feature1": [4, 5]})
+
+    X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", prefix="tag_")
+
+    # Verify the empty list row has all zeros
+    assert X_train_result.loc[1, "tag_AI"] == 0
+    assert X_train_result.loc[1, "tag_ML"] == 0
+
+
+def test_append_tags_to_frame_mixed_empty():
+    """Test mixed empty strings and empty lists."""
+    X_train = pd.DataFrame({"tags": ["AI,ML", "", ["DeepLearning"]], "feature1": [1, 2, 3]})
+    X_test = pd.DataFrame({"tags": [[], "AI"], "feature1": [4, 5]})
+
+    X_train_result, X_test_result = append_tags_to_frame(X_train, X_test, "tags", prefix="tag_")
+
+    # Should handle both empty string and empty list
+    assert X_train_result.loc[1, "tag_AI"] == 0
+    assert X_test_result.loc[0, "tag_AI"] == 0
+
+
+def test_append_tags_to_frame_lowercase_with_lists():
+    """Test that lowercase parameter works with list columns."""
+    X_train = pd.DataFrame({"tags": [["AI", "ml"], ["DeepLearning"]], "feature1": [1, 2]})
+    X_test = pd.DataFrame({"tags": [["AI"], ["ML"]], "feature1": [3, 4]})
+
+    X_train_result, X_test_result = append_tags_to_frame(
+        X_train, X_test, "tags", prefix="tag_", lowercase=True
+    )
+
+    # With lowercase=True, AI and ai should be the same feature
+    assert "tag_ai" in X_train_result.columns
+    assert "tag_ml" in X_train_result.columns
+    assert "tag_deeplearning" in X_train_result.columns
+
+    # Both should have the lowercase version
+    assert X_train_result.loc[0, "tag_ai"] == 1
+    assert X_test_result.loc[1, "tag_ml"] == 1
+
+
 @pytest.mark.parametrize(
     ("x_train", "x_test"),
     [
