@@ -52,7 +52,7 @@ def append_tags_to_frame(
     lowercase: bool = False,
     tokenizer: Optional[Callable[[str], List[str]]] = _tokenize,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Extracts tags from a column and appends them as binarized features to the dataframe.
+    """Extract tags from a column and append them as binarized features to the dataframe.
 
     This function processes a specified column in the train and test dataframes that contains tags.
     It supports columns with either string-based tags (e.g., "tag1,tag2") or list-based tags
