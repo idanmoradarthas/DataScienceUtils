@@ -347,6 +347,7 @@ def plot_features_interaction(
     Behavior by dtypes of ``feature_1`` and ``feature_2``:
     - If both are numeric: scatter plot.
     - If one is datetime and the other numeric: line/scatter over time.
+    - If both are datetime: scatter plot with complete cases.
     - If both are categorical-like: overlaid histograms per category.
     - If one is categorical-like and the other numeric: violin plot by category.
 
@@ -358,6 +359,8 @@ def plot_features_interaction(
     - Numeric vs Numeric: marginal rug plots showing missing values
     - Numeric vs Datetime: missing numeric values shown as markers on x-axis,
       missing datetime values shown as rug plot on right margin
+    - Datetime vs Datetime: complete cases shown as scatter plot, missing values
+      shown as rug plots on margins (x-axis for missing feature_2, y-axis for missing feature_1)
     - Categorical vs Numeric: missing numeric values shown with rug plots per category
     - Categorical vs Categorical: missing values included as "Missing" category
     - Categorical/Boolean vs Datetime: missing categorical values added as "Missing" category,
@@ -546,13 +549,127 @@ def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, 
     return ax
 
 
+def _plot_datetime_vs_datetime(datetime_feature_1, datetime_feature_2, data, remove_na, ax, **kwargs):
+    """Plot when both features are datetime.
+
+    When remove_na is False, missing values are handled as follows:
+    - Complete cases: shown as line/scatter plot
+    - Missing datetime_feature_2 values: shown as rug plot on x-axis (bottom margin)
+    - Missing datetime_feature_1 values: shown as rug plot on y-axis (left margin)
+    - Different colors/markers distinguish the two types of missingness
+    """
+    # Get complete cases for main plot
+    complete_data = data.dropna(subset=[datetime_feature_1, datetime_feature_2])
+
+    if len(complete_data) > 0:
+        # Use scatter plot for datetime vs datetime (can also use line plot)
+        ax.scatter(complete_data[datetime_feature_1], complete_data[datetime_feature_2], **kwargs)
+
+    ax.set_xlabel(datetime_feature_1)
+    ax.set_ylabel(datetime_feature_2)
+
+    # Format both axes as datetime
+    ax.xaxis.set_major_formatter(dates.DateFormatter("%Y-%m-%d"))
+    ax.yaxis.set_major_formatter(dates.DateFormatter("%Y-%m-%d"))
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
+    plt.setp(ax.yaxis.get_majorticklabels(), rotation=0)
+
+    # Handle missing values if not removed
+    if not remove_na and datetime_feature_1 != datetime_feature_2:
+        has_plotted_missing = False
+
+        # Cases where datetime_feature_1 is present but datetime_feature_2 is missing
+        missing_f2 = data[data[datetime_feature_2].isna() & data[datetime_feature_1].notna()]
+        if len(missing_f2) > 0:
+            # Get y-axis limits to place rug marks at the bottom
+            if len(complete_data) > 0:
+                y_min, y_max = ax.get_ylim()
+            else:
+                # If no complete data, use range from available datetime_feature_2 values
+                available_f2 = data[datetime_feature_2].dropna()
+                if len(available_f2) > 0:
+                    y_min = dates.date2num(available_f2.min())
+                    y_max = dates.date2num(available_f2.max())
+                    if y_min == y_max:
+                        y_min -= 1
+                        y_max += 1
+                else:
+                    # Fallback to default range if no datetime_feature_2 values available
+                    y_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
+                    y_max = dates.date2num(pd.Timestamp.now())
+                ax.set_ylim(y_min, y_max)
+
+            # Place rug marks slightly below the bottom of the plot
+            y_range = y_max - y_min
+            y_rug = y_min - y_range * 0.02  # 2% offset below bottom
+
+            ax.scatter(
+                missing_f2[datetime_feature_1],
+                [y_rug] * len(missing_f2),
+                marker="|",
+                s=100,
+                alpha=0.6,
+                color="red",
+                label=f"{datetime_feature_2} missing",
+                zorder=5,
+            )
+            # Extend ylim slightly to accommodate the rug plot
+            ax.set_ylim(y_min - y_range * 0.05, y_max)
+            has_plotted_missing = True
+
+        # Cases where datetime_feature_2 is present but datetime_feature_1 is missing
+        missing_f1 = data[data[datetime_feature_1].isna() & data[datetime_feature_2].notna()]
+        if len(missing_f1) > 0:
+            # Get x-axis limits to place rug marks on the left
+            if len(complete_data) > 0:
+                x_min, x_max = ax.get_xlim()
+            else:
+                # If no complete data, use range from available datetime_feature_1 values
+                available_f1 = data[datetime_feature_1].dropna()
+                if len(available_f1) > 0:
+                    x_min = dates.date2num(available_f1.min())
+                    x_max = dates.date2num(available_f1.max())
+                    if x_min == x_max:
+                        x_min -= 1
+                        x_max += 1
+                else:
+                    # Fallback to default range if no datetime_feature_1 values available
+                    x_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
+                    x_max = dates.date2num(pd.Timestamp.now())
+                ax.set_xlim(x_min, x_max)
+
+            # Place rug marks slightly to the left of the plot
+            x_range = x_max - x_min
+            x_rug = x_min - x_range * 0.02  # 2% offset to the left
+
+            ax.scatter(
+                [x_rug] * len(missing_f1),
+                missing_f1[datetime_feature_2],
+                marker="_",
+                s=100,
+                alpha=0.6,
+                color="orange",
+                label=f"{datetime_feature_1} missing",
+                zorder=5,
+            )
+            # Extend xlim slightly to accommodate the rug plot
+            ax.set_xlim(x_min - x_range * 0.05, x_max)
+            has_plotted_missing = True
+
+        # Add legend if we plotted any missing values
+        if has_plotted_missing:
+            ax.legend(loc="best", framealpha=0.9)
+
+    return ax
+
+
 def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, remove_na, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
         ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, remove_na, ax, **kwargs)
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        # Both features are datetime - treat as datetime vs numeric (line plot)
-        ax = _plot_datetime_vs_numeric(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
+        # Both features are datetime - use specialized datetime vs datetime plot
+        ax = _plot_datetime_vs_datetime(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     else:
         ax = _plot_datetime_vs_numeric(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     return ax
