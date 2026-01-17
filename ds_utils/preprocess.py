@@ -360,6 +360,8 @@ def plot_features_interaction(
       missing datetime values shown as rug plot on right margin
     - Categorical vs Numeric: missing numeric values shown with rug plots per category
     - Categorical vs Categorical: missing values included as "Missing" category
+    - Categorical/Boolean vs Datetime: missing categorical values added as "Missing" category,
+      missing datetime values shown as a separate violin at the edge of the plot
 
     :param data: The input DataFrame where each feature is a column.
     :param feature_1: Name of the first feature.
@@ -652,15 +654,97 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, re
 
 
 def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, remove_na, ax, **kwargs):
-    """Plot when one feature is categorical-like and the other is datetime."""
+    """Plot when one feature is categorical-like and the other is datetime.
+
+    When remove_na is False, missing values are handled as follows:
+    - Missing categorical values: added as "Missing" category (creates an extra violin)
+    - Missing datetime values: shown as a separate violin at the edge of the plot
+    """
     dup_df = pd.DataFrame()
-    dup_df[datetime_feature] = data[datetime_feature].apply(dates.date2num)
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
-    chart = sns.violinplot(x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs)
+
+    # Handle missing categorical values by adding "Missing" category
+    if not remove_na and dup_df[categorical_feature].isna().any():
+        dup_df[categorical_feature] = dup_df[categorical_feature].fillna("Missing")
+
+    # Initialize variables for missing datetime handling
+    missing_datetime_value = None
+    has_missing_datetime = False
+
+    # Convert datetime to numeric, handling missing values
+    if not remove_na:
+        # For missing datetime values, we'll use a special marker value
+        # First, convert non-missing datetimes to numeric
+        datetime_numeric = data[datetime_feature].apply(
+            lambda x: dates.date2num(x) if pd.notna(x) else np.nan
+        )
+
+        # Get the range of valid datetime values to place "Missing" at the edge
+        valid_datetime_numeric = datetime_numeric.dropna()
+        has_missing_datetime = datetime_numeric.isna().any()
+
+        if len(valid_datetime_numeric) > 0:
+            datetime_min = valid_datetime_numeric.min()
+            datetime_max = valid_datetime_numeric.max()
+            datetime_range = datetime_max - datetime_min
+            # Place "Missing" at the right edge, slightly offset (at least 1 day or 10% of range)
+            missing_datetime_value = datetime_max + max(datetime_range * 0.1, 1.0)
+        elif has_missing_datetime:
+            # If no valid datetimes but we have missing ones, use a default value
+            missing_datetime_value = dates.date2num(pd.Timestamp.now())
+
+        # Replace NaN datetime values with the special marker if we have missing values
+        if has_missing_datetime and missing_datetime_value is not None:
+            dup_df[datetime_feature] = datetime_numeric.fillna(missing_datetime_value)
+        else:
+            dup_df[datetime_feature] = datetime_numeric
+    else:
+        # Remove rows where either feature is missing
+        dup_df = dup_df.dropna(subset=[categorical_feature])
+        datetime_numeric = data[datetime_feature].apply(dates.date2num)
+        dup_df[datetime_feature] = datetime_numeric
+        dup_df = dup_df.dropna(subset=[datetime_feature])
+
+    # Create violin plot with all data (complete + missing datetime)
+    chart = sns.violinplot(
+        x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs
+    )
+
+    # Format x-axis ticks for datetime
     ticks_loc = chart.get_xticks()
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-    ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+
+    if not remove_na and has_missing_datetime and missing_datetime_value is not None:
+        # Check if we have missing datetime data
+        missing_datetime_data = dup_df[dup_df[datetime_feature] == missing_datetime_value]
+        if len(missing_datetime_data) > 0:
+            # Separate valid datetime ticks from the missing datetime position
+            # Use a threshold to identify the missing datetime position
+            valid_ticks = [t for t in ticks_loc if abs(t - missing_datetime_value) > 0.1]
+            # Add the missing datetime position if it's not already in ticks
+            if not any(abs(t - missing_datetime_value) < 0.1 for t in ticks_loc):
+                valid_ticks.append(missing_datetime_value)
+            valid_ticks = sorted(valid_ticks)
+
+            chart.xaxis.set_major_locator(ticker.FixedLocator(valid_ticks))
+            tick_labels = [
+                dates.num2date(t).strftime("%Y-%m-%d %H:%M") if abs(t - missing_datetime_value) > 0.1 else "Missing"
+                for t in valid_ticks
+            ]
+            chart.set_xticklabels(tick_labels, rotation=45, ha="right")
+        else:
+            # No missing datetime data, use standard formatting
+            chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
+            chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
+            ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+    else:
+        # Standard datetime formatting
+        chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
+        chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
+        ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+
+    ax.set_xlabel(datetime_feature)
+    ax.set_ylabel(categorical_feature)
+
     return ax
 
 
