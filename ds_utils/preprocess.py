@@ -792,9 +792,7 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, r
     if not remove_na:
         # For missing datetime values, we'll use a special marker value
         # First, convert non-missing datetimes to numeric
-        datetime_numeric = data[datetime_feature].apply(
-            lambda x: dates.date2num(x) if pd.notna(x) else np.nan
-        )
+        datetime_numeric = data[datetime_feature].apply(lambda x: dates.date2num(x) if pd.notna(x) else np.nan)
 
         # Get the range of valid datetime values to place "Missing" at the edge
         valid_datetime_numeric = datetime_numeric.dropna()
@@ -823,9 +821,7 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, r
         dup_df = dup_df.dropna(subset=[datetime_feature])
 
     # Create violin plot with all data (complete + missing datetime)
-    chart = sns.violinplot(
-        x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs
-    )
+    chart = sns.violinplot(x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs)
 
     # Format x-axis ticks for datetime
     ticks_loc = chart.get_xticks()
