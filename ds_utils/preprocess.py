@@ -680,6 +680,33 @@ def compute_mutual_information(
     boolean_features = df[features].select_dtypes(include=[bool]).columns.tolist()
     categorical_features = df[features].select_dtypes(include=["object", "category"]).columns.tolist()
 
+    # Handle fully missing features by imputing default values
+    fully_missing_numerical = [col for col in numerical_features if df[col].isnull().all()]
+    fully_missing_categorical = [col for col in categorical_features if df[col].isnull().all()]
+    fully_missing_boolean = [col for col in boolean_features if df[col].isnull().all()]
+
+    if fully_missing_numerical or fully_missing_categorical or fully_missing_boolean:
+        df = df.copy()  # Avoid side effects on the original DataFrame
+        imputed_features = []
+
+        if fully_missing_numerical:
+            df[fully_missing_numerical] = df[fully_missing_numerical].fillna(0)
+            imputed_features.extend(fully_missing_numerical)
+
+        if fully_missing_categorical:
+            df[fully_missing_categorical] = df[fully_missing_categorical].fillna("_MISSING_")
+            imputed_features.extend(fully_missing_categorical)
+
+        if fully_missing_boolean:
+            df[fully_missing_boolean] = df[fully_missing_boolean].fillna(False)
+            imputed_features.extend(fully_missing_boolean)
+
+        warnings.warn(
+            "The following features were fully missing and have been imputed with default values: "
+            f"{sorted(imputed_features)}",
+            UserWarning,
+        )
+
     # Create preprocessing pipelines
     numerical_transformer = Pipeline(steps=[("imputer", numerical_imputer)], memory=None, verbose=False)
     discrete_transformer = Pipeline(

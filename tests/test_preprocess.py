@@ -552,3 +552,37 @@ def test_compute_mutual_information_all_null_target():
 
     with pytest.raises(ValueError, match="Label column 'target' contains only null values"):
         compute_mutual_information(df, ["feature1"], "target")
+
+def test_compute_mutual_information_fully_missing_feature():
+    """Test compute_mutual_information with a feature that is fully missing."""
+    df = pd.DataFrame({
+        'numerical_feature': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        'missing_numerical_feature': [np.nan] * 10,
+        'categorical_feature': ['A', 'B', 'A', 'B', 'A', 'B', 'A', 'B', 'A', 'B'],
+        'target': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    })
+    features = ['numerical_feature', 'missing_numerical_feature', 'categorical_feature']
+
+    # This should run without raising an IndexError
+    mi_scores = compute_mutual_information(df, features, 'target', random_state=42)
+
+    # Check that the missing feature has a score of 0 and is present in the output
+    assert 'missing_numerical_feature' in mi_scores['feature_name'].values
+    assert mi_scores.loc[mi_scores['feature_name'] == 'missing_numerical_feature', 'mi_score'].iloc[0] == 0.0
+
+
+def test_compute_mutual_information_fully_missing_categorical_feature():
+    """Test compute_mutual_information with a fully missing categorical feature."""
+    df = pd.DataFrame({
+        'numerical_feature': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        'missing_categorical_feature': [np.nan] * 10,
+        'target': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    })
+    features = ['numerical_feature', 'missing_categorical_feature']
+
+    # This should run without raising an IndexError and impute "_MISSING_"
+    mi_scores = compute_mutual_information(df, features, 'target', random_state=42)
+
+    # Check that the missing feature has a score of 0 and is present
+    assert 'missing_categorical_feature' in mi_scores['feature_name'].values
+    assert mi_scores.loc[mi_scores['feature_name'] == 'missing_categorical_feature', 'mi_score'].iloc[0] == 0.0
