@@ -49,8 +49,8 @@ def plot_confusion_matrix(
         raise ValueError("Number of labels must be greater than 1")
 
     # Get unique values from each input
-    unique_y_test = set(np.unique(y_test).tolist())
-    unique_y_pred = set(np.unique(y_pred).tolist())
+    unique_y_test = set(np.unique(y_test))
+    unique_y_pred = set(np.unique(y_pred))
     unique_labels = set(labels)
 
     # Check if all values in y_test and y_pred are in labels
