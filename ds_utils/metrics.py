@@ -48,6 +48,23 @@ def plot_confusion_matrix(
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
 
+    # Get unique values from each input
+    unique_y_test = set(np.unique(y_test).tolist())
+    unique_y_pred = set(np.unique(y_pred).tolist())
+    unique_labels = set(labels)
+
+    # Check if all values in y_test and y_pred are in labels
+    extra_in_data = (unique_y_test | unique_y_pred) - unique_labels
+    missing_from_data = unique_labels - (unique_y_test | unique_y_pred)
+
+    if extra_in_data or missing_from_data:
+        error_parts = []
+        if extra_in_data:
+            error_parts.append(f"Values in data but not in labels: {sorted(extra_in_data)}")
+        if missing_from_data:
+            error_parts.append(f"Values in labels but not in data: {sorted(missing_from_data)}")
+        raise ValueError(f"Mismatch between labels and data. {'. '.join(error_parts)}")
+
     cnf_matrix = confusion_matrix(y_test, y_pred, labels=labels, sample_weight=sample_weight)
     if len(labels) == 2:
         df, tnr, tpr = _create_binary_confusion_matrix(cnf_matrix, labels)

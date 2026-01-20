@@ -113,6 +113,36 @@ def test_print_confusion_matrix_exception():
         plot_confusion_matrix(np.array([]), np.array([]), [])
 
 
+@pytest.mark.parametrize(
+    ("y_test", "y_pred", "labels", "expected_error_pattern"),
+    [
+        (
+            np.array([0, 1, 2, 1]),
+            np.array([0, 1, 1, 1]),
+            [0, 1],
+            r"Values in data but not in labels: \[2\]",
+        ),
+        (
+            np.array([0, 1, 1, 0]),
+            np.array([0, 1, 0, 1]),
+            [0, 1, 2],
+            r"Values in labels but not in data: \[2\]",
+        ),
+        (
+            np.array([0, 1, 3, 0]),
+            np.array([0, 1, 0, 1]),
+            [0, 1, 2],
+            r"Values in data but not in labels: \[3\].*Values in labels but not in data: \[2\]",
+        ),
+    ],
+    ids=["extra_in_data", "missing_from_data", "both_issues"],
+)
+def test_plot_confusion_matrix_label_mismatch(y_test, y_pred, labels, expected_error_pattern):
+    """Test that plot_confusion_matrix raises ValueError when labels don't match data."""
+    with pytest.raises(ValueError, match=expected_error_pattern):
+        plot_confusion_matrix(y_test, y_pred, labels)
+
+
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize(
     ("n_samples", "quantiles", "random_state", "use_dummies"),
