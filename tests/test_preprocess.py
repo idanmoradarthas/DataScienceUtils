@@ -583,3 +583,43 @@ def test_compute_mutual_information_fully_missing_feature(
 
     assert missing_feature_name in mi_scores["feature_name"].values
     assert mi_scores.loc[mi_scores["feature_name"] == missing_feature_name, "mi_score"].iloc[0] == 0.0
+
+
+def test_compute_mutual_information_all_features_fully_missing():
+    """Test compute_mutual_information when ALL features contain only null values.
+
+    This tests the edge case where all features are missing, which should return
+    a DataFrame with all features having MI score of 0, sorted by feature_name.
+    """
+    df = pd.DataFrame(
+        {
+            "missing_feature1": [np.nan, np.nan, np.nan, np.nan, np.nan],
+            "missing_feature2": [np.nan, np.nan, np.nan, np.nan, np.nan],
+            "missing_feature3": [np.nan, np.nan, np.nan, np.nan, np.nan],
+            "target": [0, 1, 0, 1, 0],
+        }
+    )
+
+    features = ["missing_feature1", "missing_feature2", "missing_feature3"]
+
+    expected_warning = (
+        r"Features \['missing_feature1', 'missing_feature2', 'missing_feature3'\] "
+        r"contain only null values and will be ignored."
+    )
+
+    with pytest.warns(UserWarning, match=expected_warning):
+        mi_scores = compute_mutual_information(df, features, "target", random_state=42)
+
+    # All features should have MI score of 0
+    assert len(mi_scores) == 3
+    assert all(mi_scores["mi_score"] == 0.0)
+
+    # Should be sorted by feature_name (alphabetically)
+    expected_order = ["missing_feature1", "missing_feature2", "missing_feature3"]
+    assert mi_scores["feature_name"].tolist() == expected_order
+
+    # Verify the exact DataFrame structure
+    expected_df = pd.DataFrame(
+        {"feature_name": ["missing_feature1", "missing_feature2", "missing_feature3"], "mi_score": [0.0, 0.0, 0.0]}
+    )
+    pd.testing.assert_frame_equal(mi_scores, expected_df)

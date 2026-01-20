@@ -148,6 +148,22 @@ def test_append_tags_to_frame_empty_dataframes(request, x_train, x_test):
     assert x_test_with_tags.empty
 
 
+def test_append_tags_to_frame_both_empty():
+    """Test append_tags_to_frame when both X_train and X_test are empty."""
+    x_train = pd.DataFrame(columns=["article_name", "article_tags"])
+    x_test = pd.DataFrame(columns=["article_name", "article_tags"])
+
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(
+        x_train, x_test, "article_tags", "tag_"
+    )
+
+    # Both should be empty DataFrames
+    assert x_train_with_tags.empty
+    assert x_test_with_tags.empty
+    assert isinstance(x_train_with_tags, pd.DataFrame)
+    assert isinstance(x_test_with_tags, pd.DataFrame)
+
+
 def test_append_tags_to_frame_missing_column():
     """Test append_tags_to_frame raises KeyError if specified field_name is missing."""
     x_train = pd.DataFrame([{"article_name": "1"}])
