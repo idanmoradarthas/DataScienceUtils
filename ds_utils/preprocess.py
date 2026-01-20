@@ -677,6 +677,8 @@ def compute_mutual_information(
 
     # Identify and separate fully missing features
     fully_missing_features = [f for f in features if df[f].isnull().all()]
+    if fully_missing_features:
+        warnings.warn(f"Features {fully_missing_features} contain only null values and will be ignored.", UserWarning)
     features_to_process = [f for f in features if f not in fully_missing_features]
 
     # Create a DataFrame for missing features with MI score of 0
