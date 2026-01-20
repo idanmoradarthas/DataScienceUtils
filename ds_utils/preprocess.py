@@ -640,6 +640,9 @@ def compute_mutual_information(
     label column. Features are automatically categorized as numerical or discrete (boolean/categorical)
     and preprocessed accordingly before computing mutual information.
 
+    Any feature column that contains only null (NaN) values will be ignored and assigned a mutual
+    information score of 0. A `UserWarning` will be issued listing any such columns.
+
     Mutual information measures the mutual dependence between two variables - higher scores indicate
     stronger relationships between the feature and the target label.
 
