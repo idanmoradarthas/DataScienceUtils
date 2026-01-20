@@ -663,6 +663,7 @@ def compute_mutual_information(
 
     :raises KeyError: If any feature or label_col is not found in DataFrame
     :raises ValueError: If features list is empty or label_col contains non-finite values
+    :warns UserWarning: If one or more feature columns contain only null values.
     """
     # Input validation
     if not features:
