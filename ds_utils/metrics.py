@@ -29,7 +29,8 @@ def plot_confusion_matrix(
     """Compute and plot confusion matrix with classification metrics.
 
     Computes and plots confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
-    classification.
+    classification. Before plotting, it validates that the unique values in `y_test`, `y_pred`, and `labels`
+    are identical.
 
     :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
     :param y_pred: array, shape = [n_samples]. Estimated targets as returned by a classifier.
@@ -43,7 +44,8 @@ def plot_confusion_matrix(
                    to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the matrix drawn onto it.
 
-    :raises ValueError: If number of labels is lower than 2.
+    :raises ValueError: If number of labels is lower than 2, or if there is a mismatch between the unique
+                        values in `y_test`, `y_pred`, and `labels`.
     """
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
