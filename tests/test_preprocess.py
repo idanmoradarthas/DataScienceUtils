@@ -552,3 +552,34 @@ def test_compute_mutual_information_all_null_target():
 
     with pytest.raises(ValueError, match="Label column 'target' contains only null values"):
         compute_mutual_information(df, ["feature1"], "target")
+
+
+@pytest.mark.parametrize(
+    ("valid_feature_name", "valid_feature_data", "missing_feature_name", "missing_dtype"),
+    [
+        ("numerical_feature", [1, 2, 3, 4, 5], "missing_numerical", float),
+        ("categorical_feature", ["A", "B", "A", "B", "A"], "missing_categorical", object),
+        ("boolean_feature", [True, False, True, False, True], "missing_boolean", "boolean"),
+    ],
+    ids=["numerical", "categorical", "boolean"],
+)
+def test_compute_mutual_information_fully_missing_feature(
+    valid_feature_name, valid_feature_data, missing_feature_name, missing_dtype
+):
+    """Test that fully missing features are handled, get a score of 0, and raise a warning."""
+    df = pd.DataFrame(
+        {
+            valid_feature_name: valid_feature_data,
+            missing_feature_name: [np.nan] * 5,
+            "target": [0, 1, 0, 1, 0],
+        }
+    )
+    df[missing_feature_name] = df[missing_feature_name].astype(missing_dtype)
+    features = [valid_feature_name, missing_feature_name]
+
+    expected_warning = f"Features \\['{missing_feature_name}'\\] contain only null values and will be ignored."
+    with pytest.warns(UserWarning, match=expected_warning):
+        mi_scores = compute_mutual_information(df, features, "target", random_state=42)
+
+    assert missing_feature_name in mi_scores["feature_name"].values
+    assert mi_scores.loc[mi_scores["feature_name"] == missing_feature_name, "mi_score"].iloc[0] == 0.0
