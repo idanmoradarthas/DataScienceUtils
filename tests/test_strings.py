@@ -160,9 +160,7 @@ def test_append_tags_to_frame_truly_empty():
     x_train = pd.DataFrame()  # Truly empty: shape (0, 0), .empty = True
     x_test = pd.DataFrame(columns=["article_name", "article_tags"])
 
-    x_train_with_tags, x_test_with_tags = append_tags_to_frame(
-        x_train, x_test, "article_tags", "tag_"
-    )
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
 
     # Both should be empty DataFrames (early return on line 117)
     assert x_train_with_tags.empty
