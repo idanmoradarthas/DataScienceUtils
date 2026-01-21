@@ -148,14 +148,23 @@ def test_append_tags_to_frame_empty_dataframes(request, x_train, x_test):
     assert x_test_with_tags.empty
 
 
-def test_append_tags_to_frame_both_empty():
-    """Test append_tags_to_frame when both X_train and X_test are empty."""
-    x_train = pd.DataFrame(columns=["article_name", "article_tags"])
+def test_append_tags_to_frame_truly_empty():
+    """Test append_tags_to_frame when X_train is truly empty (0 rows, 0 columns).
+
+    This tests the edge case where X_train.empty returns True, which only happens
+    when a DataFrame has both no rows AND no columns (shape (0, 0)).
+
+    Note: In pandas, DataFrame.empty is True only when shape is (0, 0).
+    A DataFrame with columns but no rows (e.g., shape (0, 2)) has .empty = False.
+    """
+    x_train = pd.DataFrame()  # Truly empty: shape (0, 0), .empty = True
     x_test = pd.DataFrame(columns=["article_name", "article_tags"])
 
-    x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
+    x_train_with_tags, x_test_with_tags = append_tags_to_frame(
+        x_train, x_test, "article_tags", "tag_"
+    )
 
-    # Both should be empty DataFrames
+    # Both should be empty DataFrames (early return on line 117)
     assert x_train_with_tags.empty
     assert x_test_with_tags.empty
     assert isinstance(x_train_with_tags, pd.DataFrame)
