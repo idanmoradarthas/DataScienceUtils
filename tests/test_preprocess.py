@@ -610,16 +610,11 @@ def test_compute_mutual_information_all_features_fully_missing():
     with pytest.warns(UserWarning, match=expected_warning):
         mi_scores = compute_mutual_information(df, features, "target", random_state=42)
 
-    # All features should have MI score of 0
-    assert len(mi_scores) == 3
-    assert all(mi_scores["mi_score"] == 0.0)
-
-    # Should be sorted by feature_name (alphabetically)
-    expected_order = ["missing_feature1", "missing_feature2", "missing_feature3"]
-    assert mi_scores["feature_name"].tolist() == expected_order
-
-    # Verify the exact DataFrame structure
+    # Verify the exact DataFrame structure (checks length, values, and ordering)
     expected_df = pd.DataFrame(
-        {"feature_name": ["missing_feature1", "missing_feature2", "missing_feature3"], "mi_score": [0.0, 0.0, 0.0]}
+        {
+            "feature_name": ["missing_feature1", "missing_feature2", "missing_feature3"],
+            "mi_score": [0.0, 0.0, 0.0],
+        }
     )
     pd.testing.assert_frame_equal(mi_scores, expected_df)
