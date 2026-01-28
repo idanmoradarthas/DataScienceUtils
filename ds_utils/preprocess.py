@@ -1046,6 +1046,9 @@ def compute_mutual_information(
     label column. Features are automatically categorized as numerical or discrete (boolean/categorical)
     and preprocessed accordingly before computing mutual information.
 
+    Any feature column that contains only null (NaN) values will be ignored and assigned a mutual
+    information score of 0. A `UserWarning` will be issued listing any such columns.
+
     Mutual information measures the mutual dependence between two variables - higher scores indicate
     stronger relationships between the feature and the target label.
 
@@ -1066,6 +1069,7 @@ def compute_mutual_information(
 
     :raises KeyError: If any feature or label_col is not found in DataFrame
     :raises ValueError: If features list is empty or label_col contains non-finite values
+    :warns UserWarning: If one or more feature columns contain only null values.
     """
     # Input validation
     if not features:
@@ -1081,10 +1085,28 @@ def compute_mutual_information(
     if df[label_col].isnull().all():
         raise ValueError(f"Label column '{label_col}' contains only null values")
 
-    # Identify feature types
-    numerical_features = df[features].select_dtypes(include=[np.number]).columns.tolist()
-    boolean_features = df[features].select_dtypes(include=[bool]).columns.tolist()
-    categorical_features = df[features].select_dtypes(include=["object", "category"]).columns.tolist()
+    # Identify and separate fully missing features
+    fully_missing_features = [f for f in features if df[f].isnull().all()]
+    if fully_missing_features:
+        warnings.warn(f"Features {fully_missing_features} contain only null values and will be ignored.", UserWarning)
+    features_to_process = [f for f in features if f not in fully_missing_features]
+
+    # Create a DataFrame for missing features with MI score of 0
+    missing_mi_df = pd.DataFrame({"feature_name": fully_missing_features, "mi_score": 0.0})
+
+    # If all features were missing or no features to process, return the DataFrame of missing features
+    if not features_to_process:
+        return missing_mi_df.sort_values(by="feature_name").reset_index(drop=True)
+
+    # Identify feature types for the features that will be processed
+    df_processed = df[features_to_process].copy()
+    numerical_features = df_processed.select_dtypes(include=[np.number]).columns.tolist()
+    boolean_features = df_processed.select_dtypes(include=["bool", "boolean"]).columns.tolist()
+    categorical_features = df_processed.select_dtypes(include=["object", "category"]).columns.tolist()
+
+    # SimpleImputer does not support boolean dtype, so convert to object
+    for col in boolean_features:
+        df_processed[col] = df_processed[col].astype(object)
 
     # Create preprocessing pipelines
     numerical_transformer = Pipeline(steps=[("imputer", numerical_imputer)], memory=None, verbose=False)
@@ -1101,7 +1123,7 @@ def compute_mutual_information(
 
     preprocessor = ColumnTransformer(
         transformers=transformers,
-        remainder="drop",  # Drop any features not explicitly handled
+        remainder="drop",
         sparse_threshold=0,
         n_jobs=n_jobs,
         transformer_weights=None,
@@ -1118,7 +1140,7 @@ def compute_mutual_information(
     ordered_feature_names = numerical_features + boolean_features + categorical_features
 
     # Apply preprocessing
-    x_preprocessed = preprocessor.fit_transform(df[ordered_feature_names])
+    x_preprocessed = preprocessor.fit_transform(df_processed[ordered_feature_names])
     y = df[label_col]
 
     # Compute mutual information scores
@@ -1132,7 +1154,10 @@ def compute_mutual_information(
         discrete_features=discrete_features_mask,
     )
 
-    # Create results DataFrame
-    mi_df = pd.DataFrame({"feature_name": ordered_feature_names, "mi_score": mi_scores})
+    # Create results DataFrame for processed features
+    processed_mi_df = pd.DataFrame({"feature_name": ordered_feature_names, "mi_score": mi_scores})
 
-    return mi_df.sort_values(by="mi_score", ascending=False).reset_index(drop=True)
+    # Combine with missing features' results
+    final_mi_df = pd.concat([processed_mi_df, missing_mi_df], ignore_index=True)
+
+    return final_mi_df.sort_values(by="mi_score", ascending=False).reset_index(drop=True)

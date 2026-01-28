@@ -29,7 +29,8 @@ def plot_confusion_matrix(
     """Compute and plot confusion matrix with classification metrics.
 
     Computes and plots confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
-    classification.
+    classification. Before plotting, it validates that the unique values in `y_test`, `y_pred`, and `labels`
+    are identical.
 
     :param y_test: array, shape = [n_samples]. Ground truth (correct) target values.
     :param y_pred: array, shape = [n_samples]. Estimated targets as returned by a classifier.
@@ -43,10 +44,28 @@ def plot_confusion_matrix(
                    to ``matplotlib.axes.Axes.pcolormesh()``.
     :return: Returns the Axes object with the matrix drawn onto it.
 
-    :raises ValueError: If number of labels is lower than 2.
+    :raises ValueError: If number of labels is lower than 2, or if there is a mismatch between the unique
+                        values in `y_test`, `y_pred`, and `labels`.
     """
     if len(labels) < 2:
         raise ValueError("Number of labels must be greater than 1")
+
+    # Get unique values from each input
+    unique_y_test = set(np.unique(y_test))
+    unique_y_pred = set(np.unique(y_pred))
+    unique_labels = set(labels)
+
+    # Check if all values in y_test and y_pred are in labels
+    extra_in_data = (unique_y_test | unique_y_pred) - unique_labels
+    missing_from_data = unique_labels - (unique_y_test | unique_y_pred)
+
+    if extra_in_data or missing_from_data:
+        error_parts = []
+        if extra_in_data:
+            error_parts.append(f"Values in data but not in labels: {sorted(extra_in_data)}")
+        if missing_from_data:
+            error_parts.append(f"Values in labels but not in data: {sorted(missing_from_data)}")
+        raise ValueError(f"Mismatch between labels and data. {'. '.join(error_parts)}")
 
     cnf_matrix = confusion_matrix(y_test, y_pred, labels=labels, sample_weight=sample_weight)
     if len(labels) == 2:
