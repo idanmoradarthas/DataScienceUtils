@@ -324,6 +324,178 @@ def test_plot_relationship_between_features_datetime_bool(loan_data, feature1, f
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_numeric_numeric_missingness_rugs(data_1m):
+    """Numeric vs numeric: show rug markers when either axis has missing values."""
+    df = data_1m.copy()
+
+    # Create many missing values spread across the dataset so rug markers
+    # are visible across the full plotted range.
+    n = len(df)
+    # Choose evenly spaced indices (avoid endpoints to preserve plenty of complete cases)
+    x5_missing_idx = np.linspace(10, n - 11, 80, dtype=int)
+    x4_missing_idx = np.linspace(20, n - 21, 80, dtype=int)
+
+    # Ensure disjoint sets so each missingness type is clearly visible
+    x4_missing_idx = np.setdiff1d(x4_missing_idx, x5_missing_idx)
+
+    # - x4 present, x5 missing
+    df.loc[df.index[x5_missing_idx], "x5"] = np.nan
+    # - x5 present, x4 missing
+    df.loc[df.index[x4_missing_idx], "x4"] = np.nan
+
+    # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+    plot_features_interaction(df, "x4", "x5")
+    plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_datetime_numeric_missingness_no_complete_data(daily_min_temperatures, monkeypatch):
+    """Datetime vs numeric: handle missing-on-either-side even when there are no complete pairs."""
+    fixed_now = pd.Timestamp("2024-01-15 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    df = daily_min_temperatures.copy()
+
+    # Make sure there are NO complete cases, but we still have:
+    # - datetime present, numeric missing (missing numeric markers)
+    # - numeric present, datetime missing (missing datetime rug)
+    df.loc[df.index[:40], "Temp"] = np.nan  # Date present, Temp missing
+    df.loc[df.index[40:80], "Date"] = pd.NaT  # Temp present, Date missing
+
+    # Force numeric values (where present) to be equal so y_min == y_max branch triggers
+    df.loc[df["Date"].isna(), "Temp"] = 7.0
+
+    # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+    plot_features_interaction(df, "Date", "Temp")
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    "case",
+    ["with_complete_and_both_missing_rugs", "no_complete_fallback_now"],
+    ids=["with_complete_and_both_missing_rugs", "no_complete_fallback_now"],
+)
+def test_plot_features_interaction_datetime_datetime_missingness(daily_min_temperatures, monkeypatch, case):
+    """Datetime vs datetime: visualize missing values on both axes (including no-complete-cases fallback)."""
+    df = daily_min_temperatures.copy()
+    df["Date2"] = df["Date"] + pd.Timedelta(days=1)
+
+    if case == "with_complete_and_both_missing_rugs":
+        # Ensure complete cases exist plus missingness in each datetime column.
+        df.loc[df.index[:25], "Date2"] = pd.NaT  # feature_2 missing
+        df.loc[df.index[100:150], "Date"] = pd.NaT  # feature_1 missing
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        plot_features_interaction(df, "Date", "Date2")
+        plt.gcf().set_size_inches(12, 6)
+        return plt.gcf()
+
+    if case == "no_complete_fallback_now":
+        fixed_now = pd.Timestamp("2024-02-01 00:00:00")
+        monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+        # Ensure there are NO complete cases, but we still show both missingness types:
+        # - Date2 missing while Date present  -> rug on x-axis
+        # - Date missing while Date2 present  -> rug on y-axis
+        n = len(df)
+        idx = np.linspace(0, n - 1, 260, dtype=int)
+        df = df.iloc[idx].copy()
+
+        # Preserve a source of non-missing Date2 values even after we set Date to NaT.
+        date2_full = df["Date2"].copy()
+
+        # Start by making Date2 missing everywhere (so no complete pairs).
+        df.loc[:, "Date2"] = pd.NaT
+
+        # For a subset of rows, make Date missing but keep Date2 present.
+        date_missing_pos = np.linspace(5, len(df) - 6, 120, dtype=int)
+        df.loc[df.index[date_missing_pos], "Date"] = pd.NaT
+        df.loc[df.index[date_missing_pos], "Date2"] = date2_full.loc[df.index[date_missing_pos]]
+
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        ax = plot_features_interaction(df, "Date", "Date2")
+        ax.set_title("No complete date pairs; missing shown as rugs")
+        plt.gcf().set_size_inches(12, 6)
+        return plt.gcf()
+
+    raise AssertionError(f"Unknown case: {case}")
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    "case",
+    ["categorical_categorical_missingness", "categorical_numeric_missingness"],
+    ids=["categorical_categorical_missingness", "categorical_numeric_missingness"],
+)
+def test_plot_features_interaction_categorical_missingness(data_1m, case):
+    """Categorical interactions: include missing category and/or missing numeric values in the plot."""
+    df = data_1m.copy()
+
+    if case == "categorical_categorical_missingness":
+        df.loc[df.index[:15], "x7"] = np.nan
+        df.loc[df.index[15:30], "x10"] = np.nan
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        plot_features_interaction(df, "x7", "x10")
+        plt.gcf().set_size_inches(12, 5)
+        return plt.gcf()
+
+    if case == "categorical_numeric_missingness":
+        np.random.seed(0)  # jitter in rug plot uses np.random.uniform
+        df.loc[df.index[:20], "x7"] = np.nan
+        df.loc[df.index[20:40], "x1"] = np.nan
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        plot_features_interaction(df, "x7", "x1")
+        plt.gcf().set_size_inches(14, 7)
+        return plt.gcf()
+
+    raise AssertionError(f"Unknown case: {case}")
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    "case",
+    ["some_missing_datetime", "all_datetime_missing_fallback_now"],
+    ids=["some_missing_datetime", "all_datetime_missing_fallback_now"],
+)
+def test_plot_features_interaction_categorical_datetime_missingness(loan_data, monkeypatch, case):
+    """Categorical vs datetime: show missing category and missing datetimes (including all-missing fallback)."""
+    df = loan_data[["home_ownership", "issue_d"]].copy()
+
+    if case == "some_missing_datetime":
+        df.loc[df.index[:250], "home_ownership"] = np.nan
+        df.loc[df.index[250:500], "issue_d"] = pd.NaT
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        plot_features_interaction(df, "home_ownership", "issue_d")
+        plt.gcf().set_size_inches(10, 11.5)
+        return plt.gcf()
+
+    if case == "all_datetime_missing_fallback_now":
+        fixed_now = pd.Timestamp("2024-03-01 00:00:00")
+        monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+        df.loc[:, "issue_d"] = pd.NaT
+        # remove_na defaults to False; omit it to avoid redundant explicit defaults.
+        plot_features_interaction(df, "home_ownership", "issue_d")
+        plt.gcf().set_size_inches(10, 11.5)
+        return plt.gcf()
+
+    raise AssertionError(f"Unknown case: {case}")
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_remove_na_true_drops_rows(data_1m):
+    """remove_na=True: drop rows where either feature is missing before plotting."""
+    df = data_1m.copy()
+    df.loc[df.index[:25], "x4"] = np.nan
+    df.loc[df.index[25:50], "x5"] = np.nan
+
+    plot_features_interaction(df, "x4", "x5", remove_na=True)
+    plt.gcf().set_size_inches(10, 8)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 def test_plot_relationship_between_features_both_numeric_exist_ax(data_1m):
     """Test interaction plot for two numeric features on an existing Axes."""
     fig, ax = plt.subplots()
