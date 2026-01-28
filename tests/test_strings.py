@@ -64,6 +64,39 @@ def test_append_tags_to_frame_with_empty_tags_to_keep():
     pd.testing.assert_frame_equal(expected_test, x_test_with_tags, check_like=True)
 
 
+@pytest.mark.parametrize(
+    ("min_df", "expected_tags"),
+    [
+        (0.25, {"tag_a", "tag_b", "tag_c"}),  # All appear in >= 1 of 4 docs
+        (0.5, {"tag_a", "tag_b"}),  # "c" appears in < 2 of 4 docs
+        (0.75, {"tag_a"}),  # "b" appears in < 3 of 4 docs
+        (1.0, {"tag_a"}),  # Only "a" appears in all 4 docs
+    ],
+    ids=["min_df=0.25", "min_df=0.5", "min_df=0.75", "min_df=1.0"],
+)
+def test_append_tags_to_frame_min_df_float(min_df, expected_tags):
+    """Test that min_df as a float correctly filters tags by document frequency."""
+    x_train = pd.DataFrame(
+        {
+            "id": [1, 2, 3, 4],
+            "tags": [
+                "a,b,c",
+                "a,b",
+                "a",
+                "a",
+            ],
+        }
+    )
+    x_test = pd.DataFrame({"id": [5], "tags": ["a,c"]})  # Test data is not used for vocab
+
+    x_train_result, _ = append_tags_to_frame(x_train, x_test, "tags", "tag_", min_df=min_df)
+
+    # The resulting columns should only be the ones that met the min_df threshold
+    # (plus the original 'id' column)
+    result_tags = set(x_train_result.columns) - {"id"}
+    assert result_tags == expected_tags
+
+
 def test_append_tags_to_frame_with_list_column():
     """Test that list columns work correctly."""
     X_train = pd.DataFrame({"tags": [["AI", "ML"], ["DeepLearning", "NLP"], ["AI"]], "feature1": [1, 2, 3]})
