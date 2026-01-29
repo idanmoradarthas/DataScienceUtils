@@ -1,19 +1,19 @@
 #!/bin/bash
 # Build and deploy DataScienceUtils conda package using Docker
 # Usage: ./deploy-docker.sh [--skip-upload]
-# The script will prompt for your Anaconda password when needed
+# The script will prompt for your Anaconda password when needed unless --skip-upload is used
 
 set -e
 
 IMAGE_NAME="datascienceutils-conda-deploy"
 VOLUME_NAME="datascienceutils-conda-cache"
-SKIP_UPLOAD_ENV=""
 
 # Parse arguments
+SKIP_UPLOAD_FLAG=""
 for arg in "$@"; do
   if [ "$arg" == "--skip-upload" ]; then
-    SKIP_UPLOAD_ENV="-e SKIP_UPLOAD=true"
-    echo "Test mode: SKIP_UPLOAD is set to true"
+    SKIP_UPLOAD_FLAG="-e SKIP_UPLOAD=true"
+    echo "Running in test mode (no upload)"
   fi
 done
 
@@ -38,7 +38,7 @@ echo "Running deployment..."
 docker run -it --rm \
   -v "$(pwd):/workspace" \
   -v "$VOLUME_NAME:/opt/conda/pkgs" \
-  $SKIP_UPLOAD_ENV \
+  $SKIP_UPLOAD_FLAG \
   $IMAGE_NAME
 
 echo "Deployment complete! Packages are in ./outputdir"
