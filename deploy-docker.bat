@@ -12,7 +12,7 @@ set SKIP_UPLOAD_FLAG=
 REM Parse arguments
 if "%~1"=="--skip-upload" (
     set SKIP_UPLOAD_FLAG=-e SKIP_UPLOAD=true
-    echo Running in test mode (no upload)
+    echo Running in test mode - no upload
 )
 
 REM Check if Docker is installed

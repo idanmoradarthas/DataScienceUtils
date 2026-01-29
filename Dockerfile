@@ -16,10 +16,11 @@ WORKDIR /workspace
 
 # Install conda build dependencies
 COPY requirements-conda.txt /tmp/requirements-conda.txt
-RUN pip install -r /tmp/requirements-conda.txt && rm /tmp/requirements-conda.txt
+RUN conda install --yes -c conda-forge --file /tmp/requirements-conda.txt && rm /tmp/requirements-conda.txt
 
 # Copy and prepare the deployment script
 COPY deploy-conda.sh /usr/local/bin/deploy-conda.sh
+RUN sed -i 's/\r$//' /usr/local/bin/deploy-conda.sh
 RUN chmod +x /usr/local/bin/deploy-conda.sh
 
 # Set the entrypoint to run the deployment script
