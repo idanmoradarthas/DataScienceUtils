@@ -1,4 +1,5 @@
-conda-build==25.9.1
-anaconda-client==1.14.1
-conda-verify==3.4.2
-ripgrep==14.1.0
+conda-build==25.11.1
+anaconda-client==1.14.0
+# conda-verify==3.4.2
+ripgrep==15.1.0
+numpy
