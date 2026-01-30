@@ -801,10 +801,10 @@ def test_plot_features_interaction_datetime_numeric_defaults(daily_min_temperatu
 
     # Take a small slice and ensure NO complete cases exist
     df = daily_min_temperatures.head(20).copy()
-    
+
     # Half have missing numeric (Date present, Temp missing)
     df.loc[df.index[:10], "Temp"] = np.nan
-    
+
     # Half have missing date (Temp present, Date missing)
     df.loc[df.index[10:], "Date"] = pd.NaT
 
@@ -833,8 +833,8 @@ def test_plot_features_interaction_datetime_datetime_defaults(daily_min_temperat
         df["Date2"] = pd.NaT
         # This triggers lines 594-599 (default y-limits)
         plot_features_interaction(df, "Date", "Date2")
-        
-    else: # f1_missing
+
+    else:  # f1_missing
         # Feature 1 (Date) is FULLY missing. Feature 2 (Date2) is present.
         # No complete cases.
         df["Date"] = pd.NaT
@@ -857,7 +857,7 @@ def test_plot_features_interaction_datetime_datetime_defaults(daily_min_temperat
 def test_plot_features_interaction_categorical_missing_f1_scenarios(loan_data, feature_1, feature_2):
     """Test interactions where the first categorical feature has missing values."""
     df = loan_data[[feature_1, feature_2]].head(50).copy()
-    
+
     # Introduce missing values in Feature 1
     df.iloc[0:10, 0] = np.nan
 
@@ -881,7 +881,7 @@ def test_plot_features_interaction_categorical_missing_f1_scenarios(loan_data, f
 def test_plot_features_interaction_remove_na_scenarios(loan_data, feature_1, feature_2, missing_val_2):
     """Test interactions with remove_na=True."""
     df = loan_data[[feature_1, feature_2]].head(50).copy()
-    
+
     # Introduce missing values
     df.iloc[0:5, 0] = np.nan
     df.iloc[5:10, 1] = missing_val_2
@@ -898,7 +898,7 @@ def test_plot_features_interaction_remove_na_scenarios(loan_data, feature_1, fea
 def test_plot_features_interaction_categorical_datetime_missing_logic(loan_data):
     """Test cat vs datetime with missing datetime values (coverage for missing logic)."""
     df = loan_data[["home_ownership", "issue_d"]].head(50).copy()
-    
+
     # Introduce missing values in Datetime (Feature 2)
     # This ensures 'has_missing_datetime' is True
     df.iloc[0:10, 1] = pd.NaT
