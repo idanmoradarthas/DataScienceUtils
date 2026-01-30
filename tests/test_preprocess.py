@@ -790,3 +790,120 @@ def test_compute_mutual_information_all_features_fully_missing():
         }
     )
     pd.testing.assert_frame_equal(mi_scores, expected_df)
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_datetime_numeric_defaults(daily_min_temperatures, monkeypatch):
+    """Test datetime vs numeric with NO complete data to trigger default limits."""
+    # Mock current time for deterministic default x-limits
+    fixed_now = pd.Timestamp("2024-01-15 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    # Take a small slice and ensure NO complete cases exist
+    df = daily_min_temperatures.head(20).copy()
+    
+    # Half have missing numeric (Date present, Temp missing)
+    df.loc[df.index[:10], "Temp"] = np.nan
+    
+    # Half have missing date (Temp present, Date missing)
+    df.loc[df.index[10:], "Date"] = pd.NaT
+
+    # Force numeric values to be constant to trigger y_min == y_max logic (line 520)
+    df.loc[df["Date"].isna(), "Temp"] = 7.0
+
+    # This should trigger lines 516-524
+    plot_features_interaction(df, "Date", "Temp")
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("scenario", ["f2_missing", "f1_missing"])
+def test_plot_features_interaction_datetime_datetime_defaults(daily_min_temperatures, monkeypatch, scenario):
+    """Test datetime vs datetime with NO complete data and ONE feature fully missing."""
+    fixed_now = pd.Timestamp("2024-02-01 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    df = daily_min_temperatures.head(20).copy()
+    df["Date2"] = df["Date"] + pd.Timedelta(days=1)
+
+    if scenario == "f2_missing":
+        # Feature 2 (Date2) is FULLY missing. Feature 1 (Date) is present.
+        # No complete cases.
+        df["Date2"] = pd.NaT
+        # This triggers lines 594-599 (default y-limits)
+        plot_features_interaction(df, "Date", "Date2")
+        
+    else: # f1_missing
+        # Feature 1 (Date) is FULLY missing. Feature 2 (Date2) is present.
+        # No complete cases.
+        df["Date"] = pd.NaT
+        # This triggers lines 633-638 (default x-limits)
+        plot_features_interaction(df, "Date", "Date2")
+
+    plt.gcf().set_size_inches(12, 9)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    ("feature_1", "feature_2"),
+    [
+        ("home_ownership", "purpose"),
+        ("home_ownership", "emp_length_int"),
+    ],
+    ids=["cat_cat", "cat_num"],
+)
+def test_plot_features_interaction_categorical_missing_f1_scenarios(loan_data, feature_1, feature_2):
+    """Test interactions where the first categorical feature has missing values."""
+    df = loan_data[[feature_1, feature_2]].head(50).copy()
+    
+    # Introduce missing values in Feature 1
+    df.iloc[0:10, 0] = np.nan
+
+    plot_features_interaction(df, feature_1, feature_2)
+    if feature_2 == "purpose":
+        plt.gcf().set_size_inches(11, 18)
+    else:
+        plt.gcf().set_size_inches(11, 12)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize(
+    ("feature_1", "feature_2", "missing_val_2"),
+    [
+        ("home_ownership", "purpose", np.nan),
+        ("home_ownership", "issue_d", pd.NaT),
+    ],
+    ids=["cat_cat", "cat_datetime"],
+)
+def test_plot_features_interaction_remove_na_scenarios(loan_data, feature_1, feature_2, missing_val_2):
+    """Test interactions with remove_na=True."""
+    df = loan_data[[feature_1, feature_2]].head(50).copy()
+    
+    # Introduce missing values
+    df.iloc[0:5, 0] = np.nan
+    df.iloc[5:10, 1] = missing_val_2
+
+    plot_features_interaction(df, feature_1, feature_2, remove_na=True)
+    if feature_2 == "purpose":
+        plt.gcf().set_size_inches(10, 18)
+    else:
+        plt.gcf().set_size_inches(10, 13)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_categorical_datetime_missing_logic(loan_data):
+    """Test cat vs datetime with missing datetime values (coverage for missing logic)."""
+    df = loan_data[["home_ownership", "issue_d"]].head(50).copy()
+    
+    # Introduce missing values in Datetime (Feature 2)
+    # This ensures 'has_missing_datetime' is True
+    df.iloc[0:10, 1] = pd.NaT
+
+    # Defaults to remove_na=False
+    plot_features_interaction(df, "home_ownership", "issue_d")
+    plt.gcf().set_size_inches(10, 13)
+    return plt.gcf()

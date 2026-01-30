@@ -484,14 +484,39 @@ def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, 
     # Skip missing value visualization if both features are the same column
     if not remove_na and datetime_feature != other_feature:
         has_plotted_missing = False
-
-        # Cases where datetime is present but numeric is missing
         missing_numeric = data[data[other_feature].isna() & data[datetime_feature].notna()]
+        missing_datetime = data[data[datetime_feature].isna() & data[other_feature].notna()]
+
+        # If no complete cases, we must establish limits manually so the two missing groups align
+        if len(complete_data) == 0:
+            # Handle Y limits from missing_datetime data
+            if len(missing_datetime) > 0:
+                y_vals = missing_datetime[other_feature].dropna()
+                if len(y_vals) > 0:
+                    y_min = y_vals.min()
+                    y_max = y_vals.max()
+                    if y_min == y_max:
+                        y_min -= 1
+                        y_max += 1
+                    ax.set_ylim(y_min, y_max)
+
+            # Handle X limits from missing_numeric data
+            if len(missing_numeric) > 0:
+                valid_dates = missing_numeric[datetime_feature].dropna()
+                if len(valid_dates) > 0:
+                    x_min = dates.date2num(valid_dates.min())
+                    x_max = dates.date2num(valid_dates.max())
+                    if x_min == x_max:
+                        x_min -= 1.0  # 1 day
+                        x_max += 1.0
+                    ax.set_xlim(x_min, x_max)
+
+        # Plot cases where datetime is present but numeric is missing
         if len(missing_numeric) > 0:
-            # Filter out any rows where datetime_feature is also NaN (shouldn't happen due to filter, but be safe)
+            # Filter out any rows where datetime_feature is also NaN
             missing_numeric_clean = missing_numeric[missing_numeric[datetime_feature].notna()]
             if len(missing_numeric_clean) > 0:
-                y_min = ax.get_ylim()[0] if len(complete_data) > 0 else 0
+                y_min = ax.get_ylim()[0]
                 ax.scatter(
                     missing_numeric_clean[datetime_feature],
                     [y_min] * len(missing_numeric_clean),
@@ -504,27 +529,42 @@ def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, 
                 )
                 has_plotted_missing = True
 
-        # Cases where numeric is present but datetime is missing
-        missing_datetime = data[data[datetime_feature].isna() & data[other_feature].notna()]
+        # Plot cases where numeric is present but datetime is missing
         if len(missing_datetime) > 0:
-            # Get the x-axis range to place rug marks at the right edge
-            if len(complete_data) > 0:
-                x_min, x_max = ax.get_xlim()
-                y_min, y_max = ax.get_ylim()
-            else:
-                # If no complete data, set reasonable defaults
+            # Determine logic for X limits fallback if not already set
+            x_min, x_max = ax.get_xlim()
+            
+            # If limits are still default (0, 1) or invalid because no X data existed, set fallback
+            # Simple check: if complete_data empty AND missing_numeric empty, we need defaults.
+            if len(complete_data) == 0 and len(missing_numeric) == 0:
                 x_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
                 x_max = dates.date2num(pd.Timestamp.now())
-                y_min = missing_datetime[other_feature].min()
-                y_max = missing_datetime[other_feature].max()
-                if y_min == y_max:
-                    y_min -= 1
-                    y_max += 1
                 ax.set_xlim(x_min, x_max)
-                ax.set_ylim(y_min, y_max)
+                
+                # Check Y limits as well - if we didn't set them above (missing_datetime has logic above)
+                # But logic above only ran if complete_data == 0.
+                if len(missing_datetime) > 0 and len(complete_data) == 0:
+                     # Y limits should have been set above
+                     pass
+                elif len(complete_data) > 0:
+                     pass # Y limits from complete data
+                else: 
+                     # No data at all for Y? (Should only happen if missing_datetime also empty, but we are inside if len > 0)
+                     # Fallback specific to this block only needed if Y limits strictly controlled here
+                     y_vals = missing_datetime[other_feature].dropna()
+                     if len(y_vals) > 0:
+                         y_min = y_vals.min()
+                         y_max = y_vals.max()
+                         if y_min == y_max:
+                             y_min -= 1
+                             y_max += 1
+                         ax.set_ylim(y_min, y_max)
+            
+            # Re-fetch limits in case they changed
+            x_min, x_max = ax.get_xlim()
+            y_min, y_max = ax.get_ylim()
 
             # Plot rug marks for missing datetime values at the right edge
-            # Use a small offset from the right edge to make them visible
             x_range = x_max - x_min
             x_rug = x_max + x_range * 0.02  # 2% offset from right edge
             ax.scatter(
