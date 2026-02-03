@@ -134,6 +134,11 @@ Receives a feature and visualizes its values on a graph:
 * If the feature is datetime, the method plots a 2D heatmap showing day-of-week vs year-week patterns, making weekly and yearly trends immediately visible.
 * If the feature is object, categorical, boolean, or integer, the method plots a count plot (histogram). For high-cardinality features (>10 unique values), it shows the top 10 with "Other values". You can customize sorting with `order` (e.g., by count or alphabetically) and toggle count labels with `show_counts`.
 
+When `remove_na=False` (default for `visualize_feature`), missing values are handled as follows:
+* **Float**: Missing values are dropped before plotting (violin plots require valid data).
+* **Datetime**: Missing values are dropped before plotting.
+* **Categorical/Integer/Boolean**: Missing values are counted and shown as a separate category (if present).
+
 ```python
 from ds_utils.preprocess import visualize_feature
 
@@ -219,6 +224,10 @@ Plots the joint distribution between two features:
 * If one feature is datetime and the other is numeric or datetime, the method plots a line plot graph.
 * If one feature is datetime and the other is either categorical, boolean, or object, the method plots a violin plot (combination of boxplot and kernel density estimate).
 * If both features are numeric, the method plots a scatter graph.
+
+When `remove_na=False` (default), missing values are visualized:
+* For numeric/datetime plots: Missing values appear as rug plots or markers on the axes boundaries.
+* For categorical plots: Missing values are included as a separate category if present.
 
 ```python
 from ds_utils.preprocess import plot_features_interaction

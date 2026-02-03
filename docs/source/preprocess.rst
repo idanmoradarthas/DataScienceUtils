@@ -64,6 +64,15 @@ which contains loan data from a dummy bank.
 
     plt.show()
 
+Handling Missing Values
+-----------------------
+By default (`remove_na=False`), missing values are handled based on the feature type:
+
+- **Float & Datetime**: Missing values are automatically dropped before plotting, as these plots require valid numerical/time data.
+- **Categorical / Object / Boolean / Integer**: Missing values are included in the count and displayed as a separate bar/category (if any exist).
+
+To explicitly exclude missing values from categorical plots, set `remove_na=True`.
+
 For each different type of feature a different graph will be generated:
 
 Float
@@ -235,6 +244,13 @@ This method visualizes the relationship between two features. Use this when you 
 - Understand how two features interact or relate to each other
 - Identify potential non-linear relationships between features
 - Detect patterns, clusters, or outliers in feature pairs
+
+Handling Missing Values
+-----------------------
+By default (`remove_na=False`), the function visualizes missing values (NaNs/NaTs) to prevent data loss in the visual analysis:
+
+- **Numeric & Datetime**: Missing values in one variable are plotted as rug marks or special markers along the axis of the valid variable. This allows you to see the distribution of the valid data even when the other variable is missing.
+- **Categorical**: Missing values are treated as a distinct category (e.g., "nan").
 
 These insights can guide feature engineering, help in identifying complex relationships that might be exploited by your model, and inform the choice of model type (e.g., linear vs. non-linear).
 

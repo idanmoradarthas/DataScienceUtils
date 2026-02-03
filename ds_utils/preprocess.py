@@ -335,6 +335,7 @@ def plot_features_interaction(
     feature_1: str,
     feature_2: str,
     *,
+    remove_na: bool = False,
     include_outliers: bool = True,
     outlier_iqr_multiplier: float = 1.5,
     show_ratios: bool = False,
@@ -346,6 +347,7 @@ def plot_features_interaction(
     Behavior by dtypes of ``feature_1`` and ``feature_2``:
     - If both are numeric: scatter plot.
     - If one is datetime and the other numeric: line/scatter over time.
+    - If both are datetime: scatter plot with complete cases.
     - If both are categorical-like: overlaid histograms per category.
     - If one is categorical-like and the other numeric: violin plot by category.
 
@@ -353,9 +355,22 @@ def plot_features_interaction(
     numeric feature using an IQR fence [Q1 - k*IQR, Q3 + k*IQR], where ``k`` is
     controlled by ``outlier_iqr_multiplier``.
 
+    When ``remove_na`` is False, missing values are visualized:
+    - Numeric vs Numeric: marginal rug plots showing missing values
+    - Numeric vs Datetime: missing numeric values shown as markers on x-axis,
+      missing datetime values shown as rug plot on right margin
+    - Datetime vs Datetime: complete cases shown as scatter plot, missing values
+      shown as rug plots on margins (x-axis for missing feature_2, y-axis for missing feature_1)
+    - Categorical vs Numeric: missing numeric values shown with rug plots per category
+    - Categorical vs Categorical: missing values included as "Missing" category
+    - Categorical/Boolean vs Datetime: missing categorical values added as "Missing" category,
+      missing datetime values shown as a separate violin at the edge of the plot
+
     :param data: The input DataFrame where each feature is a column.
     :param feature_1: Name of the first feature.
     :param feature_2: Name of the second feature.
+    :param remove_na: If False (default), keep all data and visualize missingness patterns.
+                      If True, remove rows where either feature is NA before plotting.
     :param include_outliers: Whether to include values outside the IQR fence for
                              categorical-vs-numeric violin plots (default True).
     :param outlier_iqr_multiplier: Multiplier ``k`` for the IQR fence when trimming
@@ -371,6 +386,11 @@ def plot_features_interaction(
     if ax is None:
         _, ax = plt.subplots()
 
+    if remove_na:
+        plot_data = data[[feature_1, feature_2]].dropna()
+    else:
+        plot_data = data[[feature_1, feature_2]].copy()
+
     dtype1 = data[feature_1].dtype
     dtype2 = data[feature_2].dtype
 
@@ -378,24 +398,25 @@ def plot_features_interaction(
         ax = _plot_categorical_feature1(
             feature_1,
             feature_2,
-            data,
+            plot_data,
             dtype2,
             include_outliers,
             outlier_iqr_multiplier,
             show_ratios,
+            remove_na,
             ax,
             **kwargs,
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype1):
-        ax = _plot_datetime_feature1(feature_1, feature_2, data, dtype2, ax, **kwargs)
+        ax = _plot_datetime_feature1(feature_1, feature_2, plot_data, dtype2, remove_na, ax, **kwargs)
     elif _is_categorical_like(dtype2):
         ax = _plot_categorical_vs_numeric(
-            feature_2, feature_1, data, outlier_iqr_multiplier, include_outliers, ax, **kwargs
+            feature_2, feature_1, plot_data, outlier_iqr_multiplier, include_outliers, remove_na, ax, **kwargs
         )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        ax = _plot_xy(feature_2, feature_1, data, ax, **kwargs)
+        ax = _plot_datetime_vs_numeric(feature_2, feature_1, plot_data, remove_na, ax, **kwargs)
     else:
-        ax = _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs)
+        ax = _plot_numeric_features(feature_1, feature_2, plot_data, remove_na, ax, **kwargs)
 
     return ax
 
@@ -417,14 +438,17 @@ def _plot_categorical_feature1(
     include_outliers,
     outlier_iqr_multiplier,
     show_ratios,
+    remove_na,
     ax,
     **kwargs,
 ):
     """Plot when the first feature is categorical-like."""
     if _is_categorical_like(dtype2):
-        ax = _plot_categorical_vs_categorical(categorical_feature, feature_2, data, show_ratios, ax, **kwargs)
+        ax = _plot_categorical_vs_categorical(
+            categorical_feature, feature_2, data, show_ratios, remove_na, ax, **kwargs
+        )
     elif pd.api.types.is_datetime64_any_dtype(dtype2):
-        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(categorical_feature, feature_2, data, remove_na, ax, **kwargs)
     else:
         ax = _plot_categorical_vs_numeric(
             categorical_feature,
@@ -432,43 +456,322 @@ def _plot_categorical_feature1(
             data,
             outlier_iqr_multiplier,
             include_outliers,
+            remove_na,
             ax,
             **kwargs,
         )
     return ax
 
 
-def _plot_xy(datetime_feature, other_feature, data, ax, **kwargs):
-    ax.plot(data[datetime_feature], data[other_feature], **kwargs)
+def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, ax, **kwargs):
+    """Plot datetime vs numeric feature.
+
+    When remove_na is False, missing values are handled as follows:
+    - Missing numeric values: shown as markers on the x-axis (y=0 or bottom of plot)
+    - Missing datetime values: shown as a rug plot on the right margin
+    - Different colors/markers distinguish the two types of missingness
+    """
+    # Get complete cases for main plot
+    complete_data = data.dropna(subset=[datetime_feature, other_feature])
+
+    if len(complete_data) > 0:
+        ax.plot(complete_data[datetime_feature], complete_data[other_feature], **kwargs)
+
     ax.set_xlabel(datetime_feature)
     ax.set_ylabel(other_feature)
+
+    # Handle missing values if not removed
+    # Skip missing value visualization if both features are the same column
+    if not remove_na and datetime_feature != other_feature:
+        has_plotted_missing = False
+        missing_numeric = data[data[other_feature].isna() & data[datetime_feature].notna()]
+        missing_datetime = data[data[datetime_feature].isna() & data[other_feature].notna()]
+
+        # If no complete cases, we must establish limits manually so the two missing groups align
+        if len(complete_data) == 0:
+            # Handle Y limits from missing_datetime data
+            if len(missing_datetime) > 0:
+                y_vals = missing_datetime[other_feature].dropna()
+                if len(y_vals) > 0:
+                    y_min = y_vals.min()
+                    y_max = y_vals.max()
+                    if y_min == y_max:
+                        y_min -= 1
+                        y_max += 1
+                    ax.set_ylim(y_min, y_max)
+
+            # Handle X limits from missing_numeric data
+            if len(missing_numeric) > 0:
+                valid_dates = missing_numeric[datetime_feature].dropna()
+                if len(valid_dates) > 0:
+                    x_min = dates.date2num(valid_dates.min())
+                    x_max = dates.date2num(valid_dates.max())
+                    if x_min == x_max:
+                        x_min -= 1.0  # 1 day
+                        x_max += 1.0
+                    ax.set_xlim(x_min, x_max)
+
+        # Plot cases where datetime is present but numeric is missing
+        if len(missing_numeric) > 0:
+            # Filter out any rows where datetime_feature is also NaN
+            missing_numeric_clean = missing_numeric[missing_numeric[datetime_feature].notna()]
+            if len(missing_numeric_clean) > 0:
+                y_min = ax.get_ylim()[0]
+                ax.scatter(
+                    missing_numeric_clean[datetime_feature],
+                    [y_min] * len(missing_numeric_clean),
+                    marker="|",
+                    s=100,
+                    alpha=0.6,
+                    color="red",
+                    label=f"{other_feature} missing",
+                    zorder=5,
+                )
+                has_plotted_missing = True
+
+        # Plot cases where numeric is present but datetime is missing
+        if len(missing_datetime) > 0:
+            # Determine logic for X limits fallback if not already set
+            x_min, x_max = ax.get_xlim()
+
+            # If limits are still default (0, 1) or invalid because no X data existed, set fallback
+            # Simple check: if complete_data empty AND missing_numeric empty, we need defaults.
+            if len(complete_data) == 0 and len(missing_numeric) == 0:
+                x_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
+                x_max = dates.date2num(pd.Timestamp.now())
+                ax.set_xlim(x_min, x_max)
+
+            # Re-fetch limits in case they changed
+            x_min, x_max = ax.get_xlim()
+            y_min, y_max = ax.get_ylim()
+
+            # Plot rug marks for missing datetime values at the right edge
+            x_range = x_max - x_min
+            x_rug = x_max + x_range * 0.02  # 2% offset from right edge
+            ax.scatter(
+                [x_rug] * len(missing_datetime),
+                missing_datetime[other_feature],
+                marker="_",
+                s=100,
+                alpha=0.6,
+                color="orange",
+                label=f"{datetime_feature} missing",
+                zorder=5,
+            )
+
+            # Extend xlim slightly to accommodate the rug plot
+            ax.set_xlim(x_min, x_max + x_range * 0.05)
+            has_plotted_missing = True
+
+        # Add legend if we plotted any missing values
+        if has_plotted_missing:
+            ax.legend(loc="best", framealpha=0.9)
+
     return ax
 
 
-def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, ax, **kwargs):
+def _plot_datetime_vs_datetime(datetime_feature_1, datetime_feature_2, data, remove_na, ax, **kwargs):
+    """Plot when both features are datetime.
+
+    When remove_na is False, missing values are handled as follows:
+    - Complete cases: shown as line/scatter plot
+    - Missing datetime_feature_2 values: shown as rug plot on x-axis (bottom margin)
+    - Missing datetime_feature_1 values: shown as rug plot on y-axis (left margin)
+    - Different colors/markers distinguish the two types of missingness
+    """
+    # Get complete cases for main plot
+    complete_data = data.dropna(subset=[datetime_feature_1, datetime_feature_2])
+
+    if len(complete_data) > 0:
+        # Use scatter plot for datetime vs datetime (can also use line plot)
+        ax.scatter(complete_data[datetime_feature_1], complete_data[datetime_feature_2], **kwargs)
+
+    ax.set_xlabel(datetime_feature_1)
+    ax.set_ylabel(datetime_feature_2)
+
+    # Format both axes as datetime
+    ax.xaxis.set_major_formatter(dates.DateFormatter("%Y-%m-%d"))
+    ax.yaxis.set_major_formatter(dates.DateFormatter("%Y-%m-%d"))
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
+    plt.setp(ax.yaxis.get_majorticklabels(), rotation=0)
+
+    # Handle missing values if not removed
+    if not remove_na and datetime_feature_1 != datetime_feature_2:
+        has_plotted_missing = False
+
+        # Cases where datetime_feature_1 is present but datetime_feature_2 is missing
+        missing_f2 = data[data[datetime_feature_2].isna() & data[datetime_feature_1].notna()]
+        if len(missing_f2) > 0:
+            # Get y-axis limits to place rug marks at the bottom
+            if len(complete_data) > 0:
+                y_min, y_max = ax.get_ylim()
+            else:
+                # If no complete data, use range from available datetime_feature_2 values
+                available_f2 = data[datetime_feature_2].dropna()
+                if len(available_f2) > 0:
+                    y_min = dates.date2num(available_f2.min())
+                    y_max = dates.date2num(available_f2.max())
+                    if y_min == y_max:
+                        y_min -= 1
+                        y_max += 1
+                else:
+                    # Fallback to default range if no datetime_feature_2 values available
+                    y_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
+                    y_max = dates.date2num(pd.Timestamp.now())
+                ax.set_ylim(y_min, y_max)
+
+            # Place rug marks slightly below the bottom of the plot
+            y_range = y_max - y_min
+            y_rug = y_min - y_range * 0.02  # 2% offset below bottom
+
+            ax.scatter(
+                missing_f2[datetime_feature_1],
+                [y_rug] * len(missing_f2),
+                marker="|",
+                s=100,
+                alpha=0.6,
+                color="red",
+                label=f"{datetime_feature_2} missing",
+                zorder=5,
+            )
+            # Extend ylim slightly to accommodate the rug plot
+            ax.set_ylim(y_min - y_range * 0.05, y_max)
+            has_plotted_missing = True
+
+        # Cases where datetime_feature_2 is present but datetime_feature_1 is missing
+        missing_f1 = data[data[datetime_feature_1].isna() & data[datetime_feature_2].notna()]
+        if len(missing_f1) > 0:
+            # Get x-axis limits to place rug marks on the left
+            if len(complete_data) > 0:
+                x_min, x_max = ax.get_xlim()
+            else:
+                # If no complete data, use range from available datetime_feature_1 values
+                available_f1 = data[datetime_feature_1].dropna()
+                if len(available_f1) > 0:
+                    x_min = dates.date2num(available_f1.min())
+                    x_max = dates.date2num(available_f1.max())
+                    if x_min == x_max:
+                        x_min -= 1
+                        x_max += 1
+                else:
+                    # Fallback to default range if no datetime_feature_1 values available
+                    x_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
+                    x_max = dates.date2num(pd.Timestamp.now())
+                ax.set_xlim(x_min, x_max)
+
+            # Place rug marks slightly to the left of the plot
+            x_range = x_max - x_min
+            x_rug = x_min - x_range * 0.02  # 2% offset to the left
+
+            ax.scatter(
+                [x_rug] * len(missing_f1),
+                missing_f1[datetime_feature_2],
+                marker="_",
+                s=100,
+                alpha=0.6,
+                color="orange",
+                label=f"{datetime_feature_1} missing",
+                zorder=5,
+            )
+            # Extend xlim slightly to accommodate the rug plot
+            ax.set_xlim(x_min - x_range * 0.05, x_max)
+            has_plotted_missing = True
+
+        # Add legend if we plotted any missing values
+        if has_plotted_missing:
+            ax.legend(loc="best", framealpha=0.9)
+
+    return ax
+
+
+def _plot_datetime_feature1(datetime_feature, feature_2, data, dtype2, remove_na, ax, **kwargs):
     """Plot when the first feature is datetime."""
     if _is_categorical_like(dtype2):
-        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, ax, **kwargs)
+        ax = _plot_categorical_vs_datetime(feature_2, datetime_feature, data, remove_na, ax, **kwargs)
+    elif pd.api.types.is_datetime64_any_dtype(dtype2):
+        # Both features are datetime - use specialized datetime vs datetime plot
+        ax = _plot_datetime_vs_datetime(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     else:
-        ax = _plot_xy(datetime_feature, feature_2, data, ax, **kwargs)
+        ax = _plot_datetime_vs_numeric(datetime_feature, feature_2, data, remove_na, ax, **kwargs)
     return ax
 
 
-def _plot_numeric_features(feature_1, feature_2, data, ax, **kwargs):
-    """Plot when both features are numeric."""
-    ax.scatter(data[feature_1], data[feature_2], **kwargs)
+def _plot_numeric_features(feature_1, feature_2, data, remove_na, ax, **kwargs):
+    """Plot when both features are numeric.
+
+    If remove_na is False, adds marginal rug plots showing where missing values occur.
+    """
+    # Get complete cases for main scatter plot
+    complete_data = data.dropna(subset=[feature_1, feature_2])
+
+    ax.scatter(complete_data[feature_1], complete_data[feature_2], **kwargs)
     ax.set_xlabel(feature_1)
     ax.set_ylabel(feature_2)
+
+    # Add marginal rug plots for missing values if not removed
+    if not remove_na:
+        # Cases where feature_1 is present but feature_2 is missing
+        missing_f2 = data[data[feature_2].isna() & data[feature_1].notna()]
+        if len(missing_f2) > 0:
+            y_min = ax.get_ylim()[0]
+            ax.scatter(
+                missing_f2[feature_1],
+                [y_min] * len(missing_f2),
+                marker="|",
+                s=100,
+                alpha=0.5,
+                color="red",
+                label=f"{feature_2} missing",
+            )
+
+        # Cases where feature_2 is present but feature_1 is missing
+        missing_f1 = data[data[feature_1].isna() & data[feature_2].notna()]
+        if len(missing_f1) > 0:
+            x_min = ax.get_xlim()[0]
+            ax.scatter(
+                [x_min] * len(missing_f1),
+                missing_f1[feature_2],
+                marker="_",
+                s=100,
+                alpha=0.5,
+                color="orange",
+                label=f"{feature_1} missing",
+            )
+
+        # Add legend if there are any missing values
+        if len(missing_f2) > 0 or len(missing_f1) > 0:
+            ax.legend(loc="best", framealpha=0.9)
+
     return ax
 
 
-def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, ax, **kwargs):
-    """Plot when both features are categorical-like."""
+def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, remove_na, ax, **kwargs):
+    """Plot when both features are categorical-like.
+
+    When remove_na is False, missing values are handled by:
+    - Adding a "Missing" category for any NaN values in either feature
+    - Including these in the crosstab/heatmap display
+
+    When remove_na is True, rows with missing values in either feature are excluded.
+    """
     dup_df = pd.DataFrame()
     dup_df[feature_1] = _copy_series_or_keep_top_10(data[feature_1])
     dup_df[feature_2] = _copy_series_or_keep_top_10(data[feature_2])
 
-    crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2])
+    # Handle missing values based on remove_na parameter
+    if not remove_na:
+        # Replace NaN with "Missing" category for both features
+        if dup_df[feature_1].isna().any():
+            dup_df[feature_1] = dup_df[feature_1].fillna("Missing")
+        if dup_df[feature_2].isna().any():
+            dup_df[feature_2] = dup_df[feature_2].fillna("Missing")
+
+        # Create crosstab with all values (including "Missing" categories)
+        crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=False)
+    else:
+        # Remove rows where either feature is missing
+        dup_df = dup_df.dropna(subset=[feature_1, feature_2])
+        crosstab = pd.crosstab(dup_df[feature_1], dup_df[feature_2], dropna=True)
 
     if show_ratios:
         total = crosstab.sum().sum()
@@ -488,21 +791,88 @@ def _plot_categorical_vs_categorical(feature_1, feature_2, data, show_ratios, ax
     return ax
 
 
-def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, ax, **kwargs):
+def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, remove_na, ax, **kwargs):
     """Plot when one feature is categorical-like and the other is datetime.
 
-    Draws a violin plot across time buckets on the x-axis with categories on the
-    y-axis. This unified function expects the categorical feature name first and
-    the datetime feature name second.
+    When remove_na is False, missing values are handled as follows:
+    - Missing categorical values: added as "Missing" category (creates an extra violin)
+    - Missing datetime values: shown as a separate violin at the edge of the plot
     """
     dup_df = pd.DataFrame()
-    dup_df[datetime_feature] = data[datetime_feature].apply(dates.date2num)
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
+
+    # Handle missing categorical values by adding "Missing" category
+    if not remove_na and dup_df[categorical_feature].isna().any():
+        dup_df[categorical_feature] = dup_df[categorical_feature].fillna("Missing")
+
+    # Initialize variables for missing datetime handling
+    missing_datetime_value = None
+    has_missing_datetime = False
+
+    # Convert datetime to numeric, handling missing values
+    if not remove_na:
+        # For missing datetime values, we'll use a special marker value
+        # First, convert non-missing datetimes to numeric
+        datetime_numeric = data[datetime_feature].apply(lambda x: dates.date2num(x) if pd.notna(x) else np.nan)
+
+        # Get the range of valid datetime values to place "Missing" at the edge
+        valid_datetime_numeric = datetime_numeric.dropna()
+        has_missing_datetime = datetime_numeric.isna().any()
+
+        if len(valid_datetime_numeric) > 0:
+            datetime_min = valid_datetime_numeric.min()
+            datetime_max = valid_datetime_numeric.max()
+            datetime_range = datetime_max - datetime_min
+            # Place "Missing" at the right edge, slightly offset (at least 1 day or 10% of range)
+            missing_datetime_value = datetime_max + max(datetime_range * 0.1, 1.0)
+        elif has_missing_datetime:
+            # If no valid datetimes but we have missing ones, use a default value
+            missing_datetime_value = dates.date2num(pd.Timestamp.now())
+
+        # Replace NaN datetime values with the special marker if we have missing values
+        if has_missing_datetime and missing_datetime_value is not None:
+            dup_df[datetime_feature] = datetime_numeric.fillna(missing_datetime_value)
+        else:
+            dup_df[datetime_feature] = datetime_numeric
+    else:
+        # Remove rows where either feature is missing
+        dup_df = dup_df.dropna(subset=[categorical_feature])
+        datetime_numeric = data[datetime_feature].apply(dates.date2num)
+        dup_df[datetime_feature] = datetime_numeric
+        dup_df = dup_df.dropna(subset=[datetime_feature])
+
+    # Create violin plot with all data (complete + missing datetime)
     chart = sns.violinplot(x=datetime_feature, y=categorical_feature, data=dup_df, ax=ax, **kwargs)
+
+    # Format x-axis ticks for datetime
     ticks_loc = chart.get_xticks()
-    chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-    chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-    ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+
+    if not remove_na and has_missing_datetime and missing_datetime_value is not None:
+        # Check if we have missing datetime data
+
+        # Separate valid datetime ticks from the missing datetime position
+        # Use a threshold to identify the missing datetime position
+        valid_ticks = [t for t in ticks_loc if abs(t - missing_datetime_value) > 0.1]
+        # Add the missing datetime position if it's not already in ticks
+        if not any(abs(t - missing_datetime_value) < 0.1 for t in ticks_loc):
+            valid_ticks.append(missing_datetime_value)
+        valid_ticks = sorted(valid_ticks)
+
+        chart.xaxis.set_major_locator(ticker.FixedLocator(valid_ticks))
+        tick_labels = [
+            dates.num2date(t).strftime("%Y-%m-%d %H:%M") if abs(t - missing_datetime_value) > 0.1 else "Missing"
+            for t in valid_ticks
+        ]
+        chart.set_xticklabels(tick_labels, rotation=45, ha="right")
+    else:
+        # Standard datetime formatting
+        chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
+        chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
+        ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+
+    ax.set_xlabel(datetime_feature)
+    ax.set_ylabel(categorical_feature)
+
     return ax
 
 
@@ -512,6 +882,7 @@ def _plot_categorical_vs_numeric(
     data,
     outlier_iqr_multiplier,
     include_outliers,
+    remove_na,
     ax,
     **kwargs,
 ):
@@ -520,11 +891,20 @@ def _plot_categorical_vs_numeric(
     Renders a violin plot of the numeric feature for each category. When
     ``include_outliers`` is False, numeric values outside the IQR fence
     [Q1 - k*IQR, Q3 + k*IQR] are trimmed, where ``k`` is ``outlier_iqr_multiplier``.
+
+    When ``remove_na`` is False, missing values are handled as follows:
+    - Missing categorical values get a "Missing" category
+    - Missing numeric values are shown with rug plots at the bottom of each category
     """
     dup_df = pd.DataFrame()
     dup_df[categorical_feature] = _copy_series_or_keep_top_10(data[categorical_feature])
     dup_df[numeric_feature] = data[numeric_feature]
 
+    # Handle missing categorical values by adding "Missing" category
+    if not remove_na and dup_df[categorical_feature].isna().any():
+        dup_df[categorical_feature] = dup_df[categorical_feature].fillna("Missing")
+
+    # Apply outlier filtering if requested
     if include_outliers:
         df_plot = dup_df.copy()
     else:
@@ -537,7 +917,48 @@ def _plot_categorical_vs_numeric(
         upper_bound = min(max_series_value, q3 + outlier_iqr_multiplier * iqr)
         df_plot = dup_df[(dup_df[numeric_feature] >= lower_bound) & (dup_df[numeric_feature] <= upper_bound)].copy()
 
-    sns.violinplot(x=categorical_feature, y=numeric_feature, hue=categorical_feature, data=df_plot, ax=ax, **kwargs)
+    # Create main violin plot (only with non-NA numeric values)
+    df_plot_complete = df_plot.dropna(subset=[numeric_feature])
+    sns.violinplot(
+        x=categorical_feature, y=numeric_feature, hue=categorical_feature, data=df_plot_complete, ax=ax, **kwargs
+    )
+
+    # If remove_na is False, add rug plots for missing numeric values
+    if not remove_na:
+        missing_numeric = df_plot[df_plot[numeric_feature].isna()]
+        if len(missing_numeric) > 0:
+            # Get the y-axis limits to place rug marks at the bottom
+            y_min = ax.get_ylim()[0]
+
+            # Get unique categories and their x-axis positions
+            categories = df_plot_complete[categorical_feature].unique()
+            cat_to_pos = {cat: i for i, cat in enumerate(categories)}
+
+            # Plot rug marks for each category that has missing numeric values
+            for cat in missing_numeric[categorical_feature].unique():
+                if cat in cat_to_pos:
+                    count = len(missing_numeric[missing_numeric[categorical_feature] == cat])
+                    x_pos = cat_to_pos[cat]
+
+                    # Add small horizontal jitter for visibility when there are multiple missing values
+                    jitter = np.random.uniform(-0.1, 0.1, count)
+
+                    ax.scatter(
+                        [x_pos] * count + jitter,
+                        [y_min] * count,
+                        marker="|",
+                        s=100,
+                        alpha=0.6,
+                        color="red",
+                        linewidths=2,
+                        label=f"{numeric_feature} missing"
+                        if cat == missing_numeric[categorical_feature].unique()[0]
+                        else "",
+                    )
+
+            # Add legend if we plotted any missing values
+            if len(missing_numeric) > 0:
+                ax.legend(loc="best", framealpha=0.9)
 
     ax.set_xlabel(categorical_feature.replace("_", " ").title())
     ax.set_ylabel(numeric_feature.replace("_", " ").title())
