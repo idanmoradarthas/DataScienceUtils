@@ -533,33 +533,20 @@ def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, 
         if len(missing_datetime) > 0:
             # Determine logic for X limits fallback if not already set
             x_min, x_max = ax.get_xlim()
-            
+
             # If limits are still default (0, 1) or invalid because no X data existed, set fallback
             # Simple check: if complete_data empty AND missing_numeric empty, we need defaults.
             if len(complete_data) == 0 and len(missing_numeric) == 0:
                 x_min = dates.date2num(pd.Timestamp.now() - pd.Timedelta(days=30))
                 x_max = dates.date2num(pd.Timestamp.now())
                 ax.set_xlim(x_min, x_max)
-                
+
                 # Check Y limits as well - if we didn't set them above (missing_datetime has logic above)
                 # But logic above only ran if complete_data == 0.
                 if len(missing_datetime) > 0 and len(complete_data) == 0:
-                     # Y limits should have been set above
-                     pass
-                elif len(complete_data) > 0:
-                     pass # Y limits from complete data
-                else: 
-                     # No data at all for Y? (Should only happen if missing_datetime also empty, but we are inside if len > 0)
-                     # Fallback specific to this block only needed if Y limits strictly controlled here
-                     y_vals = missing_datetime[other_feature].dropna()
-                     if len(y_vals) > 0:
-                         y_min = y_vals.min()
-                         y_max = y_vals.max()
-                         if y_min == y_max:
-                             y_min -= 1
-                             y_max += 1
-                         ax.set_ylim(y_min, y_max)
-            
+                    # Y limits should have been set above
+                    pass
+
             # Re-fetch limits in case they changed
             x_min, x_max = ax.get_xlim()
             y_min, y_max = ax.get_ylim()
@@ -868,27 +855,21 @@ def _plot_categorical_vs_datetime(categorical_feature, datetime_feature, data, r
 
     if not remove_na and has_missing_datetime and missing_datetime_value is not None:
         # Check if we have missing datetime data
-        missing_datetime_data = dup_df[dup_df[datetime_feature] == missing_datetime_value]
-        if len(missing_datetime_data) > 0:
-            # Separate valid datetime ticks from the missing datetime position
-            # Use a threshold to identify the missing datetime position
-            valid_ticks = [t for t in ticks_loc if abs(t - missing_datetime_value) > 0.1]
-            # Add the missing datetime position if it's not already in ticks
-            if not any(abs(t - missing_datetime_value) < 0.1 for t in ticks_loc):
-                valid_ticks.append(missing_datetime_value)
-            valid_ticks = sorted(valid_ticks)
 
-            chart.xaxis.set_major_locator(ticker.FixedLocator(valid_ticks))
-            tick_labels = [
-                dates.num2date(t).strftime("%Y-%m-%d %H:%M") if abs(t - missing_datetime_value) > 0.1 else "Missing"
-                for t in valid_ticks
-            ]
-            chart.set_xticklabels(tick_labels, rotation=45, ha="right")
-        else:
-            # No missing datetime data, use standard formatting
-            chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))
-            chart.set_xticklabels(chart.get_xticklabels(), rotation=45, ha="right")
-            ax.xaxis.set_major_formatter(_convert_numbers_to_dates)
+        # Separate valid datetime ticks from the missing datetime position
+        # Use a threshold to identify the missing datetime position
+        valid_ticks = [t for t in ticks_loc if abs(t - missing_datetime_value) > 0.1]
+        # Add the missing datetime position if it's not already in ticks
+        if not any(abs(t - missing_datetime_value) < 0.1 for t in ticks_loc):
+            valid_ticks.append(missing_datetime_value)
+        valid_ticks = sorted(valid_ticks)
+
+        chart.xaxis.set_major_locator(ticker.FixedLocator(valid_ticks))
+        tick_labels = [
+            dates.num2date(t).strftime("%Y-%m-%d %H:%M") if abs(t - missing_datetime_value) > 0.1 else "Missing"
+            for t in valid_ticks
+        ]
+        chart.set_xticklabels(tick_labels, rotation=45, ha="right")
     else:
         # Standard datetime formatting
         chart.xaxis.set_major_locator(ticker.FixedLocator(ticks_loc))

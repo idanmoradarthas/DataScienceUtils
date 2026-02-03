@@ -907,3 +907,57 @@ def test_plot_features_interaction_categorical_datetime_missing_logic(loan_data)
     plot_features_interaction(df, "home_ownership", "issue_d")
     plt.gcf().set_size_inches(10, 13)
     return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_datetime_numeric_single_date(daily_min_temperatures, monkeypatch):
+    """Test datetime vs numeric with NO complete data and SINGLE unique date in 'missing numeric' set."""
+    fixed_now = pd.Timestamp("2024-01-15 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    # Take a small slice
+    df = daily_min_temperatures.head(20).copy()
+
+    # 1. No complete data
+    # 2. 'missing numeric' (Date present, Temp missing) should have only ONE unique date
+    # 3. 'missing datetime' (Temp present, Date missing) can be empty or not, let's keep it empty for simplicity
+
+    df["Temp"] = np.nan  # All numeric missing
+    # Set all dates to be the same to trigger x_min == x_max logic
+    single_date = pd.Timestamp("2024-01-01")
+    df["Date"] = single_date
+
+    # This should trigger lines 510-511 (x_min == x_max)
+    plot_features_interaction(df, "Date", "Temp")
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("scenario", ["missing_f2_single", "missing_f1_single"])
+def test_plot_features_interaction_datetime_datetime_single_value(daily_min_temperatures, monkeypatch, scenario):
+    """Test datetime vs datetime with NO complete data and SINGLE unique value in missing set."""
+    fixed_now = pd.Timestamp("2024-03-01 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    df = daily_min_temperatures.head(20).copy()
+    df["Date2"] = df["Date"]
+
+    if scenario == "missing_f2_single":
+        # Feature 2 (Date2) missing, Feature 1 (Date) present.
+        # Feature 1 has only ONE unique value.
+        df["Date2"] = pd.NaT
+        df["Date"] = pd.Timestamp("2024-01-01")
+        # Triggers lines 634-635 (y_min == y_max for rug on bottom)
+        plot_features_interaction(df, "Date", "Date2")
+
+    else:  # missing_f1_single
+        # Feature 1 (Date) missing, Feature 2 (Date2) present.
+        # Feature 2 has only ONE unique value.
+        df["Date"] = pd.NaT
+        df["Date2"] = pd.Timestamp("2024-01-01")
+        # Triggers lines 673-674 (x_min == x_max for rug on left)
+        plot_features_interaction(df, "Date", "Date2")
+
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()
