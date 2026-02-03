@@ -961,3 +961,52 @@ def test_plot_features_interaction_datetime_datetime_single_value(daily_min_temp
 
     plt.gcf().set_size_inches(12, 6)
     return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+@pytest.mark.parametrize("scenario", ["missing_f2_avail_f2_single", "missing_f1_avail_f1_single"])
+def test_plot_features_interaction_datetime_datetime_disjoint_single_value(daily_min_temperatures, scenario):
+    """Test datetime vs datetime with NO complete data, but 'available' data for limits is single-valued.
+
+    This targets lines 621-622 and 660-661 in preprocess.py.
+    """
+    df = pd.DataFrame()
+    ts1 = pd.Timestamp("2024-01-01")
+    ts2 = pd.Timestamp("2024-02-01")
+
+    if scenario == "missing_f2_avail_f2_single":
+        # We want to trigger lines 621-622.
+        # Condition:
+        # 1. missing_f2 > 0 (Rows with Date1 present, Date2 missing)
+        # 2. complete_data == 0
+        # 3. available_f2 > 0 (Rows with Date2 present) and len(unique) == 1
+
+        # Row 1: Date1 present, Date2 missing (Satisfies 1)
+        df.loc[0, "Date"] = ts1
+        df.loc[0, "Date2"] = pd.NaT
+
+        # Row 2: Date1 missing, Date2 present (Satisfies 3)
+        df.loc[1, "Date"] = pd.NaT
+        df.loc[1, "Date2"] = ts2
+
+        plot_features_interaction(df, "Date", "Date2")
+
+    else:  # missing_f1_avail_f1_single
+        # We want to trigger lines 660-661.
+        # Condition:
+        # 1. missing_f1 > 0 (Rows with Date2 present, Date1 missing)
+        # 2. complete_data == 0
+        # 3. available_f1 > 0 (Rows with Date1 present) and len(unique) == 1
+
+        # Row 1: Date2 present, Date1 missing (Satisfies 1)
+        df.loc[0, "Date"] = pd.NaT
+        df.loc[0, "Date2"] = ts2
+
+        # Row 2: Date2 missing, Date1 present (Satisfies 3)
+        df.loc[1, "Date"] = ts1
+        df.loc[1, "Date2"] = pd.NaT
+
+        plot_features_interaction(df, "Date", "Date2")
+
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()

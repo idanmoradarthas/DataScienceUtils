@@ -541,12 +541,6 @@ def _plot_datetime_vs_numeric(datetime_feature, other_feature, data, remove_na, 
                 x_max = dates.date2num(pd.Timestamp.now())
                 ax.set_xlim(x_min, x_max)
 
-                # Check Y limits as well - if we didn't set them above (missing_datetime has logic above)
-                # But logic above only ran if complete_data == 0.
-                if len(missing_datetime) > 0 and len(complete_data) == 0:
-                    # Y limits should have been set above
-                    pass
-
             # Re-fetch limits in case they changed
             x_min, x_max = ax.get_xlim()
             y_min, y_max = ax.get_ylim()
