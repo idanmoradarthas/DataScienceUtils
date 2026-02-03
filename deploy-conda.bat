@@ -13,10 +13,18 @@ for /F "tokens=2 delims== " %%i in ('findstr /R "__version__[^=]*=" ds_utils\__i
 
 set version=%version:"=%
 
-:: Get numpy version
-for /f "delims=" %%v in ('python -c "import numpy; print(numpy.__version__)"') do (
-    set numpy_version=%%v
+:: Get numpy version - use environment variable if set, otherwise detect from system
+if defined NUMPY_VERSION (
+    echo Using numpy version from environment: %NUMPY_VERSION%
+    set numpy_version=%NUMPY_VERSION%
+) else (
+    echo Detecting numpy version from system environment...
+    for /f "delims=" %%v in ('python -c "import numpy; print(numpy.__version__)"') do (
+        set numpy_version=%%v
+    )
 )
+
+echo Building with numpy version: %numpy_version%
 
 :: Create output directory if it doesn't exist
 if not exist .\outputdir mkdir .\outputdir

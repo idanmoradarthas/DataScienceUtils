@@ -5,8 +5,16 @@ set -e
 # Extract version from __init__.py
 version=$(grep -E "__version__[^=]*=" ds_utils/__init__.py | cut -d'"' -f2)
 
-# Get numpy version
-numpy_version=$(python -c "import numpy; print(numpy.__version__)")
+# Get numpy version - use environment variable if set, otherwise detect from container
+if [ -n "$NUMPY_VERSION" ]; then
+    echo "Using numpy version from host environment: $NUMPY_VERSION"
+    numpy_version="$NUMPY_VERSION"
+else
+    echo "Detecting numpy version from container environment..."
+    numpy_version=$(python -c "import numpy; print(numpy.__version__)")
+fi
+
+echo "Building with numpy version: $numpy_version"
 
 # Create output directory if it doesn't exist
 mkdir -p ./outputdir

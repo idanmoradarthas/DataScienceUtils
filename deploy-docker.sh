@@ -29,6 +29,17 @@ if [ ! -f "pyproject.toml" ]; then
     exit 1
 fi
 
+# Get numpy version from host environment
+echo "Detecting numpy version from host environment..."
+NUMPY_VERSION=$(python -c "import numpy; print(numpy.__version__)" 2>/dev/null || echo "")
+if [ -z "$NUMPY_VERSION" ]; then
+    echo "Warning: Could not detect numpy version from host. Using version from container."
+    NUMPY_VERSION_FLAG=""
+else
+    echo "Using numpy version: $NUMPY_VERSION"
+    NUMPY_VERSION_FLAG="-e NUMPY_VERSION=$NUMPY_VERSION"
+fi
+
 # Build Docker image
 echo "Building Docker image..."
 docker build -t $IMAGE_NAME .
@@ -39,6 +50,7 @@ docker run -it --rm \
   -v "$(pwd):/workspace" \
   -v "$VOLUME_NAME:/opt/conda/pkgs" \
   $SKIP_UPLOAD_FLAG \
+  $NUMPY_VERSION_FLAG \
   $IMAGE_NAME
 
 echo "Deployment complete! Packages are in ./outputdir"
