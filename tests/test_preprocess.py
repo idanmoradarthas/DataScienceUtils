@@ -964,6 +964,36 @@ def test_plot_features_interaction_datetime_datetime_single_value(daily_min_temp
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
+def test_plot_features_interaction_datetime_numeric_no_dates_at_all(daily_min_temperatures, monkeypatch):
+    """Test datetime vs numeric with NO complete data and NO valid dates at all.
+
+    This targets lines 540-542 in preprocess.py:
+    if len(complete_data) == 0 and len(missing_numeric) == 0:
+        ... default x-limits ...
+    """
+    fixed_now = pd.Timestamp("2024-06-01 00:00:00")
+    monkeypatch.setattr(pd.Timestamp, "now", classmethod(lambda cls: fixed_now))
+
+    # Take a small slice
+    df = daily_min_temperatures.head(20).copy()
+
+    # Create scenario:
+    # 1. Date is missing everywhere.
+    # 2. Temp is present (at least some rows).
+    df["Date"] = pd.NaT
+    # Keep Temp values as is (numeric present)
+
+    # removing NA is False by default.
+    # missing_datetime > 0 (all rows)
+    # complete_data == 0
+    # missing_numeric == 0 (no rows have valid Date and missing Temp, because NO rows have valid Date)
+
+    plot_features_interaction(df, "Date", "Temp")
+    plt.gcf().set_size_inches(12, 6)
+    return plt.gcf()
+
+
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
 @pytest.mark.parametrize("scenario", ["missing_f2_avail_f2_single", "missing_f1_avail_f1_single"])
 def test_plot_features_interaction_datetime_datetime_disjoint_single_value(daily_min_temperatures, scenario):
     """Test datetime vs datetime with NO complete data, but 'available' data for limits is single-valued.
