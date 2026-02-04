@@ -48,7 +48,7 @@ def get_version():
     # This works during development when package isn't installed
     init_file = Path(__file__).parents[2] / "ds_utils" / "__init__.py"
     try:
-        with open(init_file, "r", encoding="utf-8") as f:
+        with init_file.open("r", encoding="utf-8") as f:
             content = f.read()
             # Match patterns like: __version__ = "1.2.3" or __version__ = '1.2.3'
             import re
