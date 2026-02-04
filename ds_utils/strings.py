@@ -61,28 +61,33 @@ def append_tags_to_frame(
     filters them based on frequency, and then creates new binary columns for each tag.
 
     Supported Input Types for the Tags Column:
+
     - str: Comma-separated tags. The default tokenizer splits by comma, trims whitespace, and removes
-           non-alphanumeric characters (except "_", "$", "-"). Empty strings are treated as having no tags.
+      non-alphanumeric characters (except "_", "$", "-"). Empty strings are treated as having no tags.
     - List[str]: A pre-tokenized list of tags. Empty lists are treated as having no tags.
     - NaN/None: Handled as empty.
 
     Tokenization Rules (for string inputs):
+
     - The default tokenizer splits the input string by commas (",").
     - Whitespace around tags is automatically trimmed.
     - Duplicate tags within the same string (e.g., "tag1,tag1") are treated as a single occurrence for that row.
     - Casing is preserved unless `lowercase=True`.
 
     `min_df` Behavior:
+
     - This parameter filters out tags that are not frequent enough in the training data.
     - If `int`: The absolute minimum number of rows a tag must appear in to be included.
     - If `float` (between 0.0 and 1.0): The minimum fraction of rows a tag must appear in.
     - This filtering is applied *before* the final vocabulary is selected and binarized.
 
     Column Naming Logic:
+
     - The `prefix` argument is prepended to each tag to form the new column names.
     - Example: With `prefix="tag_"` and a tag "python", the resulting column will be "tag_python".
 
     Column Ordering:
+
     - The generated tag columns are always sorted alphabetically, ensuring a deterministic and stable
       order that can be relied upon for feature alignment in downstream modeling.
 

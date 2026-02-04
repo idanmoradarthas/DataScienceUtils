@@ -188,6 +188,7 @@ def visualize_feature(
     """Visualize a pandas Series using an appropriate plot based on dtype.
 
     Behavior by dtype:
+
     - Float: draw a violin distribution. If ``include_outliers`` is False, values
       outside the IQR fence [Q1 - k*IQR, Q3 + k*IQR] with ``k=outlier_iqr_multiplier``
       are trimmed prior to plotting.
@@ -356,6 +357,7 @@ def plot_features_interaction(
     controlled by ``outlier_iqr_multiplier``.
 
     When ``remove_na`` is False, missing values are visualized:
+
     - Numeric vs Numeric: marginal rug plots showing missing values
     - Numeric vs Datetime: missing numeric values shown as markers on x-axis,
       missing datetime values shown as rug plot on right margin
