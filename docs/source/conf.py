@@ -22,8 +22,52 @@ project = "Data Science Utils"
 copyright = f"{datetime.date.today().year}, Idan Morad"
 author = "Idan Morad"
 
+
+# Dynamic version extraction with fallback
+def get_version():
+    """Extract version from package.
+
+    First tries to import the package directly (works when package is installed).
+    Falls back to parsing __init__.py file if import fails.
+
+    Returns:
+        str: Version string or "unknown" if version cannot be determined
+
+    """
+    # Method 1: Try importing the package directly (preferred)
+    # This works when the package is installed via pip
+    try:
+        import ds_utils
+
+        if hasattr(ds_utils, "__version__"):
+            return ds_utils.__version__
+    except ImportError:
+        pass
+
+    # Method 2: Fallback to parsing __init__.py file
+    # This works during development when package isn't installed
+    init_file = Path(__file__).parents[2] / "ds_utils" / "__init__.py"
+    try:
+        with open(init_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Match patterns like: __version__ = "1.2.3" or __version__ = '1.2.3'
+            import re
+
+            match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+            if match:
+                return match.group(1)
+    except (FileNotFoundError, AttributeError, OSError):
+        pass
+
+    # Method 3: Final fallback if all else fails
+    return "unknown"
+
+
 # The full version, including alpha/beta/rc tags
-release = Path(__file__).parents[2].joinpath("ds_utils", "__init__.py").read_text().split("=")[1].strip()
+release = get_version()
+
+# The short X.Y version (extract from full version)
+version = ".".join(release.split(".")[:2]) if release != "unknown" else "unknown"
 
 # -- General configuration ---------------------------------------------------
 
@@ -38,13 +82,23 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-# Intersphinx mapping
+# Intersphinx mapping - allows linking to other project's documentation
 intersphinx_mapping = {
+    # Python standard library
     "python": ("https://docs.python.org/3/", None),
+    # Core scientific computing
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    # Data manipulation and analysis
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    # Machine learning
     "sklearn": ("https://scikit-learn.org/stable/", None),
+    # Visualization
     "matplotlib": ("https://matplotlib.org/stable/", None),
+    "plotly": ("https://plotly.com/python-api-reference/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
+    # Other useful libraries
+    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
 }
 
 # Add any paths that contain templates here, relative to this directory.
