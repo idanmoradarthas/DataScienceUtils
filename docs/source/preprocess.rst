@@ -246,7 +246,7 @@ This method visualizes the relationship between two features. Use this when you 
 - Detect patterns, clusters, or outliers in feature pairs
 
 Handling Missing Values
------------------------
+=======================
 By default (`remove_na=False`), the function visualizes missing values (NaNs/NaTs) to prevent data loss in the visual analysis:
 
 - **Numeric & Datetime**: Missing values in one variable are plotted as rug marks or special markers along the axis of the valid variable. This allows you to see the distribution of the valid data even when the other variable is missing.
