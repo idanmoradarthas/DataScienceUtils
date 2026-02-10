@@ -9,6 +9,7 @@
 [![PyPI version](https://badge.fury.io/py/data-science-utils.svg)](https://badge.fury.io/py/data-science-utils)
 [![Anaconda-Server Badge](https://anaconda.org/idanmorad/data-science-utils/badges/version.svg)](https://anaconda.org/idanmorad/data-science-utils)
 ![Build Status](https://github.com/idanmoradarthas/DataScienceUtils/actions/workflows/test.yml/badge.svg?branch=master)
+[![Ruff](https://img.shields.io/badge/ruff-lint%2Fformat-black?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![Coverage Status](https://coveralls.io/repos/github/idanmoradarthas/DataScienceUtils/badge.svg?branch=master)](https://coveralls.io/github/idanmoradarthas/DataScienceUtils?branch=master)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and
