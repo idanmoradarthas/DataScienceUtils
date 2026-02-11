@@ -7,9 +7,12 @@ from matplotlib import axes, pyplot as plt, ticker
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import squareform
 
-from _plot_helpers import _plot_clean_violin_distribution, _plot_datetime_heatmap, _copy_series_or_keep_top_10, \
-    _plot_count_bar, _is_categorical_like, _plot_categorical_feature1, _plot_datetime_feature1, \
-    _plot_categorical_vs_numeric, _plot_datetime_vs_numeric, _plot_numeric_features
+from ds_utils.preprocess._plot_numeric import _plot_clean_violin_distribution, _plot_numeric_features
+from ds_utils.preprocess._plot_datetime import _plot_datetime_heatmap, _plot_datetime_vs_numeric, \
+    _plot_datetime_feature1
+from ds_utils.preprocess._plot_categorical import _plot_count_bar, _plot_categorical_feature1, \
+    _plot_categorical_vs_numeric
+from ds_utils.preprocess._plot_utils import _copy_series_or_keep_top_10, _is_categorical_like
 
 
 def visualize_feature(
