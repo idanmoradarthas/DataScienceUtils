@@ -1,3 +1,10 @@
+"""Utility helpers shared across preprocess plotting modules.
+
+These functions provide common logic for handling categorical-like
+series and dtypes, including collapsing high-cardinality categories and
+checking whether a dtype should be treated as categorical.
+"""
+
 import pandas as pd
 
 

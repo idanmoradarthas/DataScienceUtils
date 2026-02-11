@@ -1,12 +1,19 @@
-from typing import Optional, Union, List
+"""Utilities for plotting relationships involving categorical features.
 
+This module contains helper functions used internally by the preprocess
+package to visualize categorical variables against other types such as
+categorical, datetime, and numeric features.
+"""
+
+from typing import List, Optional, Union
+
+from matplotlib import axes, dates, ticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import axes, dates, ticker
 
 from ds_utils.preprocess._plot_formatters import _convert_numbers_to_dates
-from ds_utils.preprocess._plot_utils import _is_categorical_like, _copy_series_or_keep_top_10
+from ds_utils.preprocess._plot_utils import _copy_series_or_keep_top_10, _is_categorical_like
 
 
 def _plot_count_bar(

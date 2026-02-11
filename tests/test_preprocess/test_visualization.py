@@ -1,13 +1,18 @@
+"""Tests for the preprocess visualization utilities."""
+
 from pathlib import Path
 
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from matplotlib import pyplot as plt
 
-from ds_utils.preprocess.visualization import visualize_feature, visualize_correlations, plot_features_interaction, \
-    plot_correlation_dendrogram
-from tests.test_preprocess.conftest import setup_teardown, loan_data, data_1m, daily_min_temperatures
+from ds_utils.preprocess.visualization import (
+    plot_correlation_dendrogram,
+    plot_features_interaction,
+    visualize_correlations,
+    visualize_feature,
+)
 
 BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_preprocess" / "test_visualization"
 

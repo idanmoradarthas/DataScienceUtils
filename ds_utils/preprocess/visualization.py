@@ -1,17 +1,32 @@
-from typing import Optional, Union, List, Callable
+"""High-level visualization utilities for exploratory preprocessing.
 
+This module exposes user-facing plotting helpers for common EDA tasks,
+built on top of the internal plotting utilities. It provides dtype-aware
+visualizations for single features, correlations, and pairwise feature
+interactions while handling missing values and outliers in a consistent
+way across the preprocess package.
+"""
+
+from typing import Callable, List, Optional, Union
+
+from matplotlib import axes, pyplot as plt, ticker
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from matplotlib import axes, pyplot as plt, ticker
-from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
+import seaborn as sns
 
+from ds_utils.preprocess._plot_categorical import (
+    _plot_categorical_feature1,
+    _plot_categorical_vs_numeric,
+    _plot_count_bar,
+)
+from ds_utils.preprocess._plot_datetime import (
+    _plot_datetime_feature1,
+    _plot_datetime_heatmap,
+    _plot_datetime_vs_numeric,
+)
 from ds_utils.preprocess._plot_numeric import _plot_clean_violin_distribution, _plot_numeric_features
-from ds_utils.preprocess._plot_datetime import _plot_datetime_heatmap, _plot_datetime_vs_numeric, \
-    _plot_datetime_feature1
-from ds_utils.preprocess._plot_categorical import _plot_count_bar, _plot_categorical_feature1, \
-    _plot_categorical_vs_numeric
 from ds_utils.preprocess._plot_utils import _copy_series_or_keep_top_10, _is_categorical_like
 
 

@@ -1,3 +1,5 @@
+"""Tests for the preprocess statistics utilities."""
+
 from pathlib import Path
 
 import numpy as np
@@ -5,9 +7,11 @@ import pandas as pd
 import pytest
 
 from ds_utils.math_utils import safe_percentile
-from ds_utils.preprocess.statistics import get_correlated_features, extract_statistics_dataframe_per_label, \
-    compute_mutual_information
-from tests.test_preprocess.conftest import setup_teardown, data_1m
+from ds_utils.preprocess.statistics import (
+    compute_mutual_information,
+    extract_statistics_dataframe_per_label,
+    get_correlated_features,
+)
 
 RESOURCES_PATH = Path(__file__).parent.parent / "resources"
 

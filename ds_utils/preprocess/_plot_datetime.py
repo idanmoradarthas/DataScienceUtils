@@ -1,6 +1,13 @@
+"""Utilities for plotting relationships involving datetime features.
+
+This module provides helper functions used internally by the preprocess
+package to visualize datetime variables alone and in combination with
+categorical and numeric features, including handling of missing values.
+"""
+
+from matplotlib import axes, dates, pyplot as plt
 import pandas as pd
 import seaborn as sns
-from matplotlib import axes, dates, pyplot as plt
 
 from ds_utils.preprocess._plot_categorical import _plot_categorical_vs_datetime
 from ds_utils.preprocess._plot_utils import _is_categorical_like

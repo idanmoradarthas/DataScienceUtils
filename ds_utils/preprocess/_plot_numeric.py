@@ -1,8 +1,15 @@
+"""Utilities for plotting relationships involving numeric features.
+
+This module contains helper functions used internally by the preprocess
+package to visualize numeric variables, including outlier-aware
+distributions and bivariate numeric relationships.
+"""
+
 from typing import Optional
 
+from matplotlib import axes
 import pandas as pd
 import seaborn as sns
-from matplotlib import axes
 
 
 def _plot_clean_violin_distribution(

@@ -1,8 +1,10 @@
+"""Pytest fixtures for the preprocess test suite."""
+
 from pathlib import Path
 
+from matplotlib import pyplot as plt
 import pandas as pd
 import pytest
-from matplotlib import pyplot as plt
 
 RESOURCES_PATH = Path(__file__).parent.parent / "resources"
 

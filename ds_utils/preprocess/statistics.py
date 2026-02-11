@@ -1,9 +1,16 @@
-import warnings
+"""Statistical utilities for preprocessing and feature analysis.
+
+This module provides helper functions for exploring feature relationships
+and distributions, including correlation inspection, label-wise summary
+statistics, and mutual information calculations used during preprocessing.
+"""
+
 from typing import List, Optional, Union
+import warnings
 
 import numpy as np
-import pandas as pd
 from numpy.random import RandomState
+import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import mutual_info_classif
