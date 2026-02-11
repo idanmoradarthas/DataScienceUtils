@@ -9,7 +9,7 @@ from ds_utils.preprocess.visualization import visualize_feature, visualize_corre
     plot_correlation_dendrogram
 from tests.test_preprocess.conftest import setup_teardown, loan_data, data_1m, daily_min_temperatures
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_preprocess"
+BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_preprocess" / "test_visualization"
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
