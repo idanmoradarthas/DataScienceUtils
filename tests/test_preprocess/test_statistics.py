@@ -100,7 +100,7 @@ def assert_series_called_with(mock_calls, expected_series, percentile):
 
 def test_extract_statistics_dataframe_per_label_basic_functionality(sample_df, mocker):
     """Test basic functionality and verify safe_percentile calls."""
-    mock_safe_percentile = mocker.patch("ds_utils.preprocess.safe_percentile", wraps=safe_percentile)
+    mock_safe_percentile = mocker.patch("ds_utils.preprocess.statistics.safe_percentile", wraps=safe_percentile)
 
     result = extract_statistics_dataframe_per_label(sample_df, "value", "category")
 
