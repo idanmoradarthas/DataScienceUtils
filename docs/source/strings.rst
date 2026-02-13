@@ -10,7 +10,7 @@ Append Tags to Frame
 
 The `append_tags_to_frame` function is designed to extract tags from a specified field in a DataFrame and create new binary columns for each unique tag. This is particularly useful for converting comma-separated tag lists into a one-hot encoded format, which is often required for machine learning models.
 
-.. autofunction:: strings::append_tags_to_frame
+.. autofunction:: ds_utils.strings.append_tags_to_frame
 
 .. highlight:: python
 
@@ -75,7 +75,7 @@ Significant Terms
 
 The `extract_significant_terms_from_subset` function is used to identify terms that are statistically overrepresented in a subset of documents compared to the full corpus. This can be particularly useful for tasks such as topic modeling, content categorization, or identifying distinctive vocabulary in specific document groups.
 
-.. autofunction:: strings::extract_significant_terms_from_subset
+.. autofunction:: ds_utils.strings.extract_significant_terms_from_subset
 
 Code Example
 ============

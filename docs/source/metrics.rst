@@ -8,7 +8,7 @@ The module of metrics contains methods that help to calculate and/or visualize e
 Plot Confusion Matrix
 *********************
 
-.. autofunction:: metrics::plot_confusion_matrix
+.. autofunction:: ds_utils.metrics.plot_confusion_matrix
 
 .. highlight:: python
 
@@ -105,7 +105,7 @@ And the following image will be shown:
 Plot Metric Growth per Labeled Instances
 ****************************************
 
-.. autofunction:: metrics::plot_metric_growth_per_labeled_instances
+.. autofunction:: ds_utils.metrics.plot_metric_growth_per_labeled_instances
 
 Code Example
 ============
@@ -146,7 +146,7 @@ Visualize Accuracy Grouped by Probability
 *****************************************
 This method was created due to the lack of maintenance of the package `EthicalML / xai <https://github.com/EthicalML/XAI>`_.
 
-.. autofunction:: metrics::visualize_accuracy_grouped_by_probability
+.. autofunction:: ds_utils.metrics.visualize_accuracy_grouped_by_probability
 
 Code Example
 ============
@@ -229,7 +229,7 @@ Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) An
 
 The ROC curve is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. It plots the True Positive Rate (TPR) against the False Positive Rate (FPR) at various threshold settings. The ROC curve is particularly useful when you have balanced classes or when you want to evaluate the classifier's performance across all possible thresholds.
 
-.. autofunction:: metrics::plot_roc_curve_with_thresholds_annotations
+.. autofunction:: ds_utils.metrics.plot_roc_curve_with_thresholds_annotations
 
 Code Example
 ============
@@ -280,7 +280,7 @@ Precision-Recall Curve with Probabilities (Thresholds) Annotations
 
 The Precision-Recall curve shows the tradeoff between precision and recall for different threshold values. It is particularly useful when you have imbalanced classes, as it focuses on the performance of the positive class. Precision-Recall curves are preferred over ROC curves when you have a large skew in the class distribution, as they are more sensitive to differences in the minority class.
 
-.. autofunction:: metrics::plot_precision_recall_curve_with_thresholds_annotations
+.. autofunction:: ds_utils.metrics.plot_precision_recall_curve_with_thresholds_annotations
 
 Code Example
 ============

@@ -12,7 +12,7 @@ visualizations for data science projects.
    installation
    math_utils
    metrics
-   preprocess
+   preprocess/index
    strings
    unsupervised
    xai
