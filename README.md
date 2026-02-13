@@ -126,6 +126,10 @@ fig.show()
 
 ## Preprocess
 
+The preprocess module is organized into focused submodules:
+- **visualization** - Feature visualization and correlation plots
+- **statistics** - Statistical computations and feature analysis
+
 ### Visualize Feature
 
 Receives a feature and visualizes its values on a graph:
@@ -140,7 +144,7 @@ When `remove_na=False` (default for `visualize_feature`), missing values are han
 * **Categorical/Integer/Boolean**: Missing values are counted and shown as a separate category (if present).
 
 ```python
-from ds_utils.preprocess import visualize_feature
+from ds_utils.preprocess.visualization import visualize_feature
 
 # Basic usage
 visualize_feature(X_train["feature"])
@@ -177,7 +181,7 @@ Calculate which features are correlated above a threshold and extract a data fra
 to the target feature.
 
 ```python
-from ds_utils.preprocess import get_correlated_features
+from ds_utils.preprocess.statistics import get_correlated_features
 
 correlations = get_correlated_features(correlation_matrix, features, target)
 ```
@@ -194,7 +198,7 @@ Compute pairwise correlation of columns, excluding NA/null values, and visualize
 [Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
 
 ```python
-from ds_utils.preprocess import visualize_correlations
+from ds_utils.preprocess.visualization import visualize_correlations
 
 visualize_correlations(correlation_matrix)
 ```
@@ -208,7 +212,7 @@ connecting them in a tree-like structure. The closer to the right that the conne
 features are. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
-from ds_utils.preprocess import plot_correlation_dendrogram
+from ds_utils.preprocess.visualization import plot_correlation_dendrogram
 
 plot_correlation_dendrogram(correlation_matrix)
 ```
@@ -230,7 +234,7 @@ When `remove_na=False` (default), missing values are visualized:
 * For categorical plots: Missing values are included as a separate category if present.
 
 ```python
-from ds_utils.preprocess import plot_features_interaction
+from ds_utils.preprocess.visualization import plot_features_interaction
 
 plot_features_interaction(data, "feature_1", "feature_2")
 ```
@@ -253,7 +257,7 @@ you want to:
 - Understand the relationship between features and target variables
 
 ```python
-from ds_utils.preprocess import extract_statistics_dataframe_per_label
+from ds_utils.preprocess.statistics import extract_statistics_dataframe_per_label
 
 extract_statistics_dataframe_per_label(
     df=df,
@@ -279,7 +283,7 @@ Use this method when you want to:
 - Compare the predictive value of different types of features
 
 ```python
-from ds_utils.preprocess import compute_mutual_information
+from ds_utils.preprocess.statistics import compute_mutual_information
 
 # Compute mutual information scores for all features
 mi_scores = compute_mutual_information(
@@ -506,8 +510,8 @@ potential of DataScienceUtils:
 * [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - Powerful methods for calculating and
   visualizing algorithm performance evaluation. Gain insights into how your models are performing.
 
-* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - Essential data preprocessing
-  techniques to prepare your data for training. Improve your model's input for better results.
+* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess/index.html) - Essential data preprocessing
+  techniques to prepare your data for training. Now organized into visualization and statistics submodules for better code organization.
 
 * [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - Efficient methods for manipulating and
   processing strings in dataframes. Handle text data with ease.
