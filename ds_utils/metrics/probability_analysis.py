@@ -1,3 +1,10 @@
+"""Probability Analysis Module.
+
+This module provides functions to visualize and analyze the performance of classifiers
+based on their predicted probabilities. It includes tools for grouping results by
+probability bins and plotting accuracy distributions.
+"""
+
 from typing import Union, Optional, Sequence
 
 import numpy as np

@@ -1,3 +1,10 @@
+"""Confusion Matrix Metrics Module.
+
+This module provides functions to compute and plot confusion matrices along with
+various classification metrics such as False Positive Rate, False Negative Rate,
+Accuracy, and F1 score. It supports both binary and multiclass classification.
+"""
+
 from typing import List, Union, Optional, Dict, Tuple
 
 import numpy as np

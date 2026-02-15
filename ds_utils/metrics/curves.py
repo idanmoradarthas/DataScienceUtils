@@ -1,3 +1,5 @@
+"""Module containing functions for plotting evaluation curves."""
+
 import warnings
 from typing import Dict, Optional, Union
 

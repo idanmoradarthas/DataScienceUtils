@@ -1,3 +1,10 @@
+"""Module for plotting learning curves and analyzing metric growth.
+
+This module provides functions to visualize the performance of machine learning models
+as a function of the training dataset size. It includes tools for plotting metric growth
+across varying numbers of labeled instances.
+"""
+
 from typing import Dict, Optional, List, Callable, Union
 
 import numpy as np
