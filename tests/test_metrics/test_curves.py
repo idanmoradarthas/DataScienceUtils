@@ -44,14 +44,14 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
                 data = plotly_models_dict[classifier]["roc_curve"]
                 return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
 
-    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+    mocker.patch("ds_utils.metrics.curves.roc_curve", side_effect=_mock_roc_curve)
 
     def _mock_roc_auc_score(y_true, y_score, **kwargs):
         for classifier, scores in classifiers_names_and_scores_dict.items():
             if np.array_equal(scores, y_score):
                 return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
 
-    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+    mocker.patch("ds_utils.metrics.curves.roc_auc_score", side_effect=_mock_roc_auc_score)
 
     fig = plot_roc_curve_with_thresholds_annotations(
         y_true, classifiers_names_and_scores_dict, add_random_classifier_line=add_random_classifier_line
@@ -77,14 +77,14 @@ def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, request
                 data = plotly_models_dict[classifier]["roc_curve"]
                 return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
 
-    mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+    mocker.patch("ds_utils.metrics.curves.roc_curve", side_effect=_mock_roc_curve)
 
     def _mock_roc_auc_score(y_true, y_score, **kwargs):
         for classifier, scores in classifiers_names_and_scores_dict.items():
             if np.array_equal(scores, y_score):
                 return np.float64(plotly_models_dict[classifier]["roc_auc_score"])
 
-    mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=_mock_roc_auc_score)
+    mocker.patch("ds_utils.metrics.curves.roc_auc_score", side_effect=_mock_roc_auc_score)
 
     fig = plot_roc_curve_with_thresholds_annotations(
         y_true, classifiers_names_and_scores_dict, add_random_classifier_line=True, fig=fig
@@ -125,7 +125,7 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
         name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
     }
     if request.node.callspec.id == "roc_calc_fail":
-        mocker.patch("ds_utils.metrics.roc_curve", side_effect=ValueError)
+        mocker.patch("ds_utils.metrics.curves.roc_curve", side_effect=ValueError)
     elif request.node.callspec.id == "auc_calc_fail":
 
         def _mock_roc_curve(y_true, y_score, **kwargs):
@@ -134,9 +134,9 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
                     data = plotly_models_dict[classifier]["roc_curve"]
                     return np.array(data["fpr_array"]), np.array(data["tpr_array"]), np.array(data["thresholds"])
 
-        mocker.patch("ds_utils.metrics.roc_curve", side_effect=_mock_roc_curve)
+        mocker.patch("ds_utils.metrics.curves.roc_curve", side_effect=_mock_roc_curve)
 
-        mocker.patch("ds_utils.metrics.roc_auc_score", side_effect=ValueError)
+        mocker.patch("ds_utils.metrics.curves.roc_auc_score", side_effect=ValueError)
     with pytest.raises(error, match=message):
         plot_roc_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
 
@@ -158,7 +158,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
                 data = plotly_models_dict[classifier]["precision_recall_curve"]
                 return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
 
-    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
 
     fig = plot_precision_recall_curve_with_thresholds_annotations(
         y_true, classifiers_names_and_scores_dict, add_random_classifier_line=add_random_classifier_line
@@ -184,7 +184,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
                 data = plotly_models_dict[classifier]["precision_recall_curve"]
                 return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
 
-    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
 
     fig = plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict, fig=fig)
 
@@ -198,7 +198,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocke
         name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
     }
 
-    mocker.patch("ds_utils.metrics.precision_recall_curve", side_effect=ValueError)
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=ValueError)
     with pytest.raises(ValueError, match="Error calculating Precision-Recall curve for classifier Decision Tree:"):
         plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
 
