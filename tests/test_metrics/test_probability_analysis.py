@@ -9,6 +9,7 @@ import pytest
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
 BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics" / "test_probability_analysis"
+RESOURCES_DIR = Path(__file__).parent.parent / "resources"
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
@@ -19,7 +20,7 @@ BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics"
 )
 def test_visualize_accuracy_grouped_by_probability(display_breakdown, bins, threshold):
     """Test visualizing accuracy grouped by probability with different parameters."""
-    class_with_probabilities = pd.read_csv(Path(__file__).parent.joinpath("resources", "class_with_probabilities.csv"))
+    class_with_probabilities = pd.read_csv(RESOURCES_DIR / "class_with_probabilities.csv")
     ax = visualize_accuracy_grouped_by_probability(
         class_with_probabilities["loan_condition_cat"],
         1,
@@ -49,7 +50,7 @@ def test_visualize_accuracy_grouped_by_probability_exists_ax():
     fig, ax = plt.subplots()
     ax.set_title("My ax")
 
-    class_with_probabilities = pd.read_csv(Path(__file__).parent.joinpath("resources", "class_with_probabilities.csv"))
+    class_with_probabilities = pd.read_csv(RESOURCES_DIR / "class_with_probabilities.csv")
     visualize_accuracy_grouped_by_probability(
         class_with_probabilities["loan_condition_cat"], 1, class_with_probabilities["probabilities"], ax=ax
     )
