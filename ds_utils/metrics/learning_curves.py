@@ -5,11 +5,11 @@ as a function of the training dataset size. It includes tools for plotting metri
 across varying numbers of labeled instances.
 """
 
-from typing import Dict, Optional, List, Callable, Union
+from typing import Callable, Dict, List, Optional, Union
 
-import numpy as np
 from joblib import Parallel, delayed
 from matplotlib import axes, pyplot as plt
+import numpy as np
 from numpy.random import RandomState
 from sklearn import clone
 from sklearn.base import ClassifierMixin

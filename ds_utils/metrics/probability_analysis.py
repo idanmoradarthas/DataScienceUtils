@@ -5,11 +5,11 @@ based on their predicted probabilities. It includes tools for grouping results b
 probability bins and plotting accuracy distributions.
 """
 
-from typing import Union, Optional, Sequence
+from typing import Optional, Sequence, Union
 
+from matplotlib import axes, pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import axes, pyplot as plt
 
 
 def visualize_accuracy_grouped_by_probability(

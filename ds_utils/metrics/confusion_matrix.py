@@ -5,13 +5,13 @@ various classification metrics such as False Positive Rate, False Negative Rate,
 Accuracy, and F1 score. It supports both binary and multiclass classification.
 """
 
-from typing import List, Union, Optional, Dict, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
+from matplotlib import axes, pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import axes, pyplot as plt
-from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 
 
 def plot_confusion_matrix(

@@ -1,12 +1,12 @@
 """Module containing functions for plotting evaluation curves."""
 
-import warnings
 from typing import Dict, Optional, Union
+import warnings
 
 import numpy as np
 from plotly import graph_objects as go
 from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve
+from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
 
 
 def plot_roc_curve_with_thresholds_annotations(
