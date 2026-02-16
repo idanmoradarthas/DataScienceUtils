@@ -20,11 +20,13 @@ RESOURCES_DIR = Path(__file__).parent.parent / "resources"
 
 RESULT_DIR.mkdir(exist_ok=True, parents=True)
 
+
 @pytest.fixture
 def plotly_models_dict() -> Dict[str, Any]:
     """Load plotly models data from JSON file."""
     with (RESOURCES_DIR / "plotly_models.json").open("r") as file:
         return json.load(file)
+
 
 def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) -> plt.Figure:
     """Save plotly figure and convert to a matplotlib figure for comparison."""
@@ -208,4 +210,3 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocke
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=ValueError)
     with pytest.raises(ValueError, match="Error calculating Precision-Recall curve for classifier Decision Tree:"):
         plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
-
