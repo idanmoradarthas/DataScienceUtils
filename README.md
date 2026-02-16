@@ -23,25 +23,31 @@ The API of the package is built to work with the Scikit-Learn API and Matplotlib
 
 ## Metrics
 
+The metrics module is organized into focused submodules:
+- **confusion_matrix** - Confusion matrix visualization and analysis
+- **curves** - ROC and Precision-Recall curves
+- **learning_curves** - Learning curve visualization
+- **probability_analysis** - Probability calibration and accuracy analysis
+
 ### Plot Confusion Matrix
 
 Computes and plots a confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
 classification.
 
 ```python
-from ds_utils.metrics import plot_confusion_matrix
+from ds_utils.metrics.confusion_matrix import plot_confusion_matrix
 
 plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 ```
 
-![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_confusion_matrix_binary.png)
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_confusion_matrix/test_plot_confusion_matrix_binary.png)
 
 ### Plot Metric Growth per Labeled Instances
 
 Receives train and test sets, and plots the given metric change with an increasing number of trained instances.
 
 ```python
-from ds_utils.metrics import plot_metric_growth_per_labeled_instances
+from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_instances
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -54,7 +60,7 @@ plot_metric_growth_per_labeled_instances(
 )
 ```
 
-![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
+![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_learning_curves/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
 
 ### Visualize Accuracy Grouped by Probability
 
@@ -62,7 +68,7 @@ Receives test true labels and classifier probability predictions, divides and cl
 plots a stacked bar chart with the results. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
-from ds_utils.metrics import visualize_accuracy_grouped_by_probability
+from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
 visualize_accuracy_grouped_by_probability(
     test["target"],
@@ -74,18 +80,18 @@ visualize_accuracy_grouped_by_probability(
 
 Without breakdown:
 
-![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_default.png)
+![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_visualize_accuracy_grouped_by_probability_default.png)
 
 With breakdown:
 
-![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
+![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
 
 ### Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 
 Plot ROC curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
-from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
@@ -100,14 +106,14 @@ fig = plot_roc_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_roc_curve_with_thresholds_annotations_default.png)
+![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_roc_curve_with_thresholds_annotations_default.png)
 
 ### Precision-Recall Curve with Probabilities (Thresholds) Annotations
 
 Plot Precision-Recall curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
-from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
+from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
@@ -122,7 +128,7 @@ fig = plot_precision_recall_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
+![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
 
 ## Preprocess
 
