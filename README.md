@@ -503,7 +503,7 @@ plot_features_importance(features, clf.feature_importances_)
 plt.show()
 ```
 
-![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance.png)
+![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance/test_plot_features_importance.png)
 
 This visualization helps in understanding which features are most influential in the model's decision-making process,
 providing valuable insights for feature selection and model interpretation.

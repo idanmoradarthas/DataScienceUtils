@@ -67,7 +67,7 @@ Now, let's create a simple decision tree classifier and plot it:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_draw_tree.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_tree/test_draw_tree.png
     :align: center
     :alt: Decision Tree Visualization
 
@@ -106,7 +106,7 @@ Let's create a simple diagram and plot it:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data/test_draw_dot_data.png
     :align: center
     :alt: Diagram Visualization
 
@@ -225,6 +225,6 @@ In this example:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance.png
+.. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance/test_plot_features_importance.png
     :align: center
     :alt: Plot Feature Importance
