@@ -8,8 +8,8 @@ import pytest
 
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics" / "test_probability_analysis"
-RESOURCES_DIR = Path(__file__).parent.parent / "resources"
+BASELINE_DIR = Path(__file__).parents[1] / "baseline_images" / Path(__file__).parent.name / Path(__file__).stem
+RESOURCES_DIR = Path(__file__).parents[1] / "resources"
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)

@@ -14,7 +14,7 @@ import pytest
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-RESOURCES_DIR = Path(__file__).parent.parent / "resources"
+RESOURCES_DIR = Path(__file__).parents[1] / "resources"
 
 
 @pytest.fixture

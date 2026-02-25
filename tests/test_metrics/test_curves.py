@@ -14,9 +14,9 @@ from ds_utils.metrics.curves import (
     plot_roc_curve_with_thresholds_annotations,
 )
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics" / "test_curves"
-RESULT_DIR = Path(__file__).parent.parent / "result_images" / "test_metrics" / "test_curves"
-RESOURCES_DIR = Path(__file__).parent.parent / "resources"
+BASELINE_DIR = Path(__file__).parents[1] / "baseline_images" / Path(__file__).parent.name / Path(__file__).stem
+RESULT_DIR = Path(__file__).parents[1] / "result_images" / Path(__file__).parent.name / Path(__file__).stem
+RESOURCES_DIR = Path(__file__).parents[1] / "resources"
 
 RESULT_DIR.mkdir(exist_ok=True, parents=True)
 

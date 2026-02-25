@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import pytest
 
-RESOURCES_PATH = Path(__file__).parent.parent / "resources"
+RESOURCES_PATH = Path(__file__).parents[1] / "resources"
 
 
 @pytest.fixture

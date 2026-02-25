@@ -10,7 +10,7 @@ import pytest
 
 from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_instances
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics" / "test_learning_curves"
+BASELINE_DIR = Path(__file__).parents[1] / "baseline_images" / Path(__file__).parent.name / Path(__file__).stem
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)

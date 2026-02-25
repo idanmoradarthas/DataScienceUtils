@@ -13,7 +13,7 @@ from ds_utils.preprocess.statistics import (
     get_correlated_features,
 )
 
-RESOURCES_PATH = Path(__file__).parent.parent / "resources"
+RESOURCES_PATH = Path(__file__).parents[1] / "resources"
 
 
 @pytest.fixture

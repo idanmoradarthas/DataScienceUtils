@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from ds_utils.preprocess.visualization import visualize_feature
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_preprocess" / "test_visualize_feature"
+BASELINE_DIR = Path(__file__).parents[1] / "baseline_images" / Path(__file__).parent.name / Path(__file__).stem
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR)
