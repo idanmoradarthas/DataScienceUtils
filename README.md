@@ -10,7 +10,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/idanmorad/data-science-utils/badges/version.svg)](https://anaconda.org/idanmorad/data-science-utils)
 ![Build Status](https://github.com/idanmoradarthas/DataScienceUtils/actions/workflows/test.yml/badge.svg?branch=master)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Coverage Status](https://coveralls.io/repos/github/idanmoradarthas/DataScienceUtils/badge.svg?branch=master)](https://coveralls.io/github/idanmoradarthas/DataScienceUtils?branch=master)
+[![codecov](https://codecov.io/gh/idanmoradarthas/DataScienceUtils/graph/badge.svg?token=GRQ86SNBNY)](https://codecov.io/gh/idanmoradarthas/DataScienceUtils)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and
 visualizations for data science projects.
