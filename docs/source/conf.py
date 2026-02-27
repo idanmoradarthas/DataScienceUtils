@@ -10,12 +10,20 @@ from pathlib import Path
 
 # -- Path setup --------------------------------------------------------------
 # If extensions (or modules to document with autodoc) are in another directory,
+<<<<<<< HEAD
 # add these directories to sys.path here. Use the project root so that
 # "import ds_utils" loads the source package (including ds_utils.preprocess
 # as a package with statistics/visualization submodules), not an installed copy.
 _project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, os.path.abspath("."))
+=======
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../../ds_utils"))
+>>>>>>> origin/master
 
 # -- Project information -----------------------------------------------------
 
