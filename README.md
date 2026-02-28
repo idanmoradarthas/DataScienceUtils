@@ -10,7 +10,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/idanmorad/data-science-utils/badges/version.svg)](https://anaconda.org/idanmorad/data-science-utils)
 ![Build Status](https://github.com/idanmoradarthas/DataScienceUtils/actions/workflows/test.yml/badge.svg?branch=master)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Coverage Status](https://coveralls.io/repos/github/idanmoradarthas/DataScienceUtils/badge.svg?branch=master)](https://coveralls.io/github/idanmoradarthas/DataScienceUtils?branch=master)
+[![codecov](https://codecov.io/gh/idanmoradarthas/DataScienceUtils/graph/badge.svg?token=GRQ86SNBNY)](https://codecov.io/gh/idanmoradarthas/DataScienceUtils)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and
 visualizations for data science projects.
@@ -24,25 +24,31 @@ The API of the package is built to work with the Scikit-Learn API and Matplotlib
 
 ## Metrics
 
+The metrics module is organized into focused submodules:
+- **confusion_matrix** - Confusion matrix visualization and analysis
+- **curves** - ROC and Precision-Recall curves
+- **learning_curves** - Learning curve visualization
+- **probability_analysis** - Probability calibration and accuracy analysis
+
 ### Plot Confusion Matrix
 
 Computes and plots a confusion matrix, False Positive Rate, False Negative Rate, Accuracy, and F1 score of a
 classification.
 
 ```python
-from ds_utils.metrics import plot_confusion_matrix
+from ds_utils.metrics.confusion_matrix import plot_confusion_matrix
 
 plot_confusion_matrix(y_test, y_pred, [0, 1, 2])
 ```
 
-![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_confusion_matrix_binary.png)
+![multi label classification confusion matrix](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_confusion_matrix/test_plot_confusion_matrix_binary.png)
 
 ### Plot Metric Growth per Labeled Instances
 
 Receives train and test sets, and plots the given metric change with an increasing number of trained instances.
 
 ```python
-from ds_utils.metrics import plot_metric_growth_per_labeled_instances
+from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_instances
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -55,7 +61,7 @@ plot_metric_growth_per_labeled_instances(
 )
 ```
 
-![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
+![metric growth per labeled instances with n samples](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_learning_curves/test_plot_metric_growth_per_labeled_instances_with_n_samples.png)
 
 ### Visualize Accuracy Grouped by Probability
 
@@ -63,7 +69,7 @@ Receives test true labels and classifier probability predictions, divides and cl
 plots a stacked bar chart with the results. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
-from ds_utils.metrics import visualize_accuracy_grouped_by_probability
+from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
 visualize_accuracy_grouped_by_probability(
     test["target"],
@@ -75,18 +81,18 @@ visualize_accuracy_grouped_by_probability(
 
 Without breakdown:
 
-![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_default.png)
+![visualize_accuracy_grouped_by_probability](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_visualize_accuracy_grouped_by_probability_default.png)
 
 With breakdown:
 
-![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
+![visualize_accuracy_grouped_by_probability_with_breakdown](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_visualize_accuracy_grouped_by_probability_with_breakdown.png)
 
 ### Receiver Operating Characteristic (ROC) Curve with Probabilities (Thresholds) Annotations
 
 Plot ROC curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
-from ds_utils.metrics import plot_roc_curve_with_thresholds_annotations
+from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
@@ -101,14 +107,14 @@ fig = plot_roc_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_roc_curve_with_thresholds_annotations_default.png)
+![plot roc curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_roc_curve_with_thresholds_annotations_default.png)
 
 ### Precision-Recall Curve with Probabilities (Thresholds) Annotations
 
 Plot Precision-Recall curves with threshold annotations for multiple classifiers, using plotly as a backend.
 
 ```python
-from ds_utils.metrics import plot_precision_recall_curve_with_thresholds_annotations
+from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_annotations
 
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
@@ -123,9 +129,13 @@ fig = plot_precision_recall_curve_with_thresholds_annotations(
 fig.show()
 ```
 
-![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
+![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
 
 ## Preprocess
+
+The preprocess module is organized into focused submodules:
+- **visualization** - Feature visualization and correlation plots
+- **statistics** - Statistical computations and feature analysis
 
 ### Visualize Feature
 
@@ -141,7 +151,7 @@ When `remove_na=False` (default for `visualize_feature`), missing values are han
 * **Categorical/Integer/Boolean**: Missing values are counted and shown as a separate category (if present).
 
 ```python
-from ds_utils.preprocess import visualize_feature
+from ds_utils.preprocess.visualization import visualize_feature
 
 # Basic usage
 visualize_feature(X_train["feature"])
@@ -166,11 +176,11 @@ visualize_feature(X_train["category_feature"], order=["High", "Medium", "Low"]) 
 
 | Feature Type      | Plot                                                                                                                                                                             |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Float             | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_float.png)                            |
-| Integer           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_int.png)                              |
-| Datetime          | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_float_datetime_int_datetime.png)                         |
-| Category / Object | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_object_category_more_than_10_categories_show_counts.png) |
-| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature_bool_show_counts.png)                             |
+| Float             | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature/test_visualize_feature_float_datetime_int_float.png)                            |
+| Integer           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature/test_visualize_feature_float_datetime_int_int.png)                              |
+| Datetime          | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature/test_visualize_feature_float_datetime_int_datetime.png)                         |
+| Category / Object | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature/test_visualize_feature_object_category_more_than_10_categories_show_counts.png) |
+| Boolean           | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_feature/test_visualize_feature_bool_show_counts.png)                             |
 
 ### Get Correlated Features
 
@@ -178,7 +188,7 @@ Calculate which features are correlated above a threshold and extract a data fra
 to the target feature.
 
 ```python
-from ds_utils.preprocess import get_correlated_features
+from ds_utils.preprocess.statistics import get_correlated_features
 
 correlations = get_correlated_features(correlation_matrix, features, target)
 ```
@@ -195,12 +205,12 @@ Compute pairwise correlation of columns, excluding NA/null values, and visualize
 [Original code](https://seaborn.pydata.org/examples/many_pairwise_correlations.html)
 
 ```python
-from ds_utils.preprocess import visualize_correlations
+from ds_utils.preprocess.visualization import visualize_correlations
 
 visualize_correlations(correlation_matrix)
 ```
 
-![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations_default.png)
+![visualize features](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_visualize_correlations/test_visualize_correlations_default.png)
 
 ### Plot Correlation Dendrogram
 
@@ -209,12 +219,12 @@ connecting them in a tree-like structure. The closer to the right that the conne
 features are. [Original code](https://github.com/EthicalML/XAI)
 
 ```python
-from ds_utils.preprocess import plot_correlation_dendrogram
+from ds_utils.preprocess.visualization import plot_correlation_dendrogram
 
 plot_correlation_dendrogram(correlation_matrix)
 ```
 
-![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram_default.png)
+![plot correlation dendrogram](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_correlation_dendrogram/test_plot_correlation_dendrogram_default.png)
 
 ### Plot Features' Interaction
 
@@ -231,17 +241,17 @@ When `remove_na=False` (default), missing values are visualized:
 * For categorical plots: Missing values are included as a separate category if present.
 
 ```python
-from ds_utils.preprocess import plot_features_interaction
+from ds_utils.preprocess.visualization import plot_features_interaction
 
 plot_features_interaction(data, "feature_1", "feature_2")
 ```
 
 |                 | Numeric                                                                                                                                                                              | Categorical                                                                                                                                                                           | Boolean                                                                                                                                                                                | Datetime                                                                                                                                                                           |
 |-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Numeric**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_numeric.png)        |                                                                                                                                                                                       |                                                                                                                                                                                        |                                                                                                                                                                                    |
-| **Categorical** | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_categorical.png)     |                                                                                                                                                                                        |                                                                                                                                                                                    |
-| **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_numeric_boolean.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_categorical_bool.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_both_bool.png)             |                                                                                                                                                                                    |
-| **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_numeric.png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_bool_default.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features_datetime_datetime.png) |
+| **Numeric**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_both_numeric.png)        |                                                                                                                                                                                       |                                                                                                                                                                                        |                                                                                                                                                                                    |
+| **Categorical** | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_numeric_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_both_categorical.png)     |                                                                                                                                                                                        |                                                                                                                                                                                    |
+| **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_numeric_boolean.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_categorical_bool.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_both_bool.png)             |                                                                                                                                                                                    |
+| **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_numeric.png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_bool_default.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_datetime.png) |
 
 ### Extract Statistics DataFrame per Label
 
@@ -254,7 +264,7 @@ you want to:
 - Understand the relationship between features and target variables
 
 ```python
-from ds_utils.preprocess import extract_statistics_dataframe_per_label
+from ds_utils.preprocess.statistics import extract_statistics_dataframe_per_label
 
 extract_statistics_dataframe_per_label(
     df=df,
@@ -280,7 +290,7 @@ Use this method when you want to:
 - Compare the predictive value of different types of features
 
 ```python
-from ds_utils.preprocess import compute_mutual_information
+from ds_utils.preprocess.statistics import compute_mutual_information
 
 # Compute mutual information scores for all features
 mi_scores = compute_mutual_information(
@@ -494,7 +504,7 @@ plot_features_importance(features, clf.feature_importances_)
 plt.show()
 ```
 
-![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance.png)
+![Plot Features Importance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_features_importance/test_plot_features_importance.png)
 
 This visualization helps in understanding which features are most influential in the model's decision-making process,
 providing valuable insights for feature selection and model interpretation.
@@ -507,8 +517,8 @@ potential of DataScienceUtils:
 * [Metrics](https://datascienceutils.readthedocs.io/en/latest/metrics.html) - Powerful methods for calculating and
   visualizing algorithm performance evaluation. Gain insights into how your models are performing.
 
-* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess.html) - Essential data preprocessing
-  techniques to prepare your data for training. Improve your model's input for better results.
+* [Preprocess](https://datascienceutils.readthedocs.io/en/latest/preprocess/index.html) - Essential data preprocessing
+  techniques to prepare your data for training. Now organized into visualization and statistics submodules for better code organization.
 
 * [Strings](https://datascienceutils.readthedocs.io/en/latest/strings.html) - Efficient methods for manipulating and
   processing strings in dataframes. Handle text data with ease.

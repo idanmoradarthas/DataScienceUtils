@@ -8,7 +8,7 @@ This module contains common methods that help calculate statistical values.
 Safe Percentile
 ***************
 
-.. autofunction:: math_utils::safe_percentile
+.. autofunction:: ds_utils.math_utils.safe_percentile
 
 .. highlight:: python
 

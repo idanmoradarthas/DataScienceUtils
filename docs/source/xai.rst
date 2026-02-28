@@ -31,7 +31,7 @@ Draw Tree
 
 The `draw_tree` function visualizes a decision tree classifier, making it easier to understand the tree's structure and decision-making process. This can be particularly useful for model interpretation and debugging.
 
-.. autofunction:: xai::draw_tree
+.. autofunction:: ds_utils.xai.draw_tree
 
 .. highlight:: python
 
@@ -67,7 +67,7 @@ Now, let's create a simple decision tree classifier and plot it:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_draw_tree.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_tree/test_draw_tree.png
     :align: center
     :alt: Decision Tree Visualization
 
@@ -78,7 +78,7 @@ Draw Dot Data
 The `draw_dot_data` function visualizes graph structures defined in DOT language. This is useful for creating custom graph visualizations, including decision trees, flowcharts, or any other graph-based representations.
 
 
-.. autofunction:: xai::draw_dot_data
+.. autofunction:: ds_utils.xai.draw_dot_data
 
 Code Example
 ============
@@ -106,7 +106,7 @@ Let's create a simple diagram and plot it:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data.png
+.. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data/test_draw_dot_data.png
     :align: center
     :alt: Diagram Visualization
 
@@ -118,7 +118,7 @@ Generate Decision Paths
 
 The `generate_decision_paths` function creates a textual representation of a decision tree's decision paths. This is helpful for understanding the logic behind the tree's classifications and can be used for both interpretation and debugging purposes.
 
-.. autofunction:: xai::generate_decision_paths
+.. autofunction:: ds_utils.xai.generate_decision_paths
 
 Code Example
 ============
@@ -171,7 +171,7 @@ Plot Feature Importance
 
 The `plot_features_importance` function visualizes the importance of different features in a machine learning model. This is crucial for understanding which features have the most significant impact on the model's predictions, aiding in feature selection and model interpretation.
 
-.. autofunction:: xai::plot_features_importance
+.. autofunction:: ds_utils.xai.plot_features_importance
 
 Code Example
 ============
@@ -225,6 +225,6 @@ In this example:
 
 The following image will be displayed:
 
-.. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance.png
+.. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance/test_plot_features_importance.png
     :align: center
     :alt: Plot Feature Importance
