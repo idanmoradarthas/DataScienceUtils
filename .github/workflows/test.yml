@@ -61,25 +61,16 @@ jobs:
           OMP_NUM_THREADS: "1"
           DISPLAY: ":99"
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: ${{ matrix.os }}-python-${{ matrix.python-version }}
+          fail_ci_if_error: true
+
       - name: Run Ruff Formatter Check
         run: uvx ruff format --check .
 
       - name: Run Ruff Linter
         run: uvx ruff check .
-
-      - name: Upload coverage to Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_FLAG_NAME: ${{ matrix.os }}-python-${{ matrix.python-version }}
-          COVERALLS_PARALLEL: true
-        run: uvx coveralls --service=github
-
-  coveralls:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Finish Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
