@@ -13,7 +13,7 @@ Plot Cluster Cardinality
 
 The plot_cluster_cardinality function visualizes the number of points in each cluster, which can help identify imbalanced clusters or outliers.
 
-.. autofunction:: unsupervised::plot_cluster_cardinality
+.. autofunction:: ds_utils.unsupervised.plot_cluster_cardinality
 
 .. highlight:: python
 
@@ -45,7 +45,7 @@ Plot Cluster Magnitude
 The plot_cluster_magnitude function visualizes the total point-to-centroid distance for each cluster, which can help
 identify compact or dispersed clusters.
 
-.. autofunction:: unsupervised::plot_cluster_magnitude
+.. autofunction:: ds_utils.unsupervised.plot_cluster_magnitude
 
 Here's an example of how to use the plot_cluster_magnitude function::
 
@@ -75,7 +75,7 @@ Magnitude vs. Cardinality
 
 The plot_magnitude_vs_cardinality function creates a scatter plot of cluster magnitude against cardinality, which can help identify anomalous clusters.
 
-.. autofunction:: unsupervised::plot_magnitude_vs_cardinality
+.. autofunction:: ds_utils.unsupervised.plot_magnitude_vs_cardinality
 
 Here's how to use the plot_magnitude_vs_cardinality function::
 
@@ -105,7 +105,7 @@ Optimum Number of Clusters
 **************************
 The plot_loss_vs_cluster_number function helps determine the optimal number of clusters by plotting the total magnitude (sum of distances) as loss against the number of clusters.
 
-.. autofunction:: unsupervised::plot_loss_vs_cluster_number
+.. autofunction:: ds_utils.unsupervised.plot_loss_vs_cluster_number
 
 Here's an example of how to use the plot_loss_vs_cluster_number function::
 

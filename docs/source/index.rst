@@ -11,8 +11,8 @@ visualizations for data science projects.
 
    installation
    math_utils
-   metrics
-   preprocess
+   metrics/index
+   preprocess/index
    strings
    unsupervised
    xai

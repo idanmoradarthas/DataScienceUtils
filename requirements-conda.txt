@@ -1,4 +1,4 @@
-conda-build==25.11.1
+conda-build==26.1.0
 anaconda-client==1.14.0
 # conda-verify==3.4.2
 ripgrep==15.1.0
