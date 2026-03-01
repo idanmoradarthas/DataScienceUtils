@@ -112,3 +112,4 @@ Temporary Items
 /outputdir/
 .pypirc
 .vscode
+uv.lock
