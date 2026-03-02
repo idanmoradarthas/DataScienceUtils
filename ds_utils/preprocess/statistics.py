@@ -199,7 +199,7 @@ def compute_mutual_information(
     df_processed = df[features_to_process].copy()
     numerical_features = df_processed.select_dtypes(include=[np.number]).columns.tolist()
     boolean_features = df_processed.select_dtypes(include=["bool", "boolean"]).columns.tolist()
-    categorical_features = df_processed.select_dtypes(include=["object", "category"]).columns.tolist()
+    categorical_features = df_processed.select_dtypes(include=["object", "str", "category"]).columns.tolist()
 
     # SimpleImputer does not support boolean dtype, so convert to object
     for col in boolean_features:
