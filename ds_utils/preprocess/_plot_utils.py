@@ -17,9 +17,6 @@ def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
     if pd.api.types.is_bool_dtype(series):
         return series.map({True: "True", False: "False"})
 
-    if _is_string_dtype(series.dtype):
-        series = series.astype(object)
-
     if len(series.unique()) > 10:
         top10 = series.value_counts().nlargest(10).index
         return series.map(lambda x: x if x in top10 else "Other values")
