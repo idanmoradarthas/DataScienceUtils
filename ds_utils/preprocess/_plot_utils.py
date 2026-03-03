@@ -8,11 +8,6 @@ checking whether a dtype should be treated as categorical.
 import pandas as pd
 
 
-def _is_string_dtype(dtype) -> bool:
-    """Return True for both legacy object dtype and the new pandas 3 StringDtype."""
-    return pd.api.types.is_object_dtype(dtype) or isinstance(dtype, pd.StringDtype)
-
-
 def _copy_series_or_keep_top_10(series: pd.Series) -> pd.Series:
     if pd.api.types.is_bool_dtype(series):
         return series.map({True: "True", False: "False"})
