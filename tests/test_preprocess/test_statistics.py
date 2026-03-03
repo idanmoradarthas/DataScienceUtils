@@ -174,6 +174,7 @@ def test_compute_mutual_information(data_1m):
         columns=["feature_name", "mi_score"],
     )
     results = compute_mutual_information(df, features, "target", random_state=42)
+    expected["feature_name"] = expected["feature_name"].astype(object)
     pd.testing.assert_frame_equal(expected, results)
 
 
