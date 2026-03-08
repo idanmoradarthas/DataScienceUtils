@@ -25,5 +25,4 @@ ENV OMP_NUM_THREADS="1"
 
 # When we mount the project into /app, we sync dependencies and generate the hash library
 # We use xvfb-run to provide a fake display in case kaleido/chromium require it
-CMD uv sync --all-extras --dev && \
-    xvfb-run -a uv run pytest --mpl-generate-hash-library=tests/baseline_images/mpl3108_ft261.json tests/ -n auto
+CMD ["/bin/bash", "-c", "uv sync --all-extras --dev && xvfb-run -a uv run pytest --mpl-generate-hash-library=tests/baseline_images/mpl3108_ft261.json tests/ -n auto"]
