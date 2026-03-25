@@ -644,6 +644,31 @@ conda install idanmorad::data-science-utils
 Data Science Utils has several dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
 automatically installed when you install the package using the methods above.
 
+### 4. Install AI Coding Skills (Claude, Cursor, Copilot, Gemini)
+
+DataScienceUtils ships AI skills that teach Claude Code, Cursor, GitHub Copilot,
+and Gemini CLI how to use this library correctly — including function signatures,
+import paths, and common pitfalls.
+
+**Mac / Linux:**
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.sh)
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 | iex
+```
+
+The installer will:
+- Detect which AI tools you have installed (Claude Code, Cursor, GitHub Copilot, Gemini CLI)
+- Ask whether to install for the current project or globally
+- Auto-detect pip or conda and install `data-science-utils`
+- Copy skill files into the correct directory for each detected tool
+
+For a full step-by-step guide, see the
+[AI Skills documentation](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html).
+
 ## Staying Updated
 
 Data Science Utils is an active project that routinely publishes new releases with additional methods and improvements.

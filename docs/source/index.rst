@@ -10,6 +10,7 @@ visualizations for data science projects.
    :caption: Contents:
 
    installation
+   ai_skills
    math_utils
    metrics/index
    preprocess/index
