@@ -39,6 +39,7 @@ FORCE=false
 SILENT=false
 USER_TOOLS=""
 TOOLS=""
+PKG_MANAGER_OVERRIDE=""
 
 # ── Output helpers ───────────────────────────────────────────────
 msg()  { [ "$SILENT" = false ] && echo -e "  $*"; }
@@ -52,6 +53,7 @@ while [ $# -gt 0 ]; do
     case $1 in
         -g|--global)      SCOPE="global"; shift ;;
         --skills-only)    INSTALL_PKG=false; shift ;;
+        --from-source)    PKG_MANAGER_OVERRIDE="source"; shift ;;
         --tools)          USER_TOOLS="$2"; shift 2 ;;
         -f|--force)       FORCE=true; shift ;;
         --silent)         SILENT=true; shift ;;
@@ -64,6 +66,7 @@ while [ $# -gt 0 ]; do
             echo "Options:"
             echo "  -g, --global       Install globally (~/) instead of current project dir"
             echo "  --skills-only      Skip Python package install (skills only)"
+            echo "  --from-source      Install from git clone instead of PyPI/conda"
             echo "  --tools LIST       Comma-separated list: claude,cursor,copilot,gemini"
             echo "  -f, --force        Force reinstall"
             echo "  -h, --help         Show this help"
@@ -292,23 +295,25 @@ select_scope() {
     )
 }
 
-# ── Package manager detection & install ──────────────────────────
-install_package() {
+# ── Package manager selection ──────────────────────────────────────
+select_package() {
     [ "$INSTALL_PKG" = false ] && return
 
-    step "Installing data-science-utils Python package"
-
-    local pkg_manager=""
+    # Honour CLI override — skip interactive selector
+    if [ -n "$PKG_MANAGER_OVERRIDE" ]; then
+        PKG_MANAGER="$PKG_MANAGER_OVERRIDE"
+        return
+    fi
 
     # Detect active conda env first
     if [ -n "$CONDA_DEFAULT_ENV" ] && command -v conda >/dev/null 2>&1; then
-        pkg_manager="conda"
+        PKG_MANAGER="conda"
     elif command -v conda >/dev/null 2>&1 && conda info --envs 2>/dev/null | grep -q "^\*"; then
-        pkg_manager="conda"
+        PKG_MANAGER="conda"
     elif command -v pip3 >/dev/null 2>&1; then
-        pkg_manager="pip3"
+        PKG_MANAGER="pip3"
     elif command -v pip >/dev/null 2>&1; then
-        pkg_manager="pip"
+        PKG_MANAGER="pip"
     else
         die "No Python package manager found. Install pip or conda first."
     fi
@@ -318,7 +323,14 @@ install_package() {
         local other_hint="available"
         local pip_state="off" conda_state="off"
 
-        if [ "$pkg_manager" = "conda" ]; then
+        local source_state="off"
+        local source_hint="clone repo and pip install ."
+        if [ -f "pyproject.toml" ] && grep -q "data-science-utils" "pyproject.toml" 2>/dev/null; then
+            source_state="on"
+            source_hint="detected: running inside repo"
+            pip_state="off"
+            conda_state="off"
+        elif [ "$PKG_MANAGER" = "conda" ]; then
             conda_state="on"
             detected_hint="active conda env: ${CONDA_DEFAULT_ENV:-detected}"
         else
@@ -332,15 +344,41 @@ install_package() {
         chosen=$(radio_select \
             "pip (PyPI)|pip|${pip_state}|${detected_hint}" \
             "conda (idanmorad channel)|conda|${conda_state}|${other_hint}" \
+            "Install from source (git clone)|source|${source_state}|${source_hint}" \
+            "Skip (install skills only)|skip|off|do not install the python package" \
         )
-        pkg_manager="$chosen"
+        if [ "$chosen" = "skip" ]; then
+            INSTALL_PKG=false
+        else
+            PKG_MANAGER="$chosen"
+        fi
     fi
+}
+
+# ── Package manager install ────────────────────────────────────────
+install_package() {
+    [ "$INSTALL_PKG" = false ] && return
+
+    step "Installing data-science-utils Python package"
+    local pkg_manager="$PKG_MANAGER"
 
     msg "Using: ${B}${pkg_manager}${N}"
 
     if [ "$pkg_manager" = "conda" ]; then
         conda install -y -c idanmorad data-science-utils 2>/dev/null \
             || die "conda install failed. Try: conda install -c idanmorad data-science-utils"
+    elif [ "$pkg_manager" = "source" ]; then
+        # Clone the repo to a temp dir and install from source
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+        msg "Cloning DataScienceUtils into ${tmp_dir}..."
+        git clone -q --depth 1 "https://github.com/idanmoradarthas/DataScienceUtils.git" "$tmp_dir" \
+            || die "git clone failed. Check your internet connection."
+        local pip_cmd="pip3"
+        command -v pip3 >/dev/null 2>&1 || pip_cmd="pip"
+        $pip_cmd install -q "$tmp_dir" \
+            || die "pip install from source failed. Try manually: git clone ... && pip install ."
+        rm -rf "$tmp_dir"
     else
         local pip_cmd="$pkg_manager"
         $pip_cmd install -U data-science-utils \
@@ -429,6 +467,11 @@ main() {
     step "Install scope"
     select_scope
     ok "Scope: ${SCOPE}"
+
+    # Select package manager
+    step "Package manager"
+    select_package
+    ok "Package: $([ "$INSTALL_PKG" = true ] && echo "$PKG_MANAGER" || echo "skip")"
 
     # Confirm
     if [ "$SILENT" = false ] && [ -e /dev/tty ]; then

@@ -16,6 +16,7 @@
 param(
     [switch]$Global,
     [switch]$SkillsOnly,
+    [switch]$FromSource,
     [switch]$Force,
     [switch]$Silent,
     [string]$Tools = ""
@@ -206,11 +207,10 @@ function Get-Scope {
     return Show-Radio -Items $items
 }
 
-# ── Package manager detection & install ──────────────────────────
-function Install-Package {
-    if ($SkillsOnly) { return }
-
-    Write-Step "Installing data-science-utils Python package"
+# ── Package manager selection ──────────────────────────────────────
+function Get-Package {
+    if ($SkillsOnly) { return "skip" }
+    if ($FromSource) { return "source" }
 
     $hasCondaEnv = $env:CONDA_DEFAULT_ENV -ne $null
     $hasConda    = $null -ne (Get-Command conda -ErrorAction SilentlyContinue)
@@ -221,24 +221,47 @@ function Install-Package {
         Write-Err "No Python package manager found. Install pip or conda first."
     }
 
-    $defaultPkg = if ($hasCondaEnv -and $hasConda) { "conda" } else { "pip" }
+    # Detect if running inside the cloned repo
+    $inSourceRepo = (Test-Path "pyproject.toml") -and
+        ((Get-Content "pyproject.toml" -Raw) -match "data-science-utils")
+    $defaultPkg = if ($hasCondaEnv -and $hasConda) { "conda" } elseif ($inSourceRepo) { "source" } else { "pip" }
 
-    $pkgManager = $defaultPkg
-    if (-not $Silent) {
-        Write-Host ""
-        Write-Host "  Install data-science-utils using:" -ForegroundColor White
+    if ($Silent) { return $defaultPkg }
 
-        $items = @(
-            @{ Label = "pip (PyPI)";             Value = "pip";   Selected = ($defaultPkg -eq "pip");   Hint = if ($defaultPkg -eq "pip")   { "recommended" } else { "available" } },
-            @{ Label = "conda (idanmorad channel)"; Value = "conda"; Selected = ($defaultPkg -eq "conda"); Hint = if ($defaultPkg -eq "conda") { "active env: $env:CONDA_DEFAULT_ENV" } else { "available" } }
-        )
-        $pkgManager = Show-Radio -Items $items
-    }
+    Write-Host ""
+    Write-Host "  Install data-science-utils using:" -ForegroundColor White
 
+    $items = @(
+        @{ Label = "pip (PyPI)";                    Value = "pip";    Selected = ($defaultPkg -eq "pip");    Hint = if ($defaultPkg -eq "pip")    { "recommended" } else { "available" } },
+        @{ Label = "conda (idanmorad channel)";      Value = "conda";  Selected = ($defaultPkg -eq "conda");  Hint = if ($defaultPkg -eq "conda")  { "active env: $env:CONDA_DEFAULT_ENV" } else { "available" } },
+        @{ Label = "Install from source (git clone)"; Value = "source"; Selected = ($defaultPkg -eq "source"); Hint = if ($defaultPkg -eq "source") { "detected: running inside repo" } else { "clone repo and pip install ." } },
+        @{ Label = "Skip (install skills only)";      Value = "skip";   Selected = $false;                     Hint = "do not install the python package" }
+    )
+    return Show-Radio -Items $items
+}
+
+# ── Package manager install ────────────────────────────────────────
+function Install-Package {
+    param([string]$pkgManager)
+    
+    if ($SkillsOnly -or $pkgManager -eq "skip") { return }
+
+    Write-Step "Installing data-science-utils Python package"
     Write-Msg "Using: $pkgManager"
+
+    $hasPip3     = $null -ne (Get-Command pip3  -ErrorAction SilentlyContinue)
 
     if ($pkgManager -eq "conda") {
         conda install -y -c idanmorad data-science-utils
+    } elseif ($pkgManager -eq "source") {
+        $tmpDir = Join-Path $env:TEMP "DataScienceUtils-install"
+        Write-Msg "Cloning DataScienceUtils into $tmpDir ..."
+        git clone --depth 1 -q "https://github.com/idanmoradarthas/DataScienceUtils.git" $tmpDir
+        if ($LASTEXITCODE -ne 0) { Write-Err "git clone failed. Check your internet connection." }
+        $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }
+        & $pipCmd install -q $tmpDir
+        if ($LASTEXITCODE -ne 0) { Write-Err "pip install from source failed." }
+        Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
     } else {
         $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }
         & $pipCmd install -U data-science-utils
@@ -304,6 +327,11 @@ Write-Step "Install scope"
 $SCOPE = Get-Scope
 Write-Ok "Scope: $SCOPE"
 
+Write-Step "Package manager"
+$pkgManager = Get-Package
+if ($pkgManager -eq "skip") { $SkillsOnly = $true }
+Write-Ok "Package: $pkgManager"
+
 # Confirm
 if (-not $Silent) {
     $baseDir = if ($SCOPE -eq "global") { "~" } else { (Get-Location).Path }
@@ -312,7 +340,7 @@ if (-not $Silent) {
     Write-Host "  ──────────────────────────────────────"
     Write-Host ("  Tools:    " + ($selectedTools -join ", ")) -ForegroundColor Green
     Write-Host "  Scope:    $SCOPE ($baseDir)" -ForegroundColor Green
-    Write-Host ("  Package:  " + (if ($SkillsOnly) { "skip" } else { "pip/conda install" })) -ForegroundColor Green
+    Write-Host ("  Package:  " + (if ($SkillsOnly) { "skip" } else { $pkgManager })) -ForegroundColor Green
     Write-Host "  Skills:   $($SKILLS -join ', ')" -ForegroundColor Green
     Write-Host ""
     $confirm = Read-Host "  Proceed with installation? (y/n) [y]"
@@ -322,7 +350,7 @@ if (-not $Silent) {
     }
 }
 
-Install-Package
+Install-Package -pkgManager $pkgManager
 Install-Skills -SelectedTools $selectedTools -InstallScope $SCOPE
 
 Write-Host ""
