@@ -2,7 +2,7 @@
 #
 # DataScienceUtils - AI Skills Installer
 #
-# Installs ds_utils skills for Claude Code, Cursor, GitHub Copilot, and Gemini CLI.
+# Installs ds_utils skills for Claude Code, Cursor, GitHub Copilot, Gemini CLI, and Antigravity.
 # Also installs the data-science-utils Python package via pip or conda.
 #
 # Usage:
@@ -11,7 +11,7 @@
 # Options:
 #   -g, --global          Install globally (home dir) instead of current project
 #   --skills-only         Skip Python package installation
-#   --tools LIST          Comma-separated: claude,cursor,copilot,gemini
+#   --tools LIST          Comma-separated: claude,cursor,copilot,gemini,antigravity
 #   -f, --force           Force reinstall even if already installed
 #   -h, --help            Show this help
 #
@@ -67,7 +67,7 @@ while [ $# -gt 0 ]; do
             echo "  -g, --global       Install globally (~/) instead of current project dir"
             echo "  --skills-only      Skip Python package install (skills only)"
             echo "  --from-source      Install from git clone instead of PyPI/conda"
-            echo "  --tools LIST       Comma-separated list: claude,cursor,copilot,gemini"
+            echo "  --tools LIST       Comma-separated list: claude,cursor,copilot,gemini,antigravity"
             echo "  -f, --force        Force reinstall"
             echo "  -h, --help         Show this help"
             echo ""
@@ -243,9 +243,9 @@ detect_tools() {
         return
     fi
 
-    local has_claude=false has_cursor=false has_copilot=false has_gemini=false
-    local claude_hint="not found" cursor_hint="not found" copilot_hint="not found" gemini_hint="not found"
-    local claude_state="off"  cursor_state="off" copilot_state="off" gemini_state="off"
+    local has_claude=false has_cursor=false has_copilot=false has_gemini=false has_antigravity=false
+    local claude_hint="not found" cursor_hint="not found" copilot_hint="not found" gemini_hint="not found" antigravity_hint="not found"
+    local claude_state="off"  cursor_state="off" copilot_state="off" gemini_state="off" antigravity_state="off"
 
     command -v claude >/dev/null 2>&1          && has_claude=true  && claude_hint="detected"  && claude_state="on"
     { command -v cursor >/dev/null 2>&1 || [ -d "/Applications/Cursor.app" ]; } \
@@ -253,10 +253,15 @@ detect_tools() {
     { command -v code >/dev/null 2>&1 || [ -d "/Applications/Visual Studio Code.app" ]; } \
                                                && has_copilot=true && copilot_hint="detected" && copilot_state="on"
     command -v gemini >/dev/null 2>&1          && has_gemini=true  && gemini_hint="detected"  && gemini_state="on"
+    command -v antigravity >/dev/null 2>&1 \
+        && has_antigravity=true \
+        && antigravity_hint="detected" \
+        && antigravity_state="on"
 
     # If nothing found, default to claude
     if [ "$has_claude" = false ] && [ "$has_cursor" = false ] && \
-       [ "$has_copilot" = false ] && [ "$has_gemini" = false ]; then
+       [ "$has_copilot" = false ] && [ "$has_gemini" = false ] && \
+       [ "$has_antigravity" = false ]; then
         claude_state="on"; claude_hint="default"
     fi
 
@@ -268,6 +273,7 @@ detect_tools() {
             "Cursor|cursor|${cursor_state}|${cursor_hint}" \
             "GitHub Copilot|copilot|${copilot_state}|${copilot_hint}" \
             "Gemini CLI|gemini|${gemini_state}|${gemini_hint}" \
+            "Antigravity|antigravity|${antigravity_state}|${antigravity_hint}" \
         )
     else
         local tools=""
@@ -275,6 +281,7 @@ detect_tools() {
         [ "$has_cursor" = true ]  && tools="${tools:+$tools }cursor"
         [ "$has_copilot" = true ] && tools="${tools:+$tools }copilot"
         [ "$has_gemini" = true ]  && tools="${tools:+$tools }gemini"
+        [ "$has_antigravity" = true ] && tools="${tools:+$tools }antigravity"
         [ -z "$tools" ] && tools="claude"
         TOOLS="$tools"
     fi
@@ -402,6 +409,12 @@ install_skills() {
             cursor)  skills_dir="$base_dir/.cursor/rules" ;;
             copilot) skills_dir="$base_dir/.github/instructions" ;;
             gemini)  skills_dir="$base_dir/.gemini/skills" ;;
+            antigravity)
+                if [ "$SCOPE" = "global" ]; then
+                    skills_dir="$HOME/.gemini/antigravity/skills"
+                else
+                    skills_dir="$base_dir/.agents/skills"
+                fi ;;
         esac
 
         [ -z "$skills_dir" ] && continue
@@ -423,6 +436,32 @@ install_skills() {
             fi
         done
     done
+
+    # ── Cross-client: Agent Skills standard path (.agents/skills/) ────
+    # Skip if antigravity was selected — it already installs to .agents/skills/
+    if ! echo "$TOOLS" | grep -qw "antigravity"; then
+        step "Installing to cross-client path (.agents/skills/)"
+        local agents_dir
+        [ "$SCOPE" = "global" ] && agents_dir="$HOME/.agents/skills" \
+                                 || agents_dir="$base_dir/.agents/skills"
+        mkdir -p "$agents_dir"
+
+        for skill in $SKILLS; do
+            local dest="$agents_dir/ds-utils-${skill}"
+            if [ -d "$dest" ] && [ "$FORCE" = false ]; then
+                ok "${skill} already present in .agents/skills (use --force to overwrite)"
+                continue
+            fi
+            mkdir -p "$dest"
+            local url="${RAW_URL}/skills/${skill}/SKILL.md"
+            if curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
+                ok "${skill} → ${dest#$HOME/}"
+            else
+                warn "Could not fetch ${skill} skill"
+                rmdir "$dest" 2>/dev/null || true
+            fi
+        done
+    fi
 }
 
 # ── Summary ───────────────────────────────────────────────────────
@@ -442,6 +481,12 @@ summary() {
     for skill in $SKILLS; do
         msg "  ${BL}ds-utils-${skill}${N}"
     done
+    msg ""
+    msg "${B}Cross-client path:${N}"
+    local agents_base
+    [ "$SCOPE" = "global" ] && agents_base="~/.agents/skills" \
+                            || agents_base=".agents/skills"
+    msg "  ${BL}${agents_base}/${N} ${D}(readable by all Agent Skills-compatible tools)${N}"
     echo ""
     msg "${B}Next steps:${N}"
     msg "1. Open your project in your AI coding tool"

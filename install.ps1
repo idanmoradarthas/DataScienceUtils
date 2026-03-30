@@ -1,6 +1,6 @@
 # DataScienceUtils - AI Skills Installer (Windows PowerShell)
 #
-# Installs ds_utils skills for Claude Code, Cursor, GitHub Copilot, and Gemini CLI.
+# Installs ds_utils skills for Claude Code, Cursor, GitHub Copilot, Gemini CLI, and Antigravity.
 # Also installs the data-science-utils Python package via pip or conda.
 #
 # Usage:
@@ -9,7 +9,7 @@
 # Options:
 #   -Global           Install globally (home dir) instead of current project
 #   -SkillsOnly       Skip Python package installation
-#   -Tools "LIST"     Comma-separated: claude,cursor,copilot,gemini
+#   -Tools "LIST"     Comma-separated: claude,cursor,copilot,gemini,antigravity
 #   -Force            Force reinstall even if already installed
 #
 
@@ -175,14 +175,21 @@ function Get-Tools {
     $hasCursor  = $null -ne (Get-Command cursor  -ErrorAction SilentlyContinue) -or (Test-Path "$env:LOCALAPPDATA\Programs\cursor\Cursor.exe")
     $hasCopilot = $null -ne (Get-Command code    -ErrorAction SilentlyContinue) -or (Test-Path "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe")
     $hasGemini  = $null -ne (Get-Command gemini  -ErrorAction SilentlyContinue)
+    $hasAntigravity = $null -ne (Get-Command antigravity -ErrorAction SilentlyContinue)
 
     $items += @{ Label = "Claude Code";    Value = "claude";  Selected = $hasClaude;  Hint = if ($hasClaude)  { "detected" } else { "not found" } }
     $items += @{ Label = "Cursor";         Value = "cursor";  Selected = $hasCursor;  Hint = if ($hasCursor)  { "detected" } else { "not found" } }
     $items += @{ Label = "GitHub Copilot"; Value = "copilot"; Selected = $hasCopilot; Hint = if ($hasCopilot) { "detected" } else { "not found" } }
     $items += @{ Label = "Gemini CLI";     Value = "gemini";  Selected = $hasGemini;  Hint = if ($hasGemini)  { "detected" } else { "not found" } }
+    $items += @{
+        Label    = "Antigravity"
+        Value    = "antigravity"
+        Selected = $hasAntigravity
+        Hint     = if ($hasAntigravity) { "detected" } else { "not found" }
+    }
 
     # Default to Claude if nothing found
-    if (-not ($hasClaude -or $hasCursor -or $hasCopilot -or $hasGemini)) {
+    if (-not ($hasClaude -or $hasCursor -or $hasCopilot -or $hasGemini -or $hasAntigravity)) {
         $items[0].Selected = $true
         $items[0].Hint = "default"
     }
@@ -284,6 +291,13 @@ function Install-Skills {
             "cursor"  { Join-Path $baseDir ".cursor\rules" }
             "copilot" { Join-Path $baseDir ".github\instructions" }
             "gemini"  { Join-Path $baseDir ".gemini\skills" }
+            "antigravity" {
+                if ($InstallScope -eq "global") {
+                    Join-Path $HOME ".gemini\antigravity\skills"
+                } else {
+                    Join-Path (Get-Location).Path ".agents\skills"
+                }
+            }
             default   { $null }
         }
 
@@ -302,6 +316,36 @@ function Install-Skills {
             $url     = "$RAW_URL/skills/$skill/SKILL.md"
             $outFile = Join-Path $dest "SKILL.md"
 
+            try {
+                Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
+                $relPath = $dest.Replace($HOME, "~")
+                Write-Ok "$skill → $relPath"
+            } catch {
+                Write-Warn "Could not fetch $skill skill"
+                Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    # Cross-client: Agent Skills standard path
+    if ($SelectedTools -notcontains "antigravity") {
+        Write-Step "Installing to cross-client path (.agents\skills)"
+        $agentsDir = if ($InstallScope -eq "global") {
+            Join-Path $HOME ".agents\skills"
+        } else {
+            Join-Path (Get-Location).Path ".agents\skills"
+        }
+        New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
+
+        foreach ($skill in $SKILLS) {
+            $dest = Join-Path $agentsDir "ds-utils-$skill"
+            if ((Test-Path $dest) -and -not $Force) {
+                Write-Ok "$skill already present in .agents\skills (use -Force to overwrite)"
+                continue
+            }
+            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+            $url     = "$RAW_URL/skills/$skill/SKILL.md"
+            $outFile = Join-Path $dest "SKILL.md"
             try {
                 Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
                 $relPath = $dest.Replace($HOME, "~")
@@ -362,6 +406,10 @@ Write-Msg "Tools:    $($selectedTools -join ', ')"
 Write-Host ""
 Write-Msg "Skills installed:"
 foreach ($s in $SKILLS) { Write-Host "    ds-utils-$s" -ForegroundColor Cyan }
+Write-Host ""
+Write-Msg "Cross-client path:"
+$agentsBase = if ($SCOPE -eq "global") { "~\.agents\skills" } else { ".agents\skills" }
+Write-Host "    $agentsBase  (readable by all Agent Skills-compatible tools)" -ForegroundColor DarkGray
 Write-Host ""
 Write-Msg "Next steps:"
 Write-Msg "1. Open your project in your AI coding tool"

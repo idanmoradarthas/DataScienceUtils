@@ -10,10 +10,18 @@ API differences between matplotlib and Plotly outputs.
 
 What Are Skills?
 ----------------
-Skills are specialized knowledge files (a folder containing a SKILL.md file) that an AI
-coding assistant reads automatically when it detects a relevant task. For more details on
-how skills work, you can refer to the
-`Anthropic's Skills Guide <https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf>`_.
+Skills are structured knowledge files — a folder containing a ``SKILL.md``
+file — that an AI coding assistant reads automatically when it detects a
+relevant task. Skills follow the open `Agent Skills
+<https://agentskills.io>`_ standard, which defines a common format portable
+across all compliant AI coding tools.
+
+For further reading:
+
+* `Agent Skills specification <https://agentskills.io/specification>`_ — the canonical open standard defining the ``SKILL.md`` format, frontmatter fields, and directory conventions
+* `Adding skills support <https://agentskills.io/client-implementation/adding-skills-support>`_ — how compliant clients discover, parse, and activate skills
+* `Anthropic's Skills Guide <https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf>`_ — Anthropic's guide to building skills for Claude
+* `Google Antigravity — Skills <https://antigravity.google/docs/skills>`_ — Antigravity-specific skills reference
 
 Quick Install
 -------------
@@ -34,12 +42,50 @@ The installer automatically detects your installed tools, project scope, and pac
 
 What the Installer Does
 -----------------------
-The installer interactively guides you through the setup process. It performs tool detection
-to locate AI editors, displays a checkbox selector for choosing which tools to inject skills into,
-offers a project vs. global scope radio selector, auto-detects pip, conda, or a
-source install from the cloned repository, and finally deploys
-the skill files to the correct locations such as ``.claude/skills/``, ``.cursor/rules/``,
-``.github/instructions/``, and ``.gemini/skills/``.
+The installer interactively guides you through the setup process. It
+performs tool detection to locate AI editors (Claude Code, Cursor, GitHub
+Copilot, Gemini CLI, Antigravity), displays a checkbox selector for
+choosing which tools to inject skills into, offers a project vs. global
+scope radio selector, auto-detects pip, conda, or a source install from
+the cloned repository, and finally deploys skill files to:
+
+* **Tool-specific directories**: ``.claude/skills/``, ``.cursor/rules/``,
+  ``.github/instructions/``, ``.gemini/skills/``
+* **Antigravity**: ``.agents/skills/`` (project) or
+  ``~/.gemini/antigravity/skills/`` (global)
+* **Cross-client path**: ``.agents/skills/`` — always written regardless
+  of which tools you select, so skills are visible to any
+  `Agent Skills <https://agentskills.io>`_-compatible tool
+
+Cross-Client Compatibility
+--------------------------
+
+DataScienceUtils skills follow the open `Agent Skills
+<https://agentskills.io>`_ standard. This means they work with any
+skills-compatible AI coding tool — not only the ones you select during
+installation.
+
+The installer always writes skills to two locations in parallel:
+
+1. **Tool-specific directories** for each tool you select (e.g.
+   ``.claude/skills/``, ``.cursor/rules/``, ``.github/instructions/``,
+   ``.gemini/skills/``)
+2. **The cross-client path** (``.agents/skills/``) — the standard location
+   that all Agent Skills-compatible clients scan automatically at session
+   start
+
+This means if you adopt a new AI coding tool later, it will discover the
+DataScienceUtils skills automatically from ``.agents/skills/`` without
+needing to re-run the installer.
+
+Tools known to scan ``.agents/skills/``:
+
+* **Claude Code** — also reads ``.claude/skills/`` (tool-specific)
+* **Cursor** — also reads ``.cursor/rules/`` (tool-specific)
+* **Antigravity** — defaults to ``.agents/skills/`` as its primary skill
+  path (global: ``~/.gemini/antigravity/skills/``)
+* **Any tool implementing the** `Agent Skills specification
+  <https://agentskills.io/specification>`_
 
 Step-by-Step Installation Guide
 -------------------------------
@@ -85,6 +131,7 @@ The installer checks that required tools (git and a Python package manager) are 
       [✓] Cursor               detected
       [ ] GitHub Copilot       not found
       [ ] Gemini CLI           not found
+      [ ] Antigravity          not found
 
         [ Confirm ]
 
@@ -93,6 +140,9 @@ The installer checks that required tools (git and a Python package manager) are 
 - Navigate down to ``[ Confirm ]`` and press ``Enter`` (or press ``Enter`` while on any item to toggle it)
 - Tools marked ``detected`` were found automatically; ``not found`` means the installer did not detect them but you can still select them manually
 - At least one tool must be selected
+- If you select **Antigravity**, skills are written directly to
+  ``.agents/skills/`` (its primary path). The separate cross-client pass
+  is skipped for Antigravity to avoid writing the same directory twice.
 
 On **Windows (PowerShell)**, the same selector appears with slightly different characters:
 
@@ -106,6 +156,7 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
       [✓] Cursor               detected
       [ ] GitHub Copilot       not found
       [ ] Gemini CLI           not found
+      [ ] Antigravity          not found
 
         [ Confirm ]
 
@@ -230,7 +281,18 @@ Review every line of this summary before pressing ``Enter``. Type ``n`` and pres
     ✓ strings    → .cursor/rules/ds-utils-strings
     ✓ xai        → .cursor/rules/ds-utils-xai
 
-Each ``✓`` line confirms a skill file was downloaded and placed correctly. If any line shows ``!`` (warning) instead, see Troubleshooting.
+    Installing to cross-client path (.agents/skills)
+    ✓ metrics    → .agents/skills/ds-utils-metrics
+    ✓ preprocess → .agents/skills/ds-utils-preprocess
+    ✓ unsupervised → .agents/skills/ds-utils-unsupervised
+    ✓ strings    → .agents/skills/ds-utils-strings
+    ✓ xai        → .agents/skills/ds-utils-xai
+
+Each ``✓`` line confirms a skill file was downloaded and placed correctly.
+The tool-specific paths ensure your selected tools load skills immediately.
+The ``.agents/skills/`` path makes skills visible to any other
+`Agent Skills <https://agentskills.io>`_-compatible tool automatically.
+If any line shows ``!`` (warning) instead, see Troubleshooting.
 
 **Step 8 — Completion message**
 
@@ -248,6 +310,8 @@ Each ``✓`` line confirms a skill file was downloaded and placed correctly. If 
       ds-utils-unsupervised
       ds-utils-strings
       ds-utils-xai
+
+    Cross-client path: .agents/skills/  (all Agent Skills-compatible tools)
 
     Next steps:
     1. Open your project in your AI coding tool
@@ -279,11 +343,32 @@ Expected output (for a project-scoped Claude Code + Cursor install):
     ./.cursor/rules/ds-utils-strings/SKILL.md
     ./.cursor/rules/ds-utils-xai/SKILL.md
 
-On **Windows (PowerShell)**:
+To also verify the cross-client path:
+
+.. code-block:: bash
+
+    find .agents/skills -name "SKILL.md"
+
+Expected output:
+
+.. code-block:: text
+
+    .agents/skills/ds-utils-metrics/SKILL.md
+    .agents/skills/ds-utils-preprocess/SKILL.md
+    .agents/skills/ds-utils-unsupervised/SKILL.md
+    .agents/skills/ds-utils-strings/SKILL.md
+    .agents/skills/ds-utils-xai/SKILL.md
+
+On **Windows (PowerShell)**, verify both tool-specific and cross-client
+paths:
 
 .. code-block:: powershell
 
+    # Tool-specific paths
     Get-ChildItem -Recurse -Filter "SKILL.md" | Where-Object { $_.DirectoryName -match "ds-utils-" }
+
+    # Cross-client path
+    Get-ChildItem -Path ".agents\skills" -Recurse -Filter "SKILL.md"
 
 Expected output:
 
@@ -341,10 +426,10 @@ CLI Flags Reference
      - Same as ``--from-source``
    * - ``--tools claude,cursor``
      - bash
-     - Pre-select tools without the interactive checkbox; comma-separated values: ``claude``, ``cursor``, ``copilot``, ``gemini``
+     - Pre-select tools without the interactive checkbox; comma-separated values: ``claude``, ``cursor``, ``copilot``, ``gemini``, ``antigravity``
    * - ``-Tools "claude,cursor"``
      - PowerShell
-     - Same as ``--tools``
+     - Pre-select tools without the interactive checkbox; comma-separated values: ``claude``, ``cursor``, ``copilot``, ``gemini``, ``antigravity``
    * - ``--force`` / ``-f``
      - bash
      - Overwrite already-installed skill files
@@ -371,15 +456,21 @@ PowerShell equivalent — download first, then run with parameters:
 
 Manual Installation
 -------------------
-If you prefer not to use the automated installer, you can install skills manually.
-Download the ``SKILL.md`` files from the
-`skills directory on GitHub <https://github.com/idanmoradarthas/DataScienceUtils/tree/master/skills>`_
-and place them in the following paths depending on your tool:
+If you prefer not to use the automated installer, you can install skills
+manually. Download the ``SKILL.md`` files from the
+`skills directory on GitHub
+<https://github.com/idanmoradarthas/DataScienceUtils/tree/master/skills>`_
+and place them in the paths below. Installing to ``.agents/skills/`` is
+recommended as a baseline — it ensures skills are discoverable by any
+present or future `Agent Skills <https://agentskills.io>`_-compatible tool.
 
+* **Cross-client (recommended)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
 * **Claude Code**: ``.claude/skills/ds-utils-<module>/SKILL.md``
 * **Cursor**: ``.cursor/rules/ds-utils-<module>/SKILL.md``
 * **GitHub Copilot**: ``.github/instructions/ds-utils-<module>/SKILL.md``
 * **Gemini CLI**: ``.gemini/skills/ds-utils-<module>/SKILL.md``
+* **Antigravity (project)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
+* **Antigravity (global)**: ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
 
 Available Skills
 ----------------
