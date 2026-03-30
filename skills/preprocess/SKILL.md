@@ -4,7 +4,6 @@ description: >
   Provides data preprocessing visualization and statistical correlation methods. Use when the user asks to visualize feature distributions, wants to plot correlation matrices or dendrograms, explore feature interactions, or needs to calculate mutual information or label-based statistics in a Python data science project using sklearn-compatible models.
 metadata:
   author: Idan Morad
-  version: "1.9.0"
   documentation: https://datascienceutils.readthedocs.io/en/stable/
   package: data-science-utils
   repository: https://github.com/idanmoradarthas/DataScienceUtils

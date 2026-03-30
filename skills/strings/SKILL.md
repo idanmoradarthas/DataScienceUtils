@@ -4,7 +4,6 @@ description: >
   Provides string manipulation and text analysis functions for DataFrames. Use when the user asks to one-hot encode comma-separated tags into boolean columns, or needs to extract statistically significant terms from a subset of text documents in a Python data science project.
 metadata:
   author: Idan Morad
-  version: "1.9.0"
   documentation: https://datascienceutils.readthedocs.io/en/stable/
   package: data-science-utils
   repository: https://github.com/idanmoradarthas/DataScienceUtils

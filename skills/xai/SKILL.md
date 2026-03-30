@@ -4,7 +4,6 @@ description: >
   Provides Explainable AI (XAI) tools to interpret machine learning models. Use when the user asks to visualize feature importance for tree-based models, or needs to explain which features drive model decisions in a Python data science project using sklearn-compatible models.
 metadata:
   author: Idan Morad
-  version: "1.9.0"
   documentation: https://datascienceutils.readthedocs.io/en/stable/
   package: data-science-utils
   repository: https://github.com/idanmoradarthas/DataScienceUtils
@@ -25,6 +24,7 @@ conda install -c idanmorad data-science-utils
 
 ```python
 from ds_utils.xai import plot_features_importance
+from ds_utils.xai import draw_dot_data
 ```
 
 ---
@@ -52,6 +52,33 @@ plt.show()
 - The `feature_names` order MUST match the column order used in `.fit()`.
 - This function only works with tree-based models that expose `.feature_importances_` (e.g., Decision Tree, Random Forest, GradientBoosting, XGBoost).
 - Does NOT work with linear models since `.coef_` implies a different interpretation scale and meaning.
+
+---
+
+## draw_dot_data
+
+Renders a decision tree image from a Graphviz DOT string (for example, DOT produced by `sklearn.tree.export_graphviz`).
+
+```python
+from ds_utils.xai import draw_dot_data
+from sklearn.tree import export_graphviz
+import matplotlib.pyplot as plt
+
+# complete usage example
+dot = export_graphviz(clf, feature_names=features, class_names=["no", "yes"], filled=True, rounded=True, out_file=None)
+draw_dot_data(dot)
+plt.show()
+```
+
+**Parameters:**
+- `dot_data` - str, Graphviz DOT string to render.
+- `ax` - matplotlib Axes, optional. Target axes for rendering.
+
+**Returns:** matplotlib Axes.
+
+**Common mistakes:**
+- Passing an empty DOT string. `draw_dot_data` requires a non-empty valid Graphviz DOT payload.
+- Passing the estimator object directly; first generate DOT text using `export_graphviz(..., out_file=None)`.
 
 ---
 

@@ -4,7 +4,6 @@ description: >
   Provides evaluation and visualization for unsupervised learning and clustering. Use when the user asks to plot cluster cardinality, wants to visualize cluster magnitude, compare magnitude versus cardinality to find anomalies, or needs to determine the optimal number of clusters in a Python data science project using sklearn-compatible models.
 metadata:
   author: Idan Morad
-  version: "1.9.0"
   documentation: https://datascienceutils.readthedocs.io/en/stable/
   package: data-science-utils
   repository: https://github.com/idanmoradarthas/DataScienceUtils
