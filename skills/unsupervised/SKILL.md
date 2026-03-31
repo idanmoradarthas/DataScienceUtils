@@ -2,6 +2,7 @@
 name: ds-utils-unsupervised
 description: >
   Provides evaluation and visualization for unsupervised learning and clustering. Use when the user asks to plot cluster cardinality, wants to visualize cluster magnitude, compare magnitude versus cardinality to find anomalies, or needs to determine the optimal number of clusters in a Python data science project using sklearn-compatible models.
+license: MIT
 metadata:
   author: Idan Morad
   documentation: https://datascienceutils.readthedocs.io/en/stable/
@@ -121,23 +122,36 @@ from scipy.spatial.distance import euclidean
 import matplotlib.pyplot as plt
 
 # complete usage example
-plot_loss_vs_cluster_number(X, 3, 20, euclidean)
+plot_loss_vs_cluster_number(
+    X,
+    k_min=3,
+    k_max=20,
+    distance_function=euclidean,
+    algorithm_parameters={"random_state": 42},
+)
 plt.show()
 ```
 
 **Parameters:**
 - `X` — array-like, The data.
-- `min_k` — int, The minimum number of clusters. (Default: 3)
-- `max_k` — int, The maximum number of clusters. (Default: 20)
-- `distance_function` — callable, The distance function to use.
-- `ax` — Axes, optional matplotlib axes.
-- `random_state` — int, random state for K-Means.
+- `k_min` — int, **Required.** The minimum number of clusters to evaluate.
+- `k_max` — int, **Required.** The maximum number of clusters to evaluate.
+- `distance_function` — callable, **Required.** The distance function to use.
+- `algorithm_parameters` — dict, optional. Additional keyword arguments
+  passed to `KMeans()`. Use this to set `random_state`, `n_init`, etc.
+  Example: `algorithm_parameters={"random_state": 42}`.
+- `ax` — matplotlib Axes, optional. Target axes for the plot.
 
 **Returns:** matplotlib Axes.
 
 **Common mistakes:**
 - The distance function must be a callable.
-- `plot_loss_vs_cluster_number` only works with `sklearn.cluster.KMeans`. Do NOT pass a pre-fitted estimator or expect it to work natively with DBSCAN/Hierarchy.
+- `k_min` and `k_max` are **required** positional arguments — there are no
+  defaults. Omitting them raises a `TypeError`.
+- Only works with `sklearn.cluster.KMeans`. Do NOT pass a pre-fitted
+  estimator or expect it to work with DBSCAN or hierarchical clustering.
+- Pass `random_state` via `algorithm_parameters={"random_state": 42}`,
+  not as a direct keyword argument.
 
 ---
 
@@ -151,7 +165,13 @@ from scipy.spatial.distance import euclidean
 from ds_utils.unsupervised import plot_loss_vs_cluster_number, plot_magnitude_vs_cardinality
 
 # Find optimal k
-plot_loss_vs_cluster_number(X, 3, 20, euclidean)
+plot_loss_vs_cluster_number(
+    X,
+    k_min=3,
+    k_max=20,
+    distance_function=euclidean,
+    algorithm_parameters={"random_state": 42},
+)
 plt.show()
 
 # Run clustering

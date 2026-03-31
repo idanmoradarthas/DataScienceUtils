@@ -2,6 +2,7 @@
 name: ds-utils-metrics
 description: >
   Provides evaluation metrics and visualization charts for machine learning models. Use when the user asks to evaluate a model, wants to plot a confusion matrix, ROC curve, or Precision-Recall curve, or needs to analyze learning curves or probability distributions in a Python data science project using sklearn-compatible models.
+license: MIT
 metadata:
   author: Idan Morad
   documentation: https://datascienceutils.readthedocs.io/en/stable/
@@ -38,9 +39,12 @@ Computes and plots a confusion matrix, False Positive Rate, False Negative Rate,
 
 ```python
 from ds_utils.metrics.confusion_matrix import plot_confusion_matrix
+import matplotlib.pyplot as plt
 
 # complete usage example
 plot_confusion_matrix(y_test, y_pred, [0, 1])
+plt.tight_layout()
+plt.show()
 ```
 
 **Parameters:**
@@ -66,6 +70,7 @@ Plots the given metric change with an increasing number of trained instances.
 ```python
 from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_instances
 from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
 
 # complete usage example
 plot_metric_growth_per_labeled_instances(
@@ -74,6 +79,8 @@ plot_metric_growth_per_labeled_instances(
         "Decision Tree": DecisionTreeClassifier(random_state=42)
     }
 )
+plt.tight_layout()
+plt.show()
 ```
 
 **Parameters:**
@@ -102,6 +109,7 @@ Visualizes accuracy grouped by probability predictions to evaluate model calibra
 
 ```python
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
+import matplotlib.pyplot as plt
 
 # complete usage example
 visualize_accuracy_grouped_by_probability(
@@ -110,12 +118,17 @@ visualize_accuracy_grouped_by_probability(
     clf.predict_proba(X_test),
     display_breakdown=False
 )
+plt.tight_layout()
+plt.show()
 ```
 
 **Parameters:**
 - `y_test` — array-like, True labels.
 - `labeled_class` — int/str, The specific labeled class to evaluate.
-- `probabilities` — array-like, Classifier probability predictions for the labeled class.
+- `probabilities` — array-like, shape (n_samples, n_classes). The full
+  probability matrix from `clf.predict_proba(X_test)` — NOT the single
+  positive-class column. The function extracts the relevant column
+  internally using `labeled_class`.
 - `threshold` — float, Probability threshold for classifying the labeled class. (Default: 0.5).
 - `display_breakdown` — bool, Whether to display class breakdown (Correct/Incorrect) or True/False Positives/Negatives. (Default: False).
 - `bins` — list, Custom probability bins. (Default: 10 bins from 0 to 1).
@@ -206,26 +219,52 @@ fig.show()
 ## Typical Workflow
 
 ```python
-import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeClassifier
 from ds_utils.metrics.confusion_matrix import plot_confusion_matrix
-from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
+from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_instances
+from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
+from ds_utils.metrics.curves import (
+    plot_roc_curve_with_thresholds_annotations,
+    plot_precision_recall_curve_with_thresholds_annotations,
+)
 
-# Train a model
 clf = DecisionTreeClassifier(random_state=42)
 clf.fit(X_train, y_train)
+y_pred  = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)
 
-# Predict
-y_pred = clf.predict(X_test)
-y_proba = clf.predict_proba(X_test)[:, 1]
-
-# Evaluate
+# 1. Confusion matrix
 plot_confusion_matrix(y_test, y_pred, labels=[0, 1])
+plt.tight_layout()
+plt.show()
 
-fig = plot_roc_curve_with_thresholds_annotations(
-    y_test,
-    {"Decision Tree": y_proba},
-    positive_label=1
+# 2. Learning curve — how accuracy grows with more training data
+plot_metric_growth_per_labeled_instances(
+    X_train, y_train, X_test, y_test,
+    {"Decision Tree": DecisionTreeClassifier(random_state=42)},
 )
-fig.show()
+plt.tight_layout()
+plt.show()
+
+# 3. Accuracy grouped by predicted probability
+visualize_accuracy_grouped_by_probability(y_test, 1, y_proba)
+plt.tight_layout()
+plt.show()
+
+# 4. ROC curve with threshold annotations (Plotly)
+fig_roc = plot_roc_curve_with_thresholds_annotations(
+    y_test,
+    {"Decision Tree": y_proba[:, 1]},
+    positive_label=1,
+)
+fig_roc.show()
+
+# 5. Precision-Recall curve with threshold annotations (Plotly)
+fig_pr = plot_precision_recall_curve_with_thresholds_annotations(
+    y_test,
+    {"Decision Tree": y_proba[:, 1]},
+    positive_label=1,
+)
+fig_pr.show()
 ```

@@ -2,6 +2,7 @@
 name: ds-utils-preprocess
 description: >
   Provides data preprocessing visualization and statistical correlation methods. Use when the user asks to visualize feature distributions, wants to plot correlation matrices or dendrograms, explore feature interactions, or needs to calculate mutual information or label-based statistics in a Python data science project using sklearn-compatible models.
+license: MIT
 metadata:
   author: Idan Morad
   documentation: https://datascienceutils.readthedocs.io/en/stable/
@@ -77,9 +78,11 @@ Visualizes a correlation matrix as a heatmap.
 
 ```python
 from ds_utils.preprocess.visualization import visualize_correlations
+import matplotlib.pyplot as plt
 
 # complete usage example
 visualize_correlations(df.corr())
+plt.show()
 ```
 
 **Parameters:**
@@ -98,9 +101,11 @@ Plots a hierarchical dendrogram of a correlation matrix.
 
 ```python
 from ds_utils.preprocess.visualization import plot_correlation_dendrogram
+import matplotlib.pyplot as plt
 
 # complete usage example
 plot_correlation_dendrogram(df.corr())
+plt.show()
 ```
 
 **Parameters:**
@@ -128,7 +133,18 @@ plot_features_interaction(df, "feature1", "feature2", remove_na=False)
 - `data_frame` — pd.DataFrame, The dataset.
 - `feature_1` — str, First feature column name.
 - `feature_2` — str, Second feature column name.
-- `remove_na` — bool, whether to explicitly remove NA/null values from the plot visualization. Wait, the plot visualizes NaNs if it is False. (Default: False).
+- `remove_na` — bool, Whether to remove NA/null values before plotting.
+  When `False` (default), missing values are included: shown as rug plots
+  on the axes for numeric/datetime plots, or as a separate bar for
+  categorical plots.
+
+**Dtype → Chart type matrix:**
+
+| feature_1 ↓  feature_2 → | Numeric | Categorical / Bool | Datetime |
+|---|---|---|---|
+| **Numeric** | Scatter plot | Box plot | Line plot |
+| **Categorical / Bool** | Box plot | Shared histogram | Violin plot |
+| **Datetime** | Line plot | Violin plot | Line plot |
 
 **Returns:** matplotlib Axes.
 

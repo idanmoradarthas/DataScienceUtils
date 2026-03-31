@@ -2,6 +2,7 @@
 name: ds-utils-strings
 description: >
   Provides string manipulation and text analysis functions for DataFrames. Use when the user asks to one-hot encode comma-separated tags into boolean columns, or needs to extract statistically significant terms from a subset of text documents in a Python data science project.
+license: MIT
 metadata:
   author: Idan Morad
   documentation: https://datascienceutils.readthedocs.io/en/stable/
@@ -81,18 +82,21 @@ terms_scores = extract_significant_terms_from_subset(df, subset, "text_column")
 - `subset` — pd.DataFrame, The subset of the dataframe representing specific documents to evaluate against the corpus.
 - `field` — str, Target text or document content column.
 
-**Returns:** pd.Series with index as terms and values as scores (0.0 to 1.0).
+**Returns:** pd.Series — index contains the terms, values are significance
+scores from 0.0 to 1.0. Access top terms with `.sort_values(ascending=False).head(10)`.
 
 **Output Example:**
 If identifying distinctive terms in the subset documents:
 
-| term     | score |
-|----------|-------|
-| third    | 1.0   |
-| one      | 1.0   |
-| and      | 1.0   |
-| this     | 0.67  |
-| document | 0.25  |
+| index (term) | value (score) |
+|---|---|
+| third    | 1.0  |
+| one      | 1.0  |
+| and      | 1.0  |
+| this     | 0.67 |
+| document | 0.25 |
+
+Access as: `terms["third"]` → `1.0` or `terms.sort_values(ascending=False)`
 
 **Common mistakes:**
 - Expecting a raw count; it uses the Elasticsearch significant_text algorithm, returning scores from 0–1 per term.
