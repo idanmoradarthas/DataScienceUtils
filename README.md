@@ -598,9 +598,35 @@ Thank you for helping make Data Science Utils better for everyone!
 
 ## Installation Guide
 
-Here are several ways to install the package:
+The preferred way to install DataScienceUtils is using the AI skills installer
+script, because it installs the package and AI skills in one guided flow.
 
-### 1. Install from PyPI (Recommended)
+### 1. Preferred: Install using the skills installer script
+
+DataScienceUtils ships AI skills that teach Claude Code, Cursor, GitHub Copilot,
+and Gemini CLI how to use this library correctly — including function signatures,
+import paths, and common pitfalls.
+
+**Mac / Linux:**
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.sh)
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 | iex
+```
+
+The installer will:
+- Detect which AI tools you have installed (Claude Code, Cursor, GitHub Copilot, Gemini CLI)
+- Ask whether to install for the current project or globally
+- Auto-detect pip or conda and install `data-science-utils`
+- Copy skill files into the correct directory for each detected tool
+
+For a full step-by-step guide, see the
+[AI Skills documentation](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html).
+
+### 2. Install from PyPI
 
 The simplest way to install Data Science Utils and its dependencies is from PyPI using pip, Python's preferred package
 installer:
@@ -615,7 +641,7 @@ To upgrade Data Science Utils to the latest version, use:
 pip install -U data-science-utils
 ```
 
-### 2. Install from Source
+### 3. Install from Source
 
 If you prefer to install from source, you can clone the repository and install:
 
@@ -631,7 +657,7 @@ Alternatively, you can install directly from GitHub using pip:
 pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
 ```
 
-### 3. Install using Anaconda
+### 4. Install using Anaconda
 
 If you're using Anaconda, you can install using conda:
 
@@ -643,6 +669,7 @@ conda install idanmorad::data-science-utils
 
 Data Science Utils has several dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
 automatically installed when you install the package using the methods above.
+
 
 ## Staying Updated
 

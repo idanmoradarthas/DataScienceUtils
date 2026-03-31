@@ -3,10 +3,29 @@ Installation Guide
 ##################
 .. highlight:: bash
 
-Data Science Utils is compatible with |py_version|. Here are several ways to install the package:
+Data Science Utils is compatible with |py_version|. The preferred way to install
+the package is using the AI skills installer script, because it installs both the
+``data-science-utils`` package and the tool skills in one guided flow. See
+:doc:`AI Coding Skills <ai_skills>`.
 
-1. Install from PyPI (Recommended)
-==================================
+Here are several ways to install the package:
+
+0. Preferred: Install using the skills installer script
+=======================================================
+
+**Mac / Linux**::
+
+    bash <(curl -sL https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.sh)
+
+**Windows (PowerShell)**::
+
+    irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 | iex
+
+For full details, interactive options, and verification steps, see
+:doc:`AI Coding Skills <ai_skills>`.
+
+1. Install from PyPI
+====================
 The simplest way to install Data Science Utils and its dependencies is from PyPI using pip, Python's preferred package
 installer |pypi_version|::
 
