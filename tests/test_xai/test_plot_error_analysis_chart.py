@@ -85,8 +85,6 @@ def test_plot_error_analysis_chart_existing_ax(binary_data):
     return fig
 
 
-
-
 def test_plot_error_analysis_chart_multiclass_infer_classes():
     """Test that classes are inferred from y_true when not provided."""
     y_true = np.array([0, 1, 2, 0, 1, 2])
