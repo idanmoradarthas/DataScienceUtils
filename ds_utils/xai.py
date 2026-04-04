@@ -190,7 +190,7 @@ def plot_error_analysis_chart(
     y_true: Union[np.ndarray, List],
     y_pred: Union[np.ndarray, List],
     y_proba: Union[np.ndarray, List],
-    positive_class,
+    positive_class: Union[int, str],
     *,
     classes: Optional[List] = None,
     ax: Optional[axes.Axes] = None,
@@ -206,7 +206,11 @@ def plot_error_analysis_chart(
     For **multi-class** classification ``y_proba`` should be 2-D with shape ``(n_samples, n_classes)``;
     the column corresponding to ``positive_class`` is determined via ``classes``
     (or inferred from ``np.unique(y_true)`` when ``classes`` is ``None``).
-    Error types are computed using a one-vs-rest scheme against ``positive_class``.
+    Error types are computed using a one-vs-rest scheme against ``positive_class``
+    by comparing ``y_true`` and ``y_pred`` directly. The original spec included a
+    ``threshold`` float parameter for re-thresholding raw probabilities; this
+    implementation intentionally omits it — callers should apply any desired
+    threshold to produce ``y_pred`` before calling this function.
 
     :param y_true: Array-like of true labels.
     :param y_pred: Array-like of predicted labels.
@@ -225,10 +229,10 @@ def plot_error_analysis_chart(
     y_pred = np.asarray(y_pred)
     y_proba = np.asarray(y_proba)
 
-    if len(y_true) != len(y_pred):
-        raise ValueError("y_true and y_pred must have the same length")
-    if len(y_true) != len(y_proba):
-        raise ValueError("y_true and y_proba must have the same length")
+    if y_true.shape[0] != y_pred.shape[0]:
+        raise ValueError("y_true and y_pred must have the same number of samples")
+    if y_true.shape[0] != y_proba.shape[0]:
+        raise ValueError("y_true and y_proba must have the same number of samples")
 
     # Determine probability column for the positive class
     if y_proba.ndim == 1:
@@ -261,6 +265,8 @@ def plot_error_analysis_chart(
     if ax is None:
         _, ax = plt.subplots()
 
+    # order is hardcoded so the axis layout is consistent even when one
+    # error category is absent (e.g. a perfect model produces no FP/FN).
     sns.violinplot(
         x="error_type",
         y="y_proba",
@@ -269,6 +275,7 @@ def plot_error_analysis_chart(
         ax=ax,
         **kwargs,
     )
+    ax.set_title(f"Error Analysis — positive class: {positive_class!r} (one-vs-rest)")
     ax.set_xlabel("Error Type")
     ax.set_ylabel("Predicted Probability")
     ax.grid(axis="y", linestyle="--", alpha=0.7)

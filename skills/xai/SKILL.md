@@ -132,7 +132,7 @@ plt.show()
 - `positive_class` — The class to treat as positive (used for correct/false_positive/false_negative assignment).
 - `classes` — list, optional. Ordered class labels matching columns of `y_proba` when 2-D. If `None`, inferred from `np.unique(y_true)`.
 - `ax` — matplotlib Axes, optional. Target axes for rendering.
-- `**kwargs` — forwarded to `plot_features_interaction`.
+- `**kwargs` — forwarded to `seaborn.violinplot`.
 
 **Returns:** matplotlib Axes.
 
