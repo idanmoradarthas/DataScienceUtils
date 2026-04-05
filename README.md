@@ -509,6 +509,43 @@ plt.show()
 This visualization helps in understanding which features are most influential in the model's decision-making process,
 providing valuable insights for feature selection and model interpretation.
 
+## Plot Error Analysis Chart
+
+This method automates the creation of an error analysis chart by computing the error type (correct, false_positive, false_negative) for each
+prediction and visualizing the distribution of predicted probabilities across these error types. It supports both binary and
+multi-class classification using a one-vs-rest scheme against a specified positive class.
+
+```python
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeClassifier
+from ds_utils.xai import plot_error_analysis_chart
+
+# After training your classifier and generating predictions
+y_pred = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
+
+# Plot error analysis
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
+plt.show()
+```
+
+![Plot Error Analysis Chart Binary](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_binary.png)
+
+For multi-class classification, pass the full 2-D probability matrix and specify the `classes` parameter:
+
+```python
+y_proba = clf.predict_proba(X_test)
+
+plot_error_analysis_chart(
+    y_test, y_pred, y_proba,
+    positive_class=1,
+    classes=clf.classes_.tolist()
+)
+plt.show()
+```
+
+![Plot Error Analysis Chart Multi-class](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_multiclass.png)
+
 ## Explore More
 
 Excited about what you've seen so far? There's even more to discover! Dive deeper into each module to unlock the full

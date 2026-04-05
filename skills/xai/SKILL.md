@@ -31,6 +31,7 @@ conda install -c idanmorad data-science-utils
 ```python
 from ds_utils.xai import plot_features_importance
 from ds_utils.xai import draw_dot_data
+from ds_utils.xai import plot_error_analysis_chart
 ```
 
 ---
@@ -63,7 +64,7 @@ plt.show()
 
 ## draw_dot_data
 
-Renders a decision tree image from a Graphviz DOT string (for example, DOT produced by `sklearn.tree.export_graphviz`).
+Renders a decision tree image from a Graphviz DOT string (for example, DOT produced by `sklearn.tree.export_graphviz`). This is more of a lagacy method, and it is not recommended to use it in new projects. Instead, use sklearn's built in method such as `sklearn.tree.plot_tree`.
 
 ```python
 from ds_utils.xai import draw_dot_data
@@ -88,12 +89,66 @@ plt.show()
 
 ---
 
+## plot_error_analysis_chart
+
+Automates the creation of an error analysis DataFrame (computing correct, false_positive, false_negative) and visualizes prediction errors relative to predicted probabilities. Supports both binary and multi-class classification using a one-vs-rest scheme.
+
+### Binary classification example
+
+```python
+from ds_utils.xai import plot_error_analysis_chart
+import matplotlib.pyplot as plt
+
+# complete usage example (binary)
+y_pred = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
+
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
+plt.show()
+```
+
+### Multi-class classification example
+
+```python
+from ds_utils.xai import plot_error_analysis_chart
+import matplotlib.pyplot as plt
+
+# complete usage example (multi-class)
+y_pred = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)
+
+plot_error_analysis_chart(
+    y_test, y_pred, y_proba,
+    positive_class=1,
+    classes=clf.classes_.tolist()
+)
+plt.show()
+```
+
+**Parameters:**
+- `y_true` — array-like, True labels.
+- `y_pred` — array-like, Predicted labels (required).
+- `y_proba` — array-like, Predicted probabilities. 1-D for binary, 2-D `(n_samples, n_classes)` for multi-class.
+- `positive_class` — The class to treat as positive (used for correct/false_positive/false_negative assignment).
+- `classes` — list, optional. Ordered class labels matching columns of `y_proba` when 2-D. If `None`, inferred from `np.unique(y_true)`.
+- `ax` — matplotlib Axes, optional. Target axes for rendering.
+- `**kwargs` — forwarded to `seaborn.violinplot`.
+
+**Returns:** matplotlib Axes.
+
+**Common mistakes:**
+- Forgetting to pass `classes` for multi-class when the class order in `y_proba` does not match `np.unique(y_true)`. Always pass `classes=clf.classes_.tolist()` to be safe.
+- For binary classification, pass only the positive class probability column (1-D), not the full 2-D probability matrix, unless you also specify `classes`.
+- `y_pred` is required — you must pass pre-computed predictions, not raw probabilities.
+
+---
+
 ## Typical Workflow
 
 ```python
 import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
-from ds_utils.xai import plot_features_importance, draw_dot_data
+from sklearn.tree import DecisionTreeClassifier
+from ds_utils.xai import plot_features_importance, plot_error_analysis_chart
 
 features = ["age", "income", "credit_score"]
 clf = DecisionTreeClassifier(random_state=42)
@@ -104,16 +159,11 @@ plot_features_importance(features, clf.feature_importances_)
 plt.tight_layout()
 plt.show()
 
-# 2. Render the decision tree as a diagram
-dot = export_graphviz(
-    clf,
-    feature_names=features,
-    class_names=["no", "yes"],
-    filled=True,
-    rounded=True,
-    out_file=None,          # must be None to get the DOT string back
-)
-draw_dot_data(dot)
+# 2. Error analysis chart
+y_pred = clf.predict(X_test[features])
+y_proba = clf.predict_proba(X_test[features])[:, 1]
+
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
 plt.tight_layout()
 plt.show()
 ```
