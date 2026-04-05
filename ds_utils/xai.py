@@ -275,7 +275,8 @@ def plot_error_analysis_chart(
         ax=ax,
         **kwargs,
     )
-    ax.set_title(f"Error Analysis — positive class: {positive_class!r} (one-vs-rest)")
+    if not ax.get_title():
+        ax.set_title(f"Error Analysis — positive class: {positive_class!r} (one-vs-rest)")
     ax.set_xlabel("Error Type")
     ax.set_ylabel("Predicted Probability")
     ax.grid(axis="y", linestyle="--", alpha=0.7)

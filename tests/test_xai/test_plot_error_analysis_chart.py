@@ -107,13 +107,13 @@ def test_plot_error_analysis_chart_multiclass_infer_classes():
 
 def test_plot_error_analysis_chart_mismatched_lengths():
     """Test that ValueError is raised for mismatched y_true and y_pred lengths."""
-    with pytest.raises(ValueError, match="y_true and y_pred must have the same length"):
+    with pytest.raises(ValueError, match="y_true and y_pred must have the same number of samples"):
         plot_error_analysis_chart([1, 0, 1], [1, 0], [0.9, 0.1, 0.8], positive_class=1)
 
 
 def test_plot_error_analysis_chart_mismatched_proba_length():
     """Test that ValueError is raised for mismatched y_true and y_proba lengths."""
-    with pytest.raises(ValueError, match="y_true and y_proba must have the same length"):
+    with pytest.raises(ValueError, match="y_true and y_proba must have the same number of samples"):
         plot_error_analysis_chart([1, 0, 1], [1, 0, 1], [0.9, 0.1], positive_class=1)
 
 
