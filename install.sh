@@ -21,7 +21,7 @@ set -e
 # ── Config ───────────────────────────────────────────────────────
 REPO="idanmoradarthas/DataScienceUtils"
 RAW_URL="https://raw.githubusercontent.com/${REPO}/master"
-SKILLS="metrics preprocess unsupervised strings xai"
+SKILLS="metrics preprocess unsupervised strings transformers xai"
 
 # ── Colors ───────────────────────────────────────────────────────
 G='\033[0;32m'   # green

@@ -25,7 +25,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RAW_URL = "https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master"
-$SKILLS  = @("metrics", "preprocess", "unsupervised", "strings", "xai")
+$SKILLS  = @("metrics", "preprocess", "unsupervised", "strings", "transformers", "xai")
 $SCOPE   = if ($Global) { "global" } else { "project" }
 
 # ── Colors ───────────────────────────────────────────────────────
