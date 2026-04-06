@@ -114,14 +114,10 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
                         isinstance(xi, float) and pd.isna(xi)
                     ):
                         cleaned.append(xi)
-                elif isinstance(x, (str, int, float, bool, np.generic)) and not (
-                    isinstance(x, float) and pd.isna(x)
-                ):
+                elif isinstance(x, (str, int, float, bool, np.generic)) and not (isinstance(x, float) and pd.isna(x)):
                     cleaned.append(x.item() if isinstance(x, np.generic) else x)
             return cleaned
-        if isinstance(item, (str, int, float, bool, np.generic)) and not (
-            isinstance(item, float) and pd.isna(item)
-        ):
+        if isinstance(item, (str, int, float, bool, np.generic)) and not (isinstance(item, float) and pd.isna(item)):
             return [item.item() if isinstance(item, np.generic) else item]
         return []
 
@@ -182,8 +178,7 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
             input_features = np.asarray(input_features, dtype=object)
             if len(input_features) != self.n_features_in_:
                 raise ValueError(
-                    f"input_features has {len(input_features)} element(s), "
-                    f"expected {self.n_features_in_}."
+                    f"input_features has {len(input_features)} element(s), expected {self.n_features_in_}."
                 )
             prefix = str(input_features[0])
         else:
