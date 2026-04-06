@@ -1,3 +1,3 @@
 """Data Science Utilities package."""
 
-__version__ = "1.10.0rc7"
+__version__ = "1.10.0rc8"

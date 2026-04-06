@@ -381,6 +381,38 @@ The output for ``terms`` will be the following table:
 |-------|-----|-----|------|------|------|-------|----------|--------|
 | 1.0   | 1.0 | 1.0 | 0.67 | 0.67 | 0.67 | 0.5   | 0.25     | 0.0    |
 
+## Transformers
+
+The ``transformers`` module provides scikit-learn compatible wrappers for preprocessing steps that need ``get_feature_names_out`` (feature names in pipelines) and consistent ``float64`` output.
+
+### MultiLabelBinarizerTransformer
+
+Wraps ``sklearn.preprocessing.MultiLabelBinarizer`` so multi-label columns work with ``Pipeline``, ``ColumnTransformer``, and ``set_output(transform="pandas")``. Pass **one iterable of labels per sample** (see the `MultiLabelBinarizer <https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MultiLabelBinarizer.html>`_ documentation—a flat list of strings is not valid input).
+
+```python
+from ds_utils.transformers import MultiLabelBinarizerTransformer
+from sklearn.pipeline import Pipeline
+
+X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
+mlb = MultiLabelBinarizerTransformer()
+X_transformed = mlb.fit_transform(X)
+feature_names = mlb.get_feature_names_out()
+
+pipeline = Pipeline([("mlb", MultiLabelBinarizerTransformer())])
+pipeline.set_output(transform="pandas")
+df_transformed = pipeline.fit_transform(X)
+```
+
+Both `X_transformed` (as a numpy array) and `df_transformed` (as a pandas DataFrame) contain the same binarized data, using `feature_names` for columns.
+
+**Output:**
+
+| label_action | label_comedy | label_romance | label_sci-fi |
+|--------------|--------------|---------------|--------------|
+| 1.0          | 0.0          | 0.0           | 1.0          |
+| 0.0          | 0.0          | 1.0           | 0.0          |
+| 1.0          | 1.0          | 0.0           | 0.0          |
+
 ## Unsupervised
 
 ### Cluster Cardinality

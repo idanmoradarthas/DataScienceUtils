@@ -255,7 +255,7 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
     Tools:    Claude Code, Cursor
     Scope:    project (/home/user/my-project)
     Package:  pip install
-    Skills:   metrics preprocess unsupervised strings xai
+    Skills:   metrics preprocess unsupervised strings transformers xai
 
     Proceed with installation? (y/n) [y]:
 
@@ -274,11 +274,13 @@ Review every line of this summary before pressing ``Enter``. Type ``n`` and pres
     ✓ preprocess → .claude/skills/ds-utils-preprocess
     ✓ unsupervised → .claude/skills/ds-utils-unsupervised
     ✓ strings    → .claude/skills/ds-utils-strings
+    ✓ transformers → .claude/skills/ds-utils-transformers
     ✓ xai        → .claude/skills/ds-utils-xai
     ✓ metrics    → .cursor/rules/ds-utils-metrics
     ✓ preprocess → .cursor/rules/ds-utils-preprocess
     ✓ unsupervised → .cursor/rules/ds-utils-unsupervised
     ✓ strings    → .cursor/rules/ds-utils-strings
+    ✓ transformers → .cursor/rules/ds-utils-transformers
     ✓ xai        → .cursor/rules/ds-utils-xai
 
     Installing to cross-client path (.agents/skills)
@@ -286,6 +288,7 @@ Review every line of this summary before pressing ``Enter``. Type ``n`` and pres
     ✓ preprocess → .agents/skills/ds-utils-preprocess
     ✓ unsupervised → .agents/skills/ds-utils-unsupervised
     ✓ strings    → .agents/skills/ds-utils-strings
+    ✓ transformers → .agents/skills/ds-utils-transformers
     ✓ xai        → .agents/skills/ds-utils-xai
 
 Each ``✓`` line confirms a skill file was downloaded and placed correctly.
@@ -309,6 +312,7 @@ If any line shows ``!`` (warning) instead, see Troubleshooting.
       ds-utils-preprocess
       ds-utils-unsupervised
       ds-utils-strings
+      ds-utils-transformers
       ds-utils-xai
 
     Cross-client path: .agents/skills/  (all Agent Skills-compatible tools)
@@ -336,11 +340,13 @@ Expected output (for a project-scoped Claude Code + Cursor install):
     ./.claude/skills/ds-utils-preprocess/SKILL.md
     ./.claude/skills/ds-utils-unsupervised/SKILL.md
     ./.claude/skills/ds-utils-strings/SKILL.md
+    ./.claude/skills/ds-utils-transformers/SKILL.md
     ./.claude/skills/ds-utils-xai/SKILL.md
     ./.cursor/rules/ds-utils-metrics/SKILL.md
     ./.cursor/rules/ds-utils-preprocess/SKILL.md
     ./.cursor/rules/ds-utils-unsupervised/SKILL.md
     ./.cursor/rules/ds-utils-strings/SKILL.md
+    ./.cursor/rules/ds-utils-transformers/SKILL.md
     ./.cursor/rules/ds-utils-xai/SKILL.md
 
 To also verify the cross-client path:
@@ -357,6 +363,7 @@ Expected output:
     .agents/skills/ds-utils-preprocess/SKILL.md
     .agents/skills/ds-utils-unsupervised/SKILL.md
     .agents/skills/ds-utils-strings/SKILL.md
+    .agents/skills/ds-utils-transformers/SKILL.md
     .agents/skills/ds-utils-xai/SKILL.md
 
 On **Windows (PowerShell)**, verify both tool-specific and cross-client
@@ -494,6 +501,9 @@ Available Skills
    * - ds-utils-strings
      - ds_utils.strings
      - Tag encoding, significant term extraction
+   * - ds-utils-transformers
+     - ds_utils.transformers
+     - Multi-label binarization for pipelines, feature names, pandas output
    * - ds-utils-xai
      - ds_utils.xai
      - Feature importance visualization
