@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.utils.validation import _check_feature_names_in, check_is_fitted
+from sklearn.utils.validation import check_is_fitted
 
 ArrayLike = Union[np.ndarray, pd.Series, pd.DataFrame, Sequence[Any]]
 
@@ -78,8 +78,9 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
         if isinstance(arr, np.ndarray) and arr.ndim == 2:
             if arr.shape[1] == 1:
                 return arr[:, 0]
-            # Each row is one sample; row entries are labels (wide layout), e.g.
-            # ``[['a', 'b', 'c']]`` is one sample with three labels.
+            # Wide 2D ndarray: treat each row as one sample, columns as label entries.
+            # Note: DataFrames with multiple columns are rejected (see ValueError above);
+            # for ndarrays we allow this layout intentionally for numpy callers.
             return [row for row in arr]
         return arr
 
@@ -93,50 +94,32 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
             return []
         if isinstance(item, float) and pd.isna(item):
             return []
+        # Flatten all ndarrays to a Python list first, then re-enter via the list branch.
         if isinstance(item, np.ndarray):
-            if item.ndim == 1:
-                cleaned: List[Any] = []
-                for x in item:
-                    if isinstance(x, np.ndarray):
-                        xi = x.item() if x.size == 1 else x.tolist()
-                        if isinstance(xi, list):
-                            cleaned.extend(
-                                y
-                                for y in xi
-                                if isinstance(y, (str, int, float, bool, np.integer, np.floating))
-                                and y is not None
-                                and not (isinstance(y, float) and pd.isna(y))
-                            )
-                        elif isinstance(xi, (str, int, float, bool)) and not (isinstance(xi, float) and pd.isna(xi)):
-                            cleaned.append(xi)
-                    elif isinstance(x, (str, int, float, bool, np.integer, np.floating)) and not (
-                        isinstance(x, float) and pd.isna(x)
-                    ):
-                        cleaned.append(x.item() if isinstance(x, np.generic) else x)
-                return cleaned
-            flat = item.flatten().tolist()
-            return self._row_to_labels(flat)
+            return self._row_to_labels(item.flatten().tolist())
         if isinstance(item, (list, tuple, set)):
-            cleaned = []
+            cleaned: List[Any] = []
             for x in item:
                 if isinstance(x, np.ndarray):
+                    # A nested ndarray element: unpack to a scalar or sub-list.
                     xi = x.item() if x.size == 1 else x.tolist()
                     if isinstance(xi, list):
                         cleaned.extend(
                             y
                             for y in xi
-                            if isinstance(y, (str, int, float, bool, np.integer, np.floating))
-                            and y is not None
+                            if isinstance(y, (str, int, float, bool, np.generic))
                             and not (isinstance(y, float) and pd.isna(y))
                         )
-                    elif isinstance(xi, (str, int, float, bool)) and not (isinstance(xi, float) and pd.isna(xi)):
+                    elif isinstance(xi, (str, int, float, bool, np.generic)) and not (
+                        isinstance(xi, float) and pd.isna(xi)
+                    ):
                         cleaned.append(xi)
-                elif isinstance(x, (str, int, float, bool, np.integer, np.floating)) and not (
+                elif isinstance(x, (str, int, float, bool, np.generic)) and not (
                     isinstance(x, float) and pd.isna(x)
                 ):
                     cleaned.append(x.item() if isinstance(x, np.generic) else x)
             return cleaned
-        if isinstance(item, (str, int, float, bool, np.integer, np.floating)) and not (
+        if isinstance(item, (str, int, float, bool, np.generic)) and not (
             isinstance(item, float) and pd.isna(item)
         ):
             return [item.item() if isinstance(item, np.generic) else item]
@@ -163,7 +146,7 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
         :param y: Ignored; present for sklearn API compatibility.
         :return: This estimator, fitted.
         """
-        self._extract_column(X)  # validate shape
+        self._extract_column(X)  # validate shape/column-count before mutating state
         self.n_features_in_ = 1
         processed_X = self._prepare(X)
         self.mlb_ = MultiLabelBinarizer(classes=self.classes, sparse_output=self.sparse_output)
@@ -196,8 +179,13 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, "mlb_")
         if input_features is not None:
-            names = _check_feature_names_in(self, input_features)
-            prefix = str(names[0])
+            input_features = np.asarray(input_features, dtype=object)
+            if len(input_features) != self.n_features_in_:
+                raise ValueError(
+                    f"input_features has {len(input_features)} element(s), "
+                    f"expected {self.n_features_in_}."
+                )
+            prefix = str(input_features[0])
         else:
             prefix = "label"
         sanitized_labels = [_sanitize_column_name(c) for c in self.mlb_.classes_]

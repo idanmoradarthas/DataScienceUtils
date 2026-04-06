@@ -44,6 +44,15 @@ def test_get_feature_names_out_custom_prefix_via_input_features():
     assert list(names) == ["my_col_a", "my_col_b", "my_col_c"]
 
 
+def test_get_feature_names_out_wrong_input_features_length():
+    """Passing more than one input feature name raises ValueError."""
+    X = [["a", "b"], ["c"]]
+    mlb = MultiLabelBinarizerTransformer()
+    mlb.fit(X)
+    with pytest.raises(ValueError, match="input_features has"):
+        mlb.get_feature_names_out(input_features=["col_a", "col_b"])
+
+
 def test_get_feature_names_out_sanitizes_invalid_chars():
     """Labels with spaces and punctuation are sanitized in feature names."""
     X = [["a b", "c,d"]]
@@ -128,7 +137,7 @@ def test_iterable_of_iterables_not_flat_list():
     mlb = MultiLabelBinarizerTransformer()
     out = mlb.fit_transform([wrong])  # one sample: iterable of three labels
     assert out.shape == (1, 3)
-    assert mlb.mlb_.classes_.size == 3
+    assert mlb.get_feature_names_out().size == 3
     assert mlb_wrong.classes_.size > 10
 
 
