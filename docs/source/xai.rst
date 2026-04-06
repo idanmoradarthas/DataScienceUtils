@@ -116,54 +116,7 @@ Generate Decision Paths
 .. deprecated:: 1.8.0
     Use `sklearn.tree.export_text <https://scikit-learn.org/stable/modules/generated/sklearn.tree.export_text.html>`_ instead
 
-The `generate_decision_paths` function creates a textual representation of a decision tree's decision paths. This is helpful for understanding the logic behind the tree's classifications and can be used for both interpretation and debugging purposes.
-
-.. autofunction:: ds_utils.xai.generate_decision_paths
-
-Code Example
-============
-Let's create a simple decision tree classifier and print its decision paths:
-
-.. code-block:: python
-
-    from sklearn.tree import DecisionTreeClassifier
-    from ds_utils.xai import generate_decision_paths
-
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0, max_depth=3)
-
-    # Train model
-    clf.fit(X, y)
-
-    # Generate and print decision paths
-    decision_paths = generate_decision_paths(clf, iris.feature_names, iris.target_names.tolist(), "iris_tree")
-    print(decision_paths)
-
-.. highlight:: none
-
-The following text will be printed:
-
-.. code-block:: python
-
-    def iris_tree(petal width (cm), petal length (cm)):
-        if petal width (cm) <= 0.8000:
-            # return class setosa with probability 0.9804
-            return ("setosa", 0.9804)
-        else:  # if petal width (cm) > 0.8000
-            if petal width (cm) <= 1.7500:
-                if petal length (cm) <= 4.9500:
-                    # return class versicolor with probability 0.9792
-                    return ("versicolor", 0.9792)
-                else:  # if petal length (cm) > 4.9500
-                    # return class virginica with probability 0.6667
-                    return ("virginica", 0.6667)
-            else:  # if petal width (cm) > 1.7500
-                if petal length (cm) <= 4.8500:
-                    # return class virginica with probability 0.6667
-                    return ("virginica", 0.6667)
-                else:  # if petal length (cm) > 4.8500
-                    # return class virginica with probability 0.9773
-                    return ("virginica", 0.9773)
+.. py:function:: ds_utils.xai.generate_decision_paths(classifier: BaseDecisionTree, feature_names: List[str] | None = None, class_names: List[str] | None = None, tree_name: str | None = None, indent_char: str = '\t') -> str
 
 *************************
 Plot Feature Importance
