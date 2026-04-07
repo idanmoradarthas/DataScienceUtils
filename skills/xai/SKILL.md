@@ -176,6 +176,15 @@ print(report_df.head())
 
 **Returns:** pandas DataFrame.
 
+**Output Example:**
+If analyzing features "age" and "income":
+
+| feature | group | count | error_count | error_rate | accuracy |
+|---------|-------|-------|-------------|------------|----------|
+| age | (18.0, 35.0] | 100 | 10 | 0.10 | 0.90 |
+| age | (35.0, 55.0] | 150 | 5 | 0.03 | 0.97 |
+| income | (2000.0, 5000.0] | 80 | 12 | 0.15 | 0.85 |
+
 **Common mistakes:**
 - Passing columns in `feature_columns` that are not present in `X`.
 - Setting `min_count` too high, which may filter out all groups for some features.
