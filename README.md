@@ -578,6 +578,34 @@ plt.show()
 
 ![Plot Error Analysis Chart Multi-class](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_multiclass.png)
 
+## Generate Error Analysis Report
+
+This method provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group. It's particularly useful for identifying specific feature ranges or categories where the model underperforms.
+
+```python
+import pandas as pd
+from ds_utils.xai import generate_error_analysis_report
+
+# After training your classifier and generating predictions
+y_pred = clf.predict(X_test)
+
+# Generate error analysis report
+report = generate_error_analysis_report(
+    X_test, y_test, y_pred,
+    feature_columns=["age", "income"],
+    bins=3
+)
+print(report)
+```
+
+The output will be a pandas DataFrame:
+
+| feature | group           | count | error_count | error_rate | accuracy |
+|---------|-----------------|-------|-------------|------------|----------|
+| age     | (18.0, 35.0]    | 100   | 10          | 0.10       | 0.90     |
+| age     | (35.0, 55.0]    | 150   | 5           | 0.03       | 0.97     |
+| income  | (2000.0, 5000.0]| 80    | 12          | 0.15       | 0.85     |
+
 ## Explore More
 
 Excited about what you've seen so far? There's even more to discover! Dive deeper into each module to unlock the full

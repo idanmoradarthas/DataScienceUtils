@@ -258,3 +258,66 @@ Multi-class Classification
 .. image:: ../../tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_multiclass.png
     :align: center
     :alt: Plot Error Analysis Chart Multi-class
+
+******************************
+Generate Error Analysis Report
+******************************
+
+The ``generate_error_analysis_report`` function provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group. It's particularly useful for identifying specific feature ranges or categories where the model underperforms.
+
+.. autofunction:: ds_utils.xai.generate_error_analysis_report
+
+Code Example
+============
+
+.. highlight:: python
+
+.. code-block:: python
+
+    import pandas as pd
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.model_selection import train_test_split
+    from sklearn.tree import DecisionTreeClassifier
+    from ds_utils.xai import generate_error_analysis_report
+
+    # Load dataset and split
+    data = load_breast_cancer()
+    X = pd.DataFrame(data.data, columns=data.feature_names)
+    y = data.target
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Train a classifier
+    clf = DecisionTreeClassifier(random_state=42, max_depth=3)
+    clf.fit(X_train, y_train)
+
+    y_pred = clf.predict(X_test)
+
+    # Generate error analysis report for a subset of features
+    report = generate_error_analysis_report(
+        X_test, y_test, y_pred,
+        feature_columns=["mean radius", "mean texture"],
+        bins=3,
+        sort_metric="error_rate",
+        ascending=False
+    )
+    print(report)
+
+The output will be a pandas DataFrame similar to this:
+
++--------------+-----------------+-------+-------------+------------+----------+
+| feature      | group           | count | error_count | error_rate | accuracy |
++==============+=================+=======+=============+============+==========+
+| mean radius  | (16.71, 24.933] | 30    | 3           | 0.100000   | 0.900000 |
++--------------+-----------------+-------+-------------+------------+----------+
+| mean texture | (25.32, 33.81]  | 17    | 1           | 0.058824   | 0.941176 |
++--------------+-----------------+-------+-------------+------------+----------+
+| mean texture | (16.83, 25.32]  | 78    | 4           | 0.051282   | 0.948718 |
++--------------+-----------------+-------+-------------+------------+----------+
+| mean radius  | (8.471, 16.71]  | 113   | 4           | 0.035398   | 0.964602 |
++--------------+-----------------+-------+-------------+------------+----------+
+| mean texture | (8.315, 16.83]  | 48    | 2           | 0.041667   | 0.958333 |
++--------------+-----------------+-------+-------------+------------+----------+
+| mean radius  | (24.933, 33.15] | 0     | 0           | NaN        | NaN      |
++--------------+-----------------+-------+-------------+------------+----------+
+
+*(Note: Exact values and bins may vary based on data distribution)*

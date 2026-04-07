@@ -32,6 +32,7 @@ conda install -c idanmorad data-science-utils
 from ds_utils.xai import plot_features_importance
 from ds_utils.xai import draw_dot_data
 from ds_utils.xai import plot_error_analysis_chart
+from ds_utils.xai import generate_error_analysis_report
 ```
 
 ---
@@ -140,6 +141,44 @@ plt.show()
 - Forgetting to pass `classes` for multi-class when the class order in `y_proba` does not match `np.unique(y_true)`. Always pass `classes=clf.classes_.tolist()` to be safe.
 - For binary classification, pass only the positive class probability column (1-D), not the full 2-D probability matrix, unless you also specify `classes`.
 - `y_pred` is required — you must pass pre-computed predictions, not raw probabilities.
+
+---
+
+## generate_error_analysis_report
+
+Provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group.
+
+```python
+from ds_utils.xai import generate_error_analysis_report
+
+# complete usage example
+report_df = generate_error_analysis_report(
+    X_test, y_test, y_pred,
+    feature_columns=["age", "gender"],
+    bins=5,
+    min_count=10,
+    sort_metric="error_rate",
+    ascending=False
+)
+print(report_df.head())
+```
+
+**Parameters:**
+- `X` — pandas DataFrame, Feature values.
+- `y_true` — array-like, True labels.
+- `y_pred` — array-like, Predicted labels.
+- `feature_columns` — list, optional. Subset of columns to analyze. If `None`, all columns in `X` are used.
+- `bins` — int, default 10. Number of bins for numerical features.
+- `threshold` — float, default 0.5. Reserved for future probability-based error definitions.
+- `min_count` — int, default 1. Minimum samples per group to include in the report.
+- `sort_metric` — str, default "error_rate". Column to sort by.
+- `ascending` — bool, default False. Sort direction.
+
+**Returns:** pandas DataFrame.
+
+**Common mistakes:**
+- Passing columns in `feature_columns` that are not present in `X`.
+- Setting `min_count` too high, which may filter out all groups for some features.
 
 ---
 
