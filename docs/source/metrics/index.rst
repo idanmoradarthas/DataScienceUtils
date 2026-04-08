@@ -9,6 +9,7 @@ The module of metrics contains methods that help to calculate and/or visualize e
    :maxdepth: 2
    
    confusion_matrix
+   curves
+   error_analysis
    learning_curves
    probability_analysis
-   curves
