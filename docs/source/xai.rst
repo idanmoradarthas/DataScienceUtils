@@ -275,6 +275,7 @@ Code Example
 .. code-block:: python
 
     import pandas as pd
+    import numpy as np
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
     from sklearn.tree import DecisionTreeClassifier
@@ -283,19 +284,20 @@ Code Example
     # Load dataset and split
     data = load_breast_cancer()
     X = pd.DataFrame(data.data, columns=data.feature_names)
+    X["tissue_type"] = np.where(data.target == 1, "benign", "malignant")  # synthetic categorical
     y = data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     # Train a classifier
     clf = DecisionTreeClassifier(random_state=42, max_depth=3)
-    clf.fit(X_train, y_train)
+    clf.fit(X_train[["mean radius", "mean texture"]], y_train)
 
-    y_pred = clf.predict(X_test)
+    y_pred = clf.predict(X_test[["mean radius", "mean texture"]])
 
-    # Generate error analysis report for a subset of features
+    # Generate error analysis report for numerical and categorical features
     report = generate_error_analysis_report(
         X_test, y_test, y_pred,
-        feature_columns=["mean radius", "mean texture"],
+        feature_columns=["mean radius", "mean texture", "tissue_type"],
         bins=3,
         sort_metric="error_rate",
         ascending=False
@@ -307,17 +309,19 @@ The output will be a pandas DataFrame similar to this:
 +--------------+-----------------+-------+-------------+------------+----------+
 | feature      | group           | count | error_count | error_rate | accuracy |
 +==============+=================+=======+=============+============+==========+
+| tissue_type  | malignant       | 45    | 5           | 0.111111   | 0.888889 |
++--------------+-----------------+-------+-------------+------------+----------+
 | mean radius  | (16.71, 24.933] | 30    | 3           | 0.100000   | 0.900000 |
 +--------------+-----------------+-------+-------------+------------+----------+
 | mean texture | (25.32, 33.81]  | 17    | 1           | 0.058824   | 0.941176 |
 +--------------+-----------------+-------+-------------+------------+----------+
 | mean texture | (16.83, 25.32]  | 78    | 4           | 0.051282   | 0.948718 |
 +--------------+-----------------+-------+-------------+------------+----------+
+| tissue_type  | benign          | 98    | 4           | 0.040816   | 0.959184 |
++--------------+-----------------+-------+-------------+------------+----------+
 | mean radius  | (8.471, 16.71]  | 113   | 4           | 0.035398   | 0.964602 |
 +--------------+-----------------+-------+-------------+------------+----------+
 | mean texture | (8.315, 16.83]  | 48    | 2           | 0.041667   | 0.958333 |
 +--------------+-----------------+-------+-------------+------------+----------+
-| mean radius  | (24.933, 33.15] | 0     | 0           | NaN        | NaN      |
-+--------------+-----------------+-------+-------------+------------+----------+
 
-*(Note: Exact values and bins may vary based on data distribution)*
+*(Note: The tissue_type rows use raw string values as groups, while numerical features are binned. Exact values and bins may vary based on data distribution.)*

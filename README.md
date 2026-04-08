@@ -606,12 +606,17 @@ print(report)
 
 The output will be a pandas DataFrame:
 
-| feature | group           | count | error_count | error_rate | accuracy |
-|---------|-----------------|-------|-------------|------------|----------|
-| age     | (34.667, 47.333]| 2     | 1           | 0.50       | 0.50     |
-| region  | North           | 3     | 1           | 0.33       | 0.67     |
-| region  | South           | 2     | 1           | 0.50       | 0.50     |
-| age     | (21.962, 34.667]| 4     | 1           | 0.25       | 0.75     |
+| feature | group            | count | error_count | error_rate | accuracy |
+|---------|------------------|-------|-------------|------------|----------|
+| age     | (34.667, 47.333] | 2     | 1           | 0.50       | 0.50     |
+| region  | South            | 2     | 1           | 0.50       | 0.50     |
+| region  | North            | 3     | 1           | 0.33       | 0.67     |
+| age     | (21.962, 34.667] | 4     | 1           | 0.25       | 0.75     |
+| age     | (47.333, 60.0]   | 2     | 0           | 0.00       | 1.00     |
+| region  | East             | 1     | 0           | 0.00       | 1.00     |
+| region  | West             | 2     | 0           | 0.00       | 1.00     |
+
+*(Note: Rows with equal error_rate may appear in any order)*
 
 ## Explore More
 
