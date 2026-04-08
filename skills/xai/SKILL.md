@@ -31,8 +31,6 @@ conda install -c idanmorad data-science-utils
 ```python
 from ds_utils.xai import plot_features_importance
 from ds_utils.xai import draw_dot_data
-from ds_utils.xai import plot_error_analysis_chart
-from ds_utils.xai import generate_error_analysis_report
 ```
 
 ---
@@ -90,144 +88,18 @@ plt.show()
 
 ---
 
-## plot_error_analysis_chart
-
-Automates the creation of an error analysis DataFrame (computing correct, false_positive, false_negative) and visualizes prediction errors relative to predicted probabilities. Supports both binary and multi-class classification using a one-vs-rest scheme.
-
-### Binary classification example
-
-```python
-from ds_utils.xai import plot_error_analysis_chart
-import matplotlib.pyplot as plt
-
-# complete usage example (binary)
-y_pred = clf.predict(X_test)
-y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
-
-plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
-plt.show()
-```
-
-### Multi-class classification example
-
-```python
-from ds_utils.xai import plot_error_analysis_chart
-import matplotlib.pyplot as plt
-
-# complete usage example (multi-class)
-y_pred = clf.predict(X_test)
-y_proba = clf.predict_proba(X_test)
-
-plot_error_analysis_chart(
-    y_test, y_pred, y_proba,
-    positive_class=1,
-    classes=clf.classes_.tolist()
-)
-plt.show()
-```
-
-**Parameters:**
-- `y_true` — array-like, True labels.
-- `y_pred` — array-like, Predicted labels (required).
-- `y_proba` — array-like, Predicted probabilities. 1-D for binary, 2-D `(n_samples, n_classes)` for multi-class.
-- `positive_class` — The class to treat as positive (used for correct/false_positive/false_negative assignment).
-- `classes` — list, optional. Ordered class labels matching columns of `y_proba` when 2-D. If `None`, inferred from `np.unique(y_true)`.
-- `ax` — matplotlib Axes, optional. Target axes for rendering.
-- `**kwargs` — forwarded to `seaborn.violinplot`.
-
-**Returns:** matplotlib Axes.
-
-**Common mistakes:**
-- Forgetting to pass `classes` for multi-class when the class order in `y_proba` does not match `np.unique(y_true)`. Always pass `classes=clf.classes_.tolist()` to be safe.
-- For binary classification, pass only the positive class probability column (1-D), not the full 2-D probability matrix, unless you also specify `classes`.
-- `y_pred` is required — you must pass pre-computed predictions, not raw probabilities.
-
----
-
-## generate_error_analysis_report
-
-Provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group.
-
-```python
-import pandas as pd
-import numpy as np
-from ds_utils.xai import generate_error_analysis_report
-
-# Setup dummy data with numerical and categorical features
-X_test = pd.DataFrame({
-    "age": [25, 30, 45, 50, 22, 35, 40, 60],
-    "region": ["North", "South", "North", "West", "East", "South", "West", "North"]
-})
-y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1])
-y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1]) # Errors at index 2 and 5
-
-# complete usage example
-report_df = generate_error_analysis_report(
-    X_test, y_test, y_pred,
-    feature_columns=["age", "region"],
-    bins=3,
-    min_count=1,
-    sort_metric="error_rate",
-    ascending=False
-)
-print(report_df.head())
-```
-
-**Parameters:**
-- `X` — pandas DataFrame, Feature values.
-- `y_true` — array-like, True labels.
-- `y_pred` — array-like, Predicted labels.
-- `feature_columns` — list, optional. Subset of columns to analyze. If `None`, all columns in `X` are used.
-- `bins` — int, default 10. Number of bins for numerical features.
-- `threshold` — float, default 0.5. Reserved for future probability-based error definitions.
-- `min_count` — int, default 1. Minimum samples per group to include in the report.
-- `sort_metric` — str, default "error_rate". Column to sort by.
-- `ascending` — bool, default False. Sort direction.
-
-**Returns:** pandas DataFrame.
-
-**Output Example:**
-If analyzing features "age" and "region":
-
-| feature | group | count | error_count | error_rate | accuracy |
-|---------|-------|-------|-------------|------------|----------|
-| age | (34.667, 47.333] | 2 | 1 | 0.50 | 0.50 |
-| region | South | 2 | 1 | 0.50 | 0.50 |
-| region | North | 3 | 1 | 0.33 | 0.67 |
-| age | (21.962, 34.667] | 4 | 1 | 0.25 | 0.75 |
-| age | (47.333, 60.0] | 2 | 0 | 0.00 | 1.00 |
-| region | East | 1 | 0 | 0.00 | 1.00 |
-| region | West | 2 | 0 | 0.00 | 1.00 |
-
-*(Note: Rows with equal error_rate may appear in any order)*
-
-**Common mistakes:**
-- Passing columns in `feature_columns` that are not present in `X`.
-- Setting `min_count` too high, which may filter out all groups for some features.
-
----
-
-## Typical Workflow
 
 ```python
 import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeClassifier
-from ds_utils.xai import plot_features_importance, plot_error_analysis_chart
+from ds_utils.xai import plot_features_importance
 
 features = ["age", "income", "credit_score"]
 clf = DecisionTreeClassifier(random_state=42)
 clf.fit(X_train[features], y_train)
 
-# 1. Feature importance bar chart
+# Feature importance bar chart
 plot_features_importance(features, clf.feature_importances_)
-plt.tight_layout()
-plt.show()
-
-# 2. Error analysis chart
-y_pred = clf.predict(X_test[features])
-y_proba = clf.predict_proba(X_test[features])[:, 1]
-
-plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
 plt.tight_layout()
 plt.show()
 ```

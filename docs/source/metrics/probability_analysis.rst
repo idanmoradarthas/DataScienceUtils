@@ -80,3 +80,80 @@ And the following image will be shown:
 .. image:: ../../../tests/baseline_images/test_metrics/test_probability_analysis/test_visualize_accuracy_grouped_by_probability_with_breakdown.png
     :align: center
     :alt: Visualize Accuracy Grouped by Probability with Breakdown
+
+**************************
+Plot Error Analysis Chart
+**************************
+
+The ``plot_error_analysis_chart`` function automates the creation of an error analysis DataFrame (computing correct, false_positive, false_negative) and visualizes the prediction errors relative to their predicted probabilities using a violin plot. It supports both binary and multi-class classification using a one-vs-rest scheme against a specified positive class.
+
+.. autofunction:: ds_utils.metrics.probability_analysis.plot_error_analysis_chart
+
+Code Example
+============
+
+.. highlight:: python
+
+Binary Classification
+---------------------
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.model_selection import train_test_split
+    from sklearn.tree import DecisionTreeClassifier
+    from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
+
+    # Load dataset and split
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Train a classifier
+    clf = DecisionTreeClassifier(random_state=42)
+    clf.fit(X_train, y_train)
+
+    y_pred = clf.predict(X_test)
+    y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
+
+    # Plot error analysis
+    plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
+    plt.show()
+
+.. image:: ../../../tests/baseline_images/test_metrics/test_probability_analysis/test_plot_error_analysis_chart_binary.png
+    :align: center
+    :alt: Plot Error Analysis Chart Binary
+
+Multi-class Classification
+--------------------------
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+    from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
+    from sklearn.tree import DecisionTreeClassifier
+    from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
+
+    # Load dataset and split
+    X, y = load_iris(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Train a classifier
+    clf = DecisionTreeClassifier(random_state=42)
+    clf.fit(X_train, y_train)
+
+    y_pred = clf.predict(X_test)
+    y_proba = clf.predict_proba(X_test)
+
+    # Plot error analysis for class 1 (one-vs-rest)
+    plot_error_analysis_chart(
+        y_test, y_pred, y_proba,
+        positive_class=1,
+        classes=clf.classes_.tolist()
+    )
+    plt.show()
+
+.. image:: ../../../tests/baseline_images/test_metrics/test_probability_analysis/test_plot_error_analysis_chart_multiclass.png
+    :align: center
+    :alt: Plot Error Analysis Chart Multi-class

@@ -131,6 +131,97 @@ fig.show()
 
 ![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
 
+### Plot Error Analysis Chart
+
+This method automates the creation of an error analysis chart by computing the error type (correct, false_positive, false_negative) for each
+prediction and visualizing the distribution of predicted probabilities across these error types. It supports both binary and
+multi-class classification using a one-vs-rest scheme against a specified positive class.
+
+```python
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeClassifier
+from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
+
+# After training your classifier and generating predictions
+y_pred = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
+
+# Plot error analysis
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
+plt.show()
+```
+
+![Plot Error Analysis Chart Binary](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_plot_error_analysis_chart_binary.png)
+
+For multi-class classification, pass the full 2-D probability matrix and specify the `classes` parameter:
+
+```python
+y_proba = clf.predict_proba(X_test)
+
+plot_error_analysis_chart(
+    y_test, y_pred, y_proba,
+    positive_class=1,
+    classes=clf.classes_.tolist()
+)
+plt.show()
+```
+
+![Plot Error Analysis Chart Multi-class](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_probability_analysis/test_plot_error_analysis_chart_multiclass.png)
+
+### Generate Error Analysis Report
+
+This method provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group.
+It's particularly useful for identifying specific feature ranges or categories where the model underperforms.
+
+```python
+import pandas as pd
+import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from ds_utils.metrics.error_analysis import generate_error_analysis_report
+
+# Load dataset and split
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+
+# Add a categorical feature for demonstration
+X["size_category"] = pd.cut(
+    X["mean radius"], bins=3, labels=["small", "medium", "large"]
+).astype(str)
+
+y = data.target
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+# Train a classifier
+clf = DecisionTreeClassifier(random_state=42, max_depth=3)
+clf.fit(X_train[["mean radius", "mean texture"]], y_train)
+
+y_pred = clf.predict(X_test[["mean radius", "mean texture"]])
+
+# Generate error analysis report for numerical and categorical features
+report = generate_error_analysis_report(
+    X_test, y_test, y_pred,
+    feature_columns=["mean radius", "mean texture", "size_category"],
+    bins=3,
+    sort_metric="error_rate",
+    ascending=False
+)
+print(report)
+```
+The output will be a pandas DataFrame:
+
+| feature | group            | count | error_count | error_rate | accuracy |
+|---------|------------------|-------|-------------|------------|----------|
+| age     | (34.667, 47.333] | 2     | 1           | 0.50       | 0.50     |
+| region  | South            | 2     | 1           | 0.50       | 0.50     |
+| region  | North            | 3     | 1           | 0.33       | 0.67     |
+| age     | (21.962, 34.667] | 4     | 1           | 0.25       | 0.75     |
+| age     | (47.333, 60.0]   | 2     | 0           | 0.00       | 1.00     |
+| region  | East             | 1     | 0           | 0.00       | 1.00     |
+| region  | West             | 2     | 0           | 0.00       | 1.00     |
+
+*(Note: Rows with equal error_rate may appear in any order)*
 ## Preprocess
 
 The preprocess module is organized into focused submodules:
@@ -540,83 +631,6 @@ plt.show()
 
 This visualization helps in understanding which features are most influential in the model's decision-making process,
 providing valuable insights for feature selection and model interpretation.
-
-## Plot Error Analysis Chart
-
-This method automates the creation of an error analysis chart by computing the error type (correct, false_positive, false_negative) for each
-prediction and visualizing the distribution of predicted probabilities across these error types. It supports both binary and
-multi-class classification using a one-vs-rest scheme against a specified positive class.
-
-```python
-import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeClassifier
-from ds_utils.xai import plot_error_analysis_chart
-
-# After training your classifier and generating predictions
-y_pred = clf.predict(X_test)
-y_proba = clf.predict_proba(X_test)[:, 1]  # probability of the positive class
-
-# Plot error analysis
-plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1)
-plt.show()
-```
-
-![Plot Error Analysis Chart Binary](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_binary.png)
-
-For multi-class classification, pass the full 2-D probability matrix and specify the `classes` parameter:
-
-```python
-y_proba = clf.predict_proba(X_test)
-
-plot_error_analysis_chart(
-    y_test, y_pred, y_proba,
-    positive_class=1,
-    classes=clf.classes_.tolist()
-)
-plt.show()
-```
-
-![Plot Error Analysis Chart Multi-class](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_multiclass.png)
-
-## Generate Error Analysis Report
-
-This method provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group. It's particularly useful for identifying specific feature ranges or categories where the model underperforms.
-
-```python
-import pandas as pd
-import numpy as np
-from ds_utils.xai import generate_error_analysis_report
-
-# Setup dummy data with numerical and categorical features
-X_test = pd.DataFrame({
-    "age": [25, 30, 45, 50, 22, 35, 40, 60],
-    "region": ["North", "South", "North", "West", "East", "South", "West", "North"]
-})
-y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1])
-y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1]) # Errors at index 2 and 5
-
-# Generate error analysis report
-report = generate_error_analysis_report(
-    X_test, y_test, y_pred,
-    feature_columns=["age", "region"],
-    bins=3
-)
-print(report)
-```
-
-The output will be a pandas DataFrame:
-
-| feature | group            | count | error_count | error_rate | accuracy |
-|---------|------------------|-------|-------------|------------|----------|
-| age     | (34.667, 47.333] | 2     | 1           | 0.50       | 0.50     |
-| region  | South            | 2     | 1           | 0.50       | 0.50     |
-| region  | North            | 3     | 1           | 0.33       | 0.67     |
-| age     | (21.962, 34.667] | 4     | 1           | 0.25       | 0.75     |
-| age     | (47.333, 60.0]   | 2     | 0           | 0.00       | 1.00     |
-| region  | East             | 1     | 0           | 0.00       | 1.00     |
-| region  | West             | 2     | 0           | 0.00       | 1.00     |
-
-*(Note: Rows with equal error_rate may appear in any order)*
 
 ## Explore More
 

@@ -1,4 +1,4 @@
-"""Tests for the plot_error_analysis_chart function in ds_utils.xai."""
+"""Tests for the plot_error_analysis_chart function in ds_utils.metrics.probability_analysis."""
 
 from pathlib import Path
 
@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pytest
 
-from ds_utils.xai import plot_error_analysis_chart
+from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
 
-BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_xai" / "test_plot_error_analysis_chart"
+BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_metrics" / "test_probability_analysis"
 
 
 @pytest.fixture

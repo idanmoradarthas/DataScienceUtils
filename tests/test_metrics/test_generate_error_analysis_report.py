@@ -3,7 +3,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from ds_utils.xai import generate_error_analysis_report
+
+from ds_utils.metrics.error_analysis import generate_error_analysis_report
 
 
 def test_generate_error_analysis_report_categorical():
