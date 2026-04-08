@@ -578,6 +578,46 @@ plt.show()
 
 ![Plot Error Analysis Chart Multi-class](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_xai/test_plot_error_analysis_chart/test_plot_error_analysis_chart_multiclass.png)
 
+## Generate Error Analysis Report
+
+This method provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group. It's particularly useful for identifying specific feature ranges or categories where the model underperforms.
+
+```python
+import pandas as pd
+import numpy as np
+from ds_utils.xai import generate_error_analysis_report
+
+# Setup dummy data with numerical and categorical features
+X_test = pd.DataFrame({
+    "age": [25, 30, 45, 50, 22, 35, 40, 60],
+    "region": ["North", "South", "North", "West", "East", "South", "West", "North"]
+})
+y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1])
+y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1]) # Errors at index 2 and 5
+
+# Generate error analysis report
+report = generate_error_analysis_report(
+    X_test, y_test, y_pred,
+    feature_columns=["age", "region"],
+    bins=3
+)
+print(report)
+```
+
+The output will be a pandas DataFrame:
+
+| feature | group            | count | error_count | error_rate | accuracy |
+|---------|------------------|-------|-------------|------------|----------|
+| age     | (34.667, 47.333] | 2     | 1           | 0.50       | 0.50     |
+| region  | South            | 2     | 1           | 0.50       | 0.50     |
+| region  | North            | 3     | 1           | 0.33       | 0.67     |
+| age     | (21.962, 34.667] | 4     | 1           | 0.25       | 0.75     |
+| age     | (47.333, 60.0]   | 2     | 0           | 0.00       | 1.00     |
+| region  | East             | 1     | 0           | 0.00       | 1.00     |
+| region  | West             | 2     | 0           | 0.00       | 1.00     |
+
+*(Note: Rows with equal error_rate may appear in any order)*
+
 ## Explore More
 
 Excited about what you've seen so far? There's even more to discover! Dive deeper into each module to unlock the full
