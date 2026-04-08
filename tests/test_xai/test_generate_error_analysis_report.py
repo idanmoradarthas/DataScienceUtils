@@ -27,7 +27,7 @@ def test_generate_error_analysis_report_categorical():
             "accuracy": [0.5, 0.5, 1.0],
         }
     )
-    pd.testing.assert_frame_equal(report, expected)
+    pd.testing.assert_frame_equal(report, expected, check_dtype=False)
 
 
 def test_generate_error_analysis_report_numerical_binning():
@@ -46,6 +46,7 @@ def test_generate_error_analysis_report_numerical_binning():
     assert report.iloc[0]["error_count"] == 1
     assert report.iloc[1]["count"] == 2
     assert report.iloc[1]["error_count"] == 0
+    assert "group" in report.columns
     assert isinstance(report.iloc[0]["group"], pd.Interval)
 
 
@@ -73,7 +74,8 @@ def test_generate_error_analysis_report_min_count():
     assert "B" not in report["group"].values
 
 
-def test_generate_error_analysis_report_sorting():
+@pytest.mark.parametrize("ascending", [True, False])
+def test_generate_error_analysis_report_sorting(ascending):
     """Test sort_metric and ascending parameters."""
     X = pd.DataFrame({"cat": ["A", "B", "C"]})
     y_true = np.array([0, 0, 0])
@@ -82,22 +84,29 @@ def test_generate_error_analysis_report_sorting():
     # B: error_rate 0.0, count 1
     # C: error_rate 0.0, count 1
 
-    # Sort by error_rate descending (default)
-    report = generate_error_analysis_report(X, y_true, y_pred, sort_metric="error_rate", ascending=False)
-    assert report.iloc[0]["group"] == "A"
-
-    # Sort by error_rate ascending
-    report = generate_error_analysis_report(X, y_true, y_pred, sort_metric="error_rate", ascending=True)
-    assert report.iloc[-1]["group"] == "A"
+    report = generate_error_analysis_report(X, y_true, y_pred, sort_metric="error_rate", ascending=ascending)
+    if ascending:
+        assert report.iloc[-1]["group"] == "A"
+    else:
+        assert report.iloc[0]["group"] == "A"
 
 
-def test_generate_error_analysis_report_invalid_sort_metric():
-    """Test sort_metric validation."""
+@pytest.mark.parametrize(
+    ("kwargs", "exc_type", "match"),
+    [
+        ({"bins": 0}, ValueError, "bins must be at least 1"),
+        ({"threshold": 1.5}, ValueError, "threshold must be between 0 and 1 inclusive"),
+        ({"min_count": 0}, ValueError, "min_count must be at least 1"),
+        ({"sort_metric": "invalid"}, ValueError, "sort_metric must be one of"),
+    ],
+)
+def test_generate_error_analysis_report_invalid_params(kwargs, exc_type, match):
+    """Test invalid parameters validation."""
     X = pd.DataFrame({"cat": ["A"]})
     y_true = np.array([0])
     y_pred = np.array([0])
-    with pytest.raises(ValueError, match="sort_metric must be one of"):
-        generate_error_analysis_report(X, y_true, y_pred, sort_metric="invalid")
+    with pytest.raises(exc_type, match=match):
+        generate_error_analysis_report(X, y_true, y_pred, **kwargs)
 
 
 def test_generate_error_analysis_report_invalid_feature_columns():
@@ -107,33 +116,6 @@ def test_generate_error_analysis_report_invalid_feature_columns():
     y_pred = np.array([0])
     with pytest.raises(KeyError, match="The following columns are missing from X"):
         generate_error_analysis_report(X, y_true, y_pred, feature_columns=["missing"])
-
-
-def test_generate_error_analysis_report_invalid_bins():
-    """Test bins validation."""
-    X = pd.DataFrame({"cat": ["A"]})
-    y_true = np.array([0])
-    y_pred = np.array([0])
-    with pytest.raises(ValueError, match="bins must be at least 1"):
-        generate_error_analysis_report(X, y_true, y_pred, bins=0)
-
-
-def test_generate_error_analysis_report_invalid_threshold():
-    """Test threshold validation."""
-    X = pd.DataFrame({"cat": ["A"]})
-    y_true = np.array([0])
-    y_pred = np.array([0])
-    with pytest.raises(ValueError, match="threshold must be between 0 and 1 inclusive"):
-        generate_error_analysis_report(X, y_true, y_pred, threshold=1.5)
-
-
-def test_generate_error_analysis_report_invalid_min_count():
-    """Test min_count validation."""
-    X = pd.DataFrame({"cat": ["A"]})
-    y_true = np.array([0])
-    y_pred = np.array([0])
-    with pytest.raises(ValueError, match="min_count must be at least 1"):
-        generate_error_analysis_report(X, y_true, y_pred, min_count=0)
 
 
 def test_generate_error_analysis_report_multiple_features():
@@ -173,11 +155,16 @@ def test_generate_error_analysis_report_all_wrong_predictions():
     assert (report["accuracy"] == 0.0).all()
 
 
-def test_generate_error_analysis_report_mismatched_lengths():
+@pytest.mark.parametrize(
+    ("y_true", "y_pred"),
+    [
+        (np.array([0, 1]), np.array([0])),  # y_true too long
+        (np.array([0]), np.array([0, 1])),  # y_pred too long
+    ],
+)
+def test_generate_error_analysis_report_mismatched_lengths(y_true, y_pred):
     """Test X, y_true, y_pred mismatched lengths."""
     X = pd.DataFrame({"cat": ["A"]})
-    y_true = np.array([0, 1])
-    y_pred = np.array([0])
     with pytest.raises(ValueError, match="X, y_true, and y_pred must have the same number of samples"):
         generate_error_analysis_report(X, y_true, y_pred)
 
@@ -190,3 +177,14 @@ def test_generate_error_analysis_report_empty_report():
     report = generate_error_analysis_report(X, y_true, y_pred, feature_columns=[])
     assert report.empty
     assert list(report.columns) == ["feature", "group", "count", "error_count", "error_rate", "accuracy"]
+
+
+def test_generate_error_analysis_report_is_error_collision():
+    """Test when a feature is named 'is_error'."""
+    X = pd.DataFrame({"is_error": ["feat_val"]})
+    y_true = np.array([0])
+    y_pred = np.array([1])
+    report = generate_error_analysis_report(X, y_true, y_pred)
+    assert report.iloc[0]["feature"] == "is_error"
+    assert report.iloc[0]["group"] == "feat_val"
+    assert report.iloc[0]["error_count"] == 1

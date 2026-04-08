@@ -306,7 +306,9 @@ def generate_error_analysis_report(
     :param y_pred: Predicted labels.
     :param feature_columns: List of columns to analyze. If None, all columns in X are used.
     :param bins: Number of bins for numerical features.
-    :param threshold: Threshold for probability-based error definitions (not used currently).
+    :param threshold: Threshold for probability-based error definitions.
+                      Validated but not used in the current implementation;
+                      reserved for future probability-based error definitions.
     :param min_count: Minimum number of samples in a group to be included in the report.
     :param sort_metric: Metric to sort the report by. Valid options are:
                         'feature', 'group', 'count', 'error_count', 'error_rate', 'accuracy'.
@@ -326,6 +328,12 @@ def generate_error_analysis_report(
     if sort_metric not in valid_columns:
         raise ValueError(f"sort_metric must be one of {valid_columns}")
 
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    if len(y_true) != len(X) or len(y_pred) != len(X):
+        raise ValueError("X, y_true, and y_pred must have the same number of samples")
+
     if feature_columns is not None:
         missing_cols = [col for col in feature_columns if col not in X.columns]
         if missing_cols:
@@ -334,14 +342,8 @@ def generate_error_analysis_report(
     else:
         cols_to_use = X.columns.tolist()
 
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-
-    if len(y_true) != len(X) or len(y_pred) != len(X):
-        raise ValueError("X, y_true, and y_pred must have the same number of samples")
-
     internal_df = X[cols_to_use].copy()
-    internal_df["is_error"] = y_true != y_pred
+    internal_df["__is_error__"] = y_true != y_pred
 
     all_reports = []
     for col in cols_to_use:
@@ -353,7 +355,7 @@ def generate_error_analysis_report(
 
         report = (
             internal_df.groupby(groups, observed=True)
-            .agg(count=("is_error", "size"), error_count=("is_error", "sum"))
+            .agg(count=("__is_error__", "size"), error_count=("__is_error__", "sum"))
             .reset_index()
         )
         report.rename(columns={col: "group"}, inplace=True)

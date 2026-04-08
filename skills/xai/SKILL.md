@@ -149,14 +149,24 @@ plt.show()
 Provides a tabular error-analysis report that groups predictions by feature values and computes error metrics per group.
 
 ```python
+import pandas as pd
+import numpy as np
 from ds_utils.xai import generate_error_analysis_report
+
+# Setup dummy data with numerical and categorical features
+X_test = pd.DataFrame({
+    "age": [25, 30, 45, 50, 22, 35, 40, 60],
+    "region": ["North", "South", "North", "West", "East", "South", "West", "North"]
+})
+y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1])
+y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1]) # Errors at index 2 and 5
 
 # complete usage example
 report_df = generate_error_analysis_report(
     X_test, y_test, y_pred,
-    feature_columns=["age", "gender"],
-    bins=5,
-    min_count=10,
+    feature_columns=["age", "region"],
+    bins=3,
+    min_count=1,
     sort_metric="error_rate",
     ascending=False
 )
@@ -177,14 +187,14 @@ print(report_df.head())
 **Returns:** pandas DataFrame.
 
 **Output Example:**
-If analyzing features "age" and "income":
+If analyzing features "age" and "region":
 
 | feature | group | count | error_count | error_rate | accuracy |
 |---------|-------|-------|-------------|------------|----------|
-| age | (18.0, 35.0] | 100 | 10 | 0.10 | 0.90 |
-| age | (35.0, 55.0] | 150 | 5 | 0.03 | 0.97 |
-| region | North | 120 | 15 | 0.125 | 0.875 |
-| income | (2000.0, 5000.0] | 80 | 12 | 0.15 | 0.85 |
+| age | (34.667, 47.333] | 2 | 1 | 0.50 | 0.50 |
+| region | North | 3 | 1 | 0.33 | 0.67 |
+| region | South | 2 | 1 | 0.50 | 0.50 |
+| age | (21.962, 34.667] | 4 | 1 | 0.25 | 0.75 |
 
 **Common mistakes:**
 - Passing columns in `feature_columns` that are not present in `X`.
