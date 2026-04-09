@@ -66,16 +66,16 @@ def directional_accuracy_score(
     if baseline is None:
         if len(y_true) < 2:
             raise ValueError("Time-series mode (baseline=None) requires at least 2 samples.")
+        if sample_weight is not None:
+            sample_weight = np.asarray(sample_weight).flatten()
+            if len(sample_weight) != len(y_true):
+                raise ValueError(
+                    f"Sample weight length ({len(sample_weight)}) does not match sample count ({len(y_true)})"
+                )
         baseline = y_true[:-1]
         y_true = y_true[1:]
         y_pred = y_pred[1:]
         if sample_weight is not None:
-            sample_weight = np.asarray(sample_weight).flatten()
-            if len(sample_weight) != len(y_true) + 1:
-                raise ValueError(
-                    f"Sample weight length ({len(sample_weight)}) does not match "
-                    f"original sample count ({len(y_true) + 1})"
-                )
             sample_weight = sample_weight[1:]
     else:
         baseline = np.asarray(baseline).flatten()

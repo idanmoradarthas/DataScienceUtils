@@ -125,12 +125,16 @@ def test_directional_accuracy_with_weights_time_series():
     assert directional_accuracy_score(y_true, y_pred, sample_weight=weights) == pytest.approx(1.0)
 
 
-def test_directional_accuracy_weight_mismatch():
-    """Test directional_accuracy_score raises error for weight length mismatch."""
+def test_directional_accuracy_weight_mismatch_with_baseline():
+    """Test directional_accuracy_score raises error for weight length mismatch with explicit baseline."""
     with pytest.raises(ValueError, match="Sample weight length"):
         directional_accuracy_score(
             np.array([1, 2]), np.array([1, 2]), baseline=np.array([0, 0]), sample_weight=np.array([1])
         )
+
+
+def test_directional_accuracy_weight_mismatch_time_series():
+    """Test directional_accuracy_score raises error for weight length mismatch in time-series mode."""
     with pytest.raises(ValueError, match="Sample weight length"):
         directional_accuracy_score(np.array([1, 2]), np.array([1, 2]), sample_weight=np.array([1]))
 
@@ -223,6 +227,22 @@ def test_directional_bias_with_weights_skewed():
     y_pred = np.array([1.1, 2.1, 2.9, 3.9])
     weights = np.array([2.0, 2.0, 1.0, 1.0])
     assert directional_bias_score(y_true, y_pred, sample_weight=weights) == pytest.approx(1 / 3, rel=1e-4)
+
+
+def test_directional_bias_with_weights_and_exclusion_filtering():
+    """Test directional_bias_score with weights when exclude removes zero-error samples."""
+    # errors: [+0.1, 0.0, -0.1, +0.2]
+    # handle_equal='exclude' removes index 1 (error == 0)
+    # remaining: [+0.1, -0.1, +0.2] with weights [1.0, 2.0, 3.0] (original [1.0, 5.0, 2.0, 3.0])
+    # normalized weights: [1/6, 2/6, 3/6]
+    # prop_over = (1 + 3) / 6 = 4/6
+    # prop_under = 2/6
+    # bias = (4-2)/6 = 2/6 ≈ 0.3333
+    y_true = np.array([1.0, 2.0, 3.0, 4.0])
+    y_pred = np.array([1.1, 2.0, 2.9, 4.2])
+    weights = np.array([1.0, 5.0, 2.0, 3.0])
+    result = directional_bias_score(y_true, y_pred, sample_weight=weights, handle_equal="exclude")
+    assert result == pytest.approx(1 / 3, rel=1e-4)
 
 
 def test_directional_bias_weight_mismatch():

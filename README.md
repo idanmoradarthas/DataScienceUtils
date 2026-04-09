@@ -27,7 +27,7 @@ The API of the package is built to work with the Scikit-Learn API and Matplotlib
 The metrics module is organized into focused submodules:
 - **confusion_matrix** - Confusion matrix visualization and analysis
 - **curves** - ROC and Precision-Recall curves
-- **directional_metrics** - Time-series and forecasting directional metrics
+- **time_series** - Time-series and forecasting directional metrics
 - **learning_curves** - Learning curve visualization
 - **probability_analysis** - Probability calibration and accuracy analysis
 
@@ -154,6 +154,7 @@ print(f"Directional Bias: {bias:.2f}")
 ```
 
 Output:
+```
 Directional Accuracy: 100.00%
 Directional Bias: 1.00
 ```

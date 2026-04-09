@@ -31,6 +31,8 @@ from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_annotations
 from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
 from ds_utils.metrics.error_analysis import generate_error_analysis_report
+from ds_utils.metrics.time_series import directional_accuracy_score
+from ds_utils.metrics.time_series import directional_bias_score
 ```
 
 ---
@@ -484,9 +486,12 @@ report_df = generate_error_analysis_report(
 )
 print(report_df)
 
-# 8. Directional Metrics (for time-series/forecasting)
+# 8. Directional Metrics (for time-series/forecasting with continuous targets)
+# Note: these metrics require continuous regression/forecasting outputs, not classifier labels.
 from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
-da = directional_accuracy_score(y_test, y_pred)
-bias = directional_bias_score(y_test, y_pred)
+y_forecast_true = np.array([100, 102, 98, 101, 99])
+y_forecast_pred = np.array([101, 103, 97, 102, 98])
+da = directional_accuracy_score(y_forecast_true, y_forecast_pred)
+bias = directional_bias_score(y_forecast_true, y_forecast_pred)
 print(f"DA: {da:.2%}, Bias: {bias:.2f}")
 ```

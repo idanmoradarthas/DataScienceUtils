@@ -26,8 +26,10 @@ Code Example
     da = directional_accuracy_score(y_true, y_pred)
     print(f"Directional Accuracy: {da:.2%}")
 
-Output:
-Directional Accuracy: 100.00%
+.. code-block:: text
+
+    Output:
+    Directional Accuracy: 100.00%
 
 Directional Bias Score
 ----------------------
@@ -49,5 +51,7 @@ Code Example
     bias = directional_bias_score(y_true, y_pred)
     print(f"Directional Bias: {bias:.2f}")
 
-Output:
-Directional Bias: 1.00
+.. code-block:: text
+
+    Output:
+    Directional Bias: 1.00
