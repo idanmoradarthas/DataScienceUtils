@@ -352,16 +352,22 @@ y_true = np.array([100, 102, 98, 101, 99])
 y_pred = np.array([101, 103, 97, 102, 98])
 da = directional_accuracy_score(y_true, y_pred)
 print(f"Directional Accuracy: {da:.2%}")
-
-# Custom baseline
-baseline = np.array([100, 100, 100, 100, 100])
-da = directional_accuracy_score(y_true, y_pred, baseline=baseline)
-print(f"Directional Accuracy (baseline 100): {da:.2%}")
 ```
 
 Output:
 Directional Accuracy: 100.00%
-Directional Accuracy (baseline 100): 40.00%
+
+```python
+# Custom baseline — different y_true to illustrate a non-trivial result
+y_true_baseline = np.array([102, 98, 101, 99, 102])
+baseline = np.array([100, 100, 100, 100, 100])
+y_pred_baseline = np.array([101, 99, 99, 101, 99])
+da_baseline = directional_accuracy_score(y_true_baseline, y_pred_baseline, baseline=baseline)
+print(f"Directional Accuracy (custom baseline): {da_baseline:.2%}")
+```
+
+Output:
+Directional Accuracy (custom baseline): 40.00%
 
 **Parameters:**
 

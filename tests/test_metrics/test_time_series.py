@@ -32,8 +32,9 @@ def test_directional_accuracy_all_wrong():
 
 def test_directional_accuracy_time_series_default():
     """Test directional_accuracy_score in default time-series mode."""
-    # true changes from prev: +2, -4, +3, -2
-    # pred changes from prev: +2.5, -6, +5, -4  -> all correct
+    # time series mode: baseline = y_true[:-1] = [100, 102, 98, 101]
+    # true changes from baseline: +2, -4, +3, -2  (signs: +, -, +, -)
+    # pred changes from baseline: +3, -5, +4, -3  (signs: +, -, +, -)  -> all directions match
     y_true = np.array([100, 102, 98, 101, 99])
     y_pred = np.array([100.5, 103, 97, 102, 98])
     assert directional_accuracy_score(y_true, y_pred) == pytest.approx(1.0)
