@@ -335,6 +335,79 @@ If analyzing features "age" and "region":
 
 ---
 
+## directional_accuracy_score
+
+Calculates the proportion of time steps for which a model correctly predicts the direction of
+change relative to a baseline. Ideal for time-series forecasting and financial modeling where
+trend direction matters more than exact magnitude.
+
+```python
+from ds_utils.metrics.time_series import directional_accuracy_score
+import numpy as np
+
+# Time series mode (baseline = previous value)
+y_true = np.array([100, 102, 98, 101, 99])
+y_pred = np.array([101, 103, 97, 102, 98])
+da = directional_accuracy_score(y_true, y_pred)
+print(f"Directional Accuracy: {da:.2%}")
+
+# Custom baseline
+baseline = np.array([100, 100, 100, 100, 100])
+da = directional_accuracy_score(y_true, y_pred, baseline=baseline)
+```
+
+**Parameters:**
+
+* `y_true` — array-like of shape (n_samples,). True target values.
+* `y_pred` — array-like of shape (n_samples,). Predicted target values.
+* `baseline` — array-like of shape (n_samples,), optional. Baseline values. If None, uses
+  `y_true[i-1]` (time series default). Requires `len(y_true) >= 2`.
+* `sample_weight` — array-like, optional. Sample weights.
+* `handle_equal` — `{'exclude', 'correct', 'incorrect'}`, default `'exclude'`. How to treat
+  samples where `y_true == baseline`.
+
+**Returns:** float in [0, 1]. 1.0 = perfect directional prediction, 0.5 = random baseline.
+
+**Common mistakes:**
+
+* Passing a single-element array with `baseline=None` — raises `ValueError`. You need at least
+  2 samples in time-series mode.
+* Forgetting that in time-series mode the first sample is dropped (it has no prior value), so a
+  5-element input yields 4 evaluated steps.
+
+---
+
+## directional_bias_score
+
+Calculates the systematic tendency of a model to over-predict or under-predict the target values.
+Returns a score where 1.0 is complete over-prediction, -1.0 is complete under-prediction, and
+0.0 is perfectly balanced.
+
+```python
+from ds_utils.metrics.time_series import directional_bias_score
+import numpy as np
+
+y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+y_pred = np.array([1.1, 2.1, 3.1, 4.1, 5.1])
+bias = directional_bias_score(y_true, y_pred)
+print(f"Directional Bias: {bias:.2f}")
+```
+
+**Parameters:**
+
+* `y_true` — array-like of shape (n_samples,). True target values.
+* `y_pred` — array-like of shape (n_samples,). Predicted target values.
+* `sample_weight` — array-like, optional. Sample weights.
+* `handle_equal` — `{'exclude', 'neutral'}`, default `'exclude'`. How to treat samples where `y_pred == y_true`.
+
+**Returns:** float in [-1, 1].
+
+**Common mistakes:**
+
+* Using `handle_equal='exclude'` (default) on a dataset where all predictions are exactly correct — raises `ValueError`. Use `'neutral'` if you expect and want to include perfect predictions.
+
+---
+
 ## Typical Workflow
 
 ```python
@@ -402,4 +475,10 @@ report_df = generate_error_analysis_report(
     bins=3
 )
 print(report_df)
+
+# 8. Directional Metrics (for time-series/forecasting)
+from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
+da = directional_accuracy_score(y_test, y_pred)
+bias = directional_bias_score(y_test, y_pred)
+print(f"DA: {da:.2%}, Bias: {bias:.2f}")
 ```

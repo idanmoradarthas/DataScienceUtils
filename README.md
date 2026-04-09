@@ -27,6 +27,7 @@ The API of the package is built to work with the Scikit-Learn API and Matplotlib
 The metrics module is organized into focused submodules:
 - **confusion_matrix** - Confusion matrix visualization and analysis
 - **curves** - ROC and Precision-Recall curves
+- **directional_metrics** - Time-series and forecasting directional metrics
 - **learning_curves** - Learning curve visualization
 - **probability_analysis** - Probability calibration and accuracy analysis
 
@@ -130,6 +131,27 @@ fig.show()
 ```
 
 ![plot precision recall curve with thresholds annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_curves/test_plot_precision_recall_curve_with_thresholds_annotations_default.png)
+
+### Directional Metrics
+
+Directional metrics evaluate forecasting performance, especially in time-series and financial contexts where trend direction is key.
+
+```python
+from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
+import numpy as np
+
+# Directional accuracy — time series mode (uses previous value as baseline)
+y_true = np.array([100, 102, 98, 101, 99])
+y_pred = np.array([101, 103, 97, 102, 98])
+da = directional_accuracy_score(y_true, y_pred)
+print(f"Directional Accuracy: {da:.2%}")   # 100.00%
+
+# Directional bias — detect systematic over/under-prediction
+y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+y_pred = np.array([1.1, 2.1, 3.1, 4.1, 5.1])
+bias = directional_bias_score(y_true, y_pred)
+print(f"Directional Bias: {bias:.2f}")   # 1.00
+```
 
 ### Plot Error Analysis Chart
 
