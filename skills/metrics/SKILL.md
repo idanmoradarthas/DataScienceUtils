@@ -31,8 +31,7 @@ from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_annotations
 from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
 from ds_utils.metrics.error_analysis import generate_error_analysis_report
-from ds_utils.metrics.time_series import directional_accuracy_score
-from ds_utils.metrics.time_series import directional_bias_score
+from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
 ```
 
 ---
