@@ -85,8 +85,7 @@ def directional_accuracy_score(
             sample_weight = np.asarray(sample_weight).flatten()
             if len(sample_weight) != len(y_true):
                 raise ValueError(
-                    f"Sample weight length ({len(sample_weight)}) does not match "
-                    f"sample count ({len(y_true)})"
+                    f"Sample weight length ({len(sample_weight)}) does not match sample count ({len(y_true)})"
                 )
 
     true_direction = np.sign(y_true - baseline)
@@ -180,10 +179,7 @@ def directional_bias_score(
     if sample_weight is not None:
         sample_weight = np.asarray(sample_weight).flatten()
         if len(sample_weight) != len(y_true):
-            raise ValueError(
-                f"Sample weight length ({len(sample_weight)}) does not match "
-                f"sample count ({len(y_true)})"
-            )
+            raise ValueError(f"Sample weight length ({len(sample_weight)}) does not match sample count ({len(y_true)})")
 
     errors = y_pred - y_true
 

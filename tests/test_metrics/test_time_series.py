@@ -85,9 +85,9 @@ def test_directional_accuracy_handle_equal(handle_equal, expected):
     y_true = np.array([100.0, 100.0, 102.0, 100.0, 98.0])
     baseline = np.array([100.0, 100.0, 100.0, 100.0, 100.0])
     y_pred = np.array([100.0, 101.0, 103.0, 99.0, 97.0])
-    assert directional_accuracy_score(
-        y_true, y_pred, baseline=baseline, handle_equal=handle_equal
-    ) == pytest.approx(expected)
+    assert directional_accuracy_score(y_true, y_pred, baseline=baseline, handle_equal=handle_equal) == pytest.approx(
+        expected
+    )
 
 
 def test_directional_accuracy_with_weights_all_correct():
@@ -96,9 +96,7 @@ def test_directional_accuracy_with_weights_all_correct():
     baseline = np.array([100, 100, 100, 100])
     y_pred = np.array([101, 103, 97, 102])
     weights = np.array([2.0, 1.0, 1.0, 1.0])
-    assert directional_accuracy_score(
-        y_true, y_pred, baseline=baseline, sample_weight=weights
-    ) == pytest.approx(1.0)
+    assert directional_accuracy_score(y_true, y_pred, baseline=baseline, sample_weight=weights) == pytest.approx(1.0)
 
 
 def test_directional_accuracy_with_weights_partial():
@@ -109,9 +107,7 @@ def test_directional_accuracy_with_weights_partial():
     baseline = np.array([100.0, 100.0])
     y_pred = np.array([101.0, 101.0])
     weights = np.array([3.0, 1.0])
-    assert directional_accuracy_score(
-        y_true, y_pred, baseline=baseline, sample_weight=weights
-    ) == pytest.approx(0.75)
+    assert directional_accuracy_score(y_true, y_pred, baseline=baseline, sample_weight=weights) == pytest.approx(0.75)
 
 
 def test_directional_accuracy_with_weights_time_series():
@@ -226,9 +222,7 @@ def test_directional_bias_with_weights_skewed():
     y_true = np.array([1.0, 2.0, 3.0, 4.0])
     y_pred = np.array([1.1, 2.1, 2.9, 3.9])
     weights = np.array([2.0, 2.0, 1.0, 1.0])
-    assert directional_bias_score(y_true, y_pred, sample_weight=weights) == pytest.approx(
-        1 / 3, rel=1e-4
-    )
+    assert directional_bias_score(y_true, y_pred, sample_weight=weights) == pytest.approx(1 / 3, rel=1e-4)
 
 
 def test_directional_bias_weight_mismatch():
@@ -250,8 +244,8 @@ def test_directional_metrics_on_simulated_time_series():
     rng = np.random.default_rng(42)
     n = 100
     true_prices = 100 + np.cumsum(rng.standard_normal(n) * 2)
-    good_pred = true_prices + rng.standard_normal(n) * 0.5   # tight errors
-    bad_pred = 100 + np.cumsum(rng.standard_normal(n) * 2)   # independent walk
+    good_pred = true_prices + rng.standard_normal(n) * 0.5  # tight errors
+    bad_pred = 100 + np.cumsum(rng.standard_normal(n) * 2)  # independent walk
 
     da_good = directional_accuracy_score(true_prices, good_pred)
     da_bad = directional_accuracy_score(true_prices, bad_pred)
