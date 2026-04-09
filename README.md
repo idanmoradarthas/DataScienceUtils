@@ -144,13 +144,15 @@ import numpy as np
 y_true = np.array([100, 102, 98, 101, 99])
 y_pred = np.array([101, 103, 97, 102, 98])
 da = directional_accuracy_score(y_true, y_pred)
-print(f"Directional Accuracy: {da:.2%}")   # 100.00%
+print(f"Directional Accuracy: {da:.2%}")
+# Output: Directional Accuracy: 100.00%
 
 # Directional bias — detect systematic over/under-prediction
 y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
 y_pred = np.array([1.1, 2.1, 3.1, 4.1, 5.1])
 bias = directional_bias_score(y_true, y_pred)
-print(f"Directional Bias: {bias:.2f}")   # 1.00
+print(f"Directional Bias: {bias:.2f}")
+# Output: Directional Bias: 1.00
 ```
 
 ### Plot Error Analysis Chart
