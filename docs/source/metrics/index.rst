@@ -10,6 +10,7 @@ The module of metrics contains methods that help to calculate and/or visualize e
    
    confusion_matrix
    curves
+   directional_metrics
    error_analysis
    learning_curves
    probability_analysis

@@ -6,4 +6,5 @@ This package provides functions for evaluating and visualizing model performance
 - error_analysis - Tabular error-analysis report generation
 - learning_curves - Learning curve visualization
 - probability_analysis - Probability calibration and accuracy analysis
+- time_series - Time-series forecasting and directional metrics
 """
