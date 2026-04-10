@@ -19,8 +19,8 @@ Code Example
     import numpy as np
 
     # Directional accuracy — time series mode (uses previous value as baseline)
-    # true changes from prev: +2, -4, +3, -2
-    # pred changes from prev: +1, -5, +4, -1  -> all directions match
+    # true changes from baseline: +2, -4, +3, -2
+    # pred changes from baseline: +3, -5, +4, -3  -> all directions match
     y_true = np.array([100, 102, 98, 101, 99])
     y_pred = np.array([101, 103, 97, 102, 98])
     da = directional_accuracy_score(y_true, y_pred)
