@@ -36,7 +36,7 @@ class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, *, classes: Union[None, np.ndarray, Sequence[Any]] = None, sparse_output: bool = False) -> None:
-        """See class docstring for ``classes`` and ``sparse_output``."
+        """See class docstring for ``classes`` and ``sparse_output``."""
         self.classes = classes
         self.sparse_output = sparse_output
 
