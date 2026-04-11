@@ -24,7 +24,7 @@ conda install -c idanmorad data-science-utils
 ## Import
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 ```
 
 ---
@@ -36,7 +36,7 @@ Wraps `sklearn.preprocessing.MultiLabelBinarizer` so pipelines get `get_feature_
 **1. Direct Object Usage:**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
 X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
 mlb = MultiLabelBinarizerTransformer()
@@ -54,7 +54,7 @@ feature_names = mlb.get_feature_names_out()
 **2. Pipeline Usage with Pandas Output:**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 from sklearn.pipeline import Pipeline
 
 X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
@@ -88,7 +88,7 @@ df = pipe.fit_transform(X)
 **Typical workflow**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 from sklearn.compose import ColumnTransformer
 
 # Single column "tags" in a DataFrame

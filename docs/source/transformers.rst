@@ -2,7 +2,7 @@
 Transformers
 ############
 
-The ``ds_utils.transformers`` module provides scikit-learn compatible transformers that wrap
+The ``ds_utils.transformers`` package provides scikit-learn compatible transformers that wrap
 or extend preprocessing estimators with ``get_feature_names_out`` (feature names API, SLEP007)
 and consistent output dtypes for pipelines and :class:`~sklearn.compose.ColumnTransformer`.
 
@@ -10,7 +10,7 @@ and consistent output dtypes for pipelines and :class:`~sklearn.compose.ColumnTr
 MultiLabelBinarizerTransformer
 ********************************
 
-.. autoclass:: ds_utils.transformers.MultiLabelBinarizerTransformer
+.. autoclass:: ds_utils.transformers.multi_label_binarizer.MultiLabelBinarizerTransformer
    :members:
 
 .. highlight:: python
@@ -19,7 +19,7 @@ Example
 =======
 ::
 
-    from ds_utils.transformers import MultiLabelBinarizerTransformer
+    from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
     from sklearn.pipeline import Pipeline
 
     X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
