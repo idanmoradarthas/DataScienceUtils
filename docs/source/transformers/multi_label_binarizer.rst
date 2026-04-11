@@ -21,10 +21,9 @@ Direct usage::
     X_t = mlb.fit_transform(X)
     names = mlb.get_feature_names_out()
 
-``X_t`` is a numpy array of shape ``(n_samples, n_classes)``, dtype ``float64``.
-``names`` contains the feature names, e.g. ``['label_action', 'label_comedy', 'label_romance', 'label_sci-fi']``.
-
-Their output will be:
+``X_t`` is a numpy array of shape ``(n_samples, n_classes)``, dtype ``float64``, with columns
+corresponding to ``names`` (e.g. ``['label_action', 'label_comedy', 'label_romance', 'label_sci-fi']``).
+The output will be:
 
 +------------+------------+-------------+------------+
 |label_action|label_comedy|label_romance|label_sci-fi|
