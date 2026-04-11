@@ -6,7 +6,7 @@ import pytest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
 
 def test_fit_transform_list_of_lists_basic():
