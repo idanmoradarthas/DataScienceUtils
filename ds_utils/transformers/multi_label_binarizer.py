@@ -1,8 +1,7 @@
-"""Scikit-learn compatible transformer wrappers for preprocessing pipelines."""
+"""Scikit-learn compatible MultiLabelBinarizer transformer wrapper."""
 
 from __future__ import annotations
 
-import re
 from typing import Any, List, Sequence, Union
 
 import numpy as np
@@ -11,23 +10,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.utils.validation import check_is_fitted
 
+from ._common import _sanitize_column_name
+
 ArrayLike = Union[np.ndarray, pd.Series, pd.DataFrame, Sequence[Any]]
-
-
-def _sanitize_column_name(name: Any) -> str:
-    """Sanitize a label for use in feature names (e.g. Delta-safe identifiers).
-
-    Replaces invalid characters (space, comma, semicolon, braces, parentheses,
-    newline, tab, equals) with underscores, collapses repeated underscores, and
-    strips leading and trailing underscores.
-
-    :param name: Label or value from ``classes_``; coerced to ``str``.
-    :return: Sanitized string suitable as part of a column name.
-    """
-    name_str = str(name)
-    sanitized = re.sub(r"[ ,;{}()\n\t=]", "_", name_str)
-    sanitized = re.sub(r"_+", "_", sanitized)
-    return sanitized.strip("_")
 
 
 class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
