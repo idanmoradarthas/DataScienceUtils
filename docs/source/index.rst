@@ -15,7 +15,7 @@ visualizations for data science projects.
    metrics/index
    preprocess/index
    strings
-   transformers
+   transformers/index
    unsupervised
    xai
    contributing

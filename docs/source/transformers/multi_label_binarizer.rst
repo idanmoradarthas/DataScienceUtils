@@ -1,36 +1,23 @@
-############
-Transformers
-############
-
-The ``ds_utils.transformers`` package provides scikit-learn compatible transformers that wrap
-or extend preprocessing estimators with ``get_feature_names_out`` (feature names API, SLEP007)
-and consistent output dtypes for pipelines and :class:`~sklearn.compose.ColumnTransformer`.
-
-********************************
+******************************
 MultiLabelBinarizerTransformer
-********************************
+******************************
 
 .. autoclass:: ds_utils.transformers.multi_label_binarizer.MultiLabelBinarizerTransformer
    :members:
 
 .. highlight:: python
 
-Example
-=======
-::
+Code Examples
+=============
+
+Direct usage::
 
     from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
-    from sklearn.pipeline import Pipeline
 
     X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
     mlb = MultiLabelBinarizerTransformer()
     X_t = mlb.fit_transform(X)
-
     names = mlb.get_feature_names_out()
-
-    pipe = Pipeline([("mlb", MultiLabelBinarizerTransformer())])
-    pipe.set_output(transform="pandas")
-    df = pipe.fit_transform(X)
 
 Both ``X_t`` (as a numpy array) and ``df`` (as a pandas DataFrame) contain the same binarized data.
 Their output will be:
@@ -44,3 +31,25 @@ Their output will be:
 +------------+------------+-------------+------------+
 |1.0         |1.0         |0.0          |0.0         |
 +------------+------------+-------------+------------+
+
+Pipeline usage with pandas output::
+
+    from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
+    from sklearn.pipeline import Pipeline
+
+    pipe = Pipeline([("mlb", MultiLabelBinarizerTransformer())])
+    pipe.set_output(transform="pandas")
+    df = pipe.fit_transform(X)
+
+ColumnTransformer usage::
+
+    from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
+    from sklearn.compose import ColumnTransformer
+    import pandas as pd
+
+    df = pd.DataFrame({"tags": [["x", "y"], ["z"]], "num": [1.0, 2.0]})
+    pre = ColumnTransformer(
+        [("mlb", MultiLabelBinarizerTransformer(), ["tags"])],
+        remainder="passthrough",
+    )
+    X_out = pre.fit_transform(df)
