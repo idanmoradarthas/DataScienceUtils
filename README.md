@@ -502,14 +502,14 @@ The output for ``terms`` will be the following table:
 
 ## Transformers
 
-The ``transformers`` module provides scikit-learn compatible wrappers for preprocessing steps that need ``get_feature_names_out`` (feature names in pipelines) and consistent ``float64`` output.
+The ``transformers`` package provides scikit-learn compatible wrappers for preprocessing steps that need ``get_feature_names_out`` (feature names in pipelines) and consistent ``float64`` output.
 
 ### MultiLabelBinarizerTransformer
 
 Wraps ``sklearn.preprocessing.MultiLabelBinarizer`` so multi-label columns work with ``Pipeline``, ``ColumnTransformer``, and ``set_output(transform="pandas")``. Pass **one iterable of labels per sample** (see the `MultiLabelBinarizer <https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MultiLabelBinarizer.html>`_ documentation—a flat list of strings is not valid input).
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 from sklearn.pipeline import Pipeline
 
 X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
