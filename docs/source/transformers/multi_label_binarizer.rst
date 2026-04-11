@@ -10,6 +10,8 @@ MultiLabelBinarizerTransformer
 Code Examples
 =============
 
+The following examples show the three main ways to use ``MultiLabelBinarizerTransformer``.
+
 Direct usage::
 
     from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
@@ -19,7 +21,9 @@ Direct usage::
     X_t = mlb.fit_transform(X)
     names = mlb.get_feature_names_out()
 
-Both ``X_t`` (as a numpy array) and ``df`` (as a pandas DataFrame) contain the same binarized data.
+``X_t`` is a numpy array of shape ``(n_samples, n_classes)``, dtype ``float64``.
+``names`` contains the feature names, e.g. ``['label_action', 'label_comedy', 'label_romance', 'label_sci-fi']``.
+
 Their output will be:
 
 +------------+------------+-------------+------------+
