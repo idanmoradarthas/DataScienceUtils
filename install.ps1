@@ -19,7 +19,8 @@ param(
     [switch]$FromSource,
     [switch]$Force,
     [switch]$Silent,
-    [string]$Tools = ""
+    [string]$Tools = "",
+    [string]$Extras = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -247,16 +248,37 @@ function Get-Package {
     return Show-Radio -Items $items
 }
 
+# ── Optional extras selection ─────────────────────────────────────
+function Get-Extras {
+    param([string]$pkgManager)
+
+    if ($SkillsOnly -or $pkgManager -eq "skip" -or $pkgManager -eq "conda") { return "" }
+    if ($Extras -ne "") { return $Extras }
+    if ($Silent) { return "" }
+
+    Write-Host ""
+    Write-Host "  Optional dependencies:" -ForegroundColor White
+
+    $items = @(
+        @{ Label = "NLP (sentence-transformers)"; Value = "nlp"; Selected = $false; Hint = "enables SentenceEmbeddingTransformer" }
+    )
+    $selected = Show-Checkbox -Items $items
+    return ($selected -join ",")
+}
+
 # ── Package manager install ────────────────────────────────────────
 function Install-Package {
-    param([string]$pkgManager)
-    
+    param([string]$pkgManager, [string]$selectedExtras)
+
     if ($SkillsOnly -or $pkgManager -eq "skip") { return }
 
     Write-Step "Installing data-science-utils Python package"
     Write-Msg "Using: $pkgManager"
 
-    $hasPip3     = $null -ne (Get-Command pip3  -ErrorAction SilentlyContinue)
+    $hasPip3 = $null -ne (Get-Command pip3 -ErrorAction SilentlyContinue)
+
+    # Build extras suffix: "[nlp]" or ""
+    $extrasSuffix = if ($selectedExtras) { "[$selectedExtras]" } else { "" }
 
     if ($pkgManager -eq "conda") {
         conda install -y -c idanmorad data-science-utils
@@ -266,12 +288,12 @@ function Install-Package {
         git clone --depth 1 -q "https://github.com/idanmoradarthas/DataScienceUtils.git" $tmpDir
         if ($LASTEXITCODE -ne 0) { Write-Err "git clone failed. Check your internet connection." }
         $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }
-        & $pipCmd install -q $tmpDir
+        & $pipCmd install -q "$tmpDir$extrasSuffix"
         if ($LASTEXITCODE -ne 0) { Write-Err "pip install from source failed." }
         Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
     } else {
         $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }
-        & $pipCmd install -U data-science-utils
+        & $pipCmd install -U "data-science-utils$extrasSuffix"
     }
 
     Write-Ok "data-science-utils installed"
@@ -376,6 +398,10 @@ $pkgManager = Get-Package
 if ($pkgManager -eq "skip") { $SkillsOnly = $true }
 Write-Ok "Package: $pkgManager"
 
+Write-Step "Optional dependencies"
+$selectedExtras = Get-Extras -pkgManager $pkgManager
+Write-Ok "Extras: $(if ($selectedExtras) { $selectedExtras } else { 'none' })"
+
 # Confirm
 if (-not $Silent) {
     $baseDir = if ($SCOPE -eq "global") { "~" } else { (Get-Location).Path }
@@ -385,6 +411,7 @@ if (-not $Silent) {
     Write-Host ("  Tools:    " + ($selectedTools -join ", ")) -ForegroundColor Green
     Write-Host "  Scope:    $SCOPE ($baseDir)" -ForegroundColor Green
     Write-Host ("  Package:  " + (if ($SkillsOnly) { "skip" } else { $pkgManager })) -ForegroundColor Green
+    Write-Host ("  Extras:   " + (if ($selectedExtras) { $selectedExtras } else { "none" })) -ForegroundColor Green
     Write-Host "  Skills:   $($SKILLS -join ', ')" -ForegroundColor Green
     Write-Host ""
     $confirm = Read-Host "  Proceed with installation? (y/n) [y]"
@@ -394,13 +421,14 @@ if (-not $Silent) {
     }
 }
 
-Install-Package -pkgManager $pkgManager
+Install-Package -pkgManager $pkgManager -selectedExtras $selectedExtras
 Install-Skills -SelectedTools $selectedTools -InstallScope $SCOPE
 
 Write-Host ""
 Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host "────────────────────────────────────────"
 Write-Msg "Package:  $(if ($SkillsOnly) { 'skipped' } else { 'installed' })"
+Write-Msg "Extras:   $(if ($selectedExtras) { $selectedExtras } else { 'none' })"
 Write-Msg "Scope:    $SCOPE"
 Write-Msg "Tools:    $($selectedTools -join ', ')"
 Write-Host ""

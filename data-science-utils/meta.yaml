@@ -45,7 +45,7 @@ about:
   license_family: MIT
   license_file: ../LICENSE
   summary: "This project is an ensemble of methods which are frequently used in python Data Science projects."
-  description: "This project is an ensemble of methods which are frequently used in python Data Science projects."
+  description: "This project is an ensemble of methods which are frequently used in python Data Science projects. NLP features (SentenceEmbeddingTransformer) require sentence-transformers, which can be installed separately via: pip install sentence-transformers"
   doc_url: https://datascienceutils.readthedocs.io/en/latest/
 
 extra:

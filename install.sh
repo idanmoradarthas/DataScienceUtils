@@ -38,6 +38,7 @@ INSTALL_PKG=true
 FORCE=false
 SILENT=false
 USER_TOOLS=""
+EXTRAS=""
 TOOLS=""
 PKG_MANAGER_OVERRIDE=""
 
@@ -362,20 +363,40 @@ select_package() {
     fi
 }
 
+# ── Optional extras selection ──────────────────────────────────────
+select_extras() {
+    [ "$INSTALL_PKG" = false ] && return
+    [ "$PKG_MANAGER" = "conda" ] && return   # conda doesn't support pip extras
+
+    if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
+        echo ""
+        echo -e "  ${B}Optional dependencies:${N}"
+        EXTRAS=$(checkbox_select \
+            "NLP (sentence-transformers)|nlp|off|enables SentenceEmbeddingTransformer" \
+        )
+    fi
+}
+
 # ── Package manager install ────────────────────────────────────────
 install_package() {
     [ "$INSTALL_PKG" = false ] && return
 
     step "Installing data-science-utils Python package"
     local pkg_manager="$PKG_MANAGER"
-
     msg "Using: ${B}${pkg_manager}${N}"
+
+    # Build extras suffix: "data-science-utils[nlp]" or "data-science-utils"
+    local extras_suffix=""
+    if [ -n "$EXTRAS" ]; then
+        local joined
+        joined=$(echo "$EXTRAS" | tr ' ' ',')
+        extras_suffix="[${joined}]"
+    fi
 
     if [ "$pkg_manager" = "conda" ]; then
         conda install -y -c idanmorad data-science-utils 2>/dev/null \
             || die "conda install failed. Try: conda install -c idanmorad data-science-utils"
     elif [ "$pkg_manager" = "source" ]; then
-        # Clone the repo to a temp dir and install from source
         local tmp_dir
         tmp_dir=$(mktemp -d)
         msg "Cloning DataScienceUtils into ${tmp_dir}..."
@@ -383,12 +404,12 @@ install_package() {
             || die "git clone failed. Check your internet connection."
         local pip_cmd="pip3"
         command -v pip3 >/dev/null 2>&1 || pip_cmd="pip"
-        $pip_cmd install -q "$tmp_dir" \
+        $pip_cmd install -q "${tmp_dir}${extras_suffix}" \
             || die "pip install from source failed. Try manually: git clone ... && pip install ."
         rm -rf "$tmp_dir"
     else
         local pip_cmd="$pkg_manager"
-        $pip_cmd install -U data-science-utils \
+        $pip_cmd install -U "data-science-utils${extras_suffix}" \
             || die "pip install failed. Try: pip install data-science-utils"
     fi
 
@@ -474,6 +495,7 @@ summary() {
     echo -e "${G}${B}Installation complete!${N}"
     echo "────────────────────────────────────────"
     msg "Package:  data-science-utils $([ "$INSTALL_PKG" = true ] && echo "installed" || echo "skipped")"
+    msg "Extras:   $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
     msg "Scope:    ${SCOPE} (${base_dir})"
     msg "Tools:    $(echo "$TOOLS" | tr ' ' ', ')"
     echo ""
@@ -518,6 +540,11 @@ main() {
     select_package
     ok "Package: $([ "$INSTALL_PKG" = true ] && echo "$PKG_MANAGER" || echo "skip")"
 
+    # Select optional extras
+    step "Optional dependencies"
+    select_extras
+    ok "Extras: $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
+
     # Confirm
     if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
         local base_dir
@@ -528,6 +555,7 @@ main() {
         echo -e "  Tools:    ${G}$(echo "$TOOLS" | tr ' ' ', ')${N}"
         echo -e "  Scope:    ${G}${SCOPE} (${base_dir})${N}"
         echo -e "  Package:  ${G}$([ "$INSTALL_PKG" = true ] && echo "pip/conda install" || echo "skip")${N}"
+        echo -e "  Extras:   ${G}$([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")${N}"
         echo -e "  Skills:   ${G}${SKILLS}${N}"
         echo ""
         local confirm

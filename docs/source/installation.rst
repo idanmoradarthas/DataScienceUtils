@@ -31,6 +31,10 @@ installer |pypi_version|::
 
     pip install data-science-utils
 
+To install with optional dependencies (like NLP features that require ``sentence-transformers``), use the extras syntax::
+
+    pip install "data-science-utils[nlp]"
+
 To upgrade Data Science Utils to the latest version, use::
 
     pip install -U data-science-utils
@@ -44,6 +48,10 @@ If you prefer to install from source, you can clone the repository and install |
     cd DataScienceUtils
     pip install .
 
+To include optional dependencies when installing from source, use::
+
+    pip install ".[nlp]"
+
 Alternatively, you can install directly from GitHub using pip::
 
     pip install git+https://github.com/idanmoradarthas/DataScienceUtils.git
@@ -54,11 +62,18 @@ If you're using Anaconda, you can install using conda |conda_version|::
 
     conda install idanmorad::data-science-utils
 
+To install the optional NLP features (``sentence-transformers``) via conda, you need to separately install them from the ``conda-forge`` channel::
+
+    conda install conda-forge::sentence-transformers
+
+
 Note on Dependencies
 ====================
 
-Data Science Utils has several dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
-automatically installed when you install the package using the methods above.
+Data Science Utils has several core dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
+automatically installed when you install the package using the methods above. 
+
+Optional features (such as ``SentenceEmbeddingTransformer``) require additional dependencies (``sentence-transformers``) which must be installed explicitly using the ``[nlp]`` extra or separately via conda.
 
 Staying Updated
 ===============
