@@ -47,7 +47,8 @@ performs tool detection to locate AI editors (Claude Code, Cursor, GitHub
 Copilot, Gemini CLI, Antigravity), displays a checkbox selector for
 choosing which tools to inject skills into, offers a project vs. global
 scope radio selector, auto-detects pip, conda, or a source install from
-the cloned repository, and finally deploys skill files to:
+the cloned repository, optionally installs extra dependencies (like nlp),
+and finally deploys skill files to:
 
 * **Tool-specific directories**: ``.claude/skills/``, ``.cursor/rules/``,
   ``.github/instructions/``, ``.gemini/skills/``
@@ -246,7 +247,17 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
 
         [ Confirm ]
 
-**Step 6 — Confirmation summary**
+**Step 6 — Optional dependencies prompt**
+
+.. code-block:: text
+
+    Install optional NLP extras (sentence-transformers)? (y/N) [n]
+
+This prompt lets you optionally install extra dependency groups (such as ``nlp``, which provides ``sentence-transformers``) along with the package. Pressing ``Enter`` defaults to ``no`` and installs only the core dependencies. Note: conda installations do not support this prompt and will skip it.
+
+On **Windows (PowerShell)**, the prompt is functionally identical.
+
+**Step 7 — Confirmation summary**
 
 .. code-block:: text
 
@@ -255,13 +266,14 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
     Tools:    Claude Code, Cursor
     Scope:    project (/home/user/my-project)
     Package:  pip install
+    Extras:   none
     Skills:   metrics preprocess unsupervised strings transformers xai
 
     Proceed with installation? (y/n) [y]:
 
 Review every line of this summary before pressing ``Enter``. Type ``n`` and press ``Enter`` to cancel without making any changes. Press ``Enter`` (or type ``y``) to proceed. (The ``Package`` line will read "conda install" or "skip" depending on your selections).
 
-**Step 7 — Installation progress**
+**Step 8 — Installation progress**
 
 .. code-block:: text
 
@@ -297,13 +309,14 @@ The ``.agents/skills/`` path makes skills visible to any other
 `Agent Skills <https://agentskills.io>`_-compatible tool automatically.
 If any line shows ``!`` (warning) instead, see Troubleshooting.
 
-**Step 8 — Completion message**
+**Step 9 — Completion message**
 
 .. code-block:: text
 
     Installation complete!
     ────────────────────────────────────────
     Package:  installed
+    Extras:   none
     Scope:    project
     Tools:    Claude Code, Cursor
 
@@ -324,7 +337,7 @@ If any line shows ``!`` (warning) instead, see Troubleshooting.
 
 The skills are now active. No further configuration is needed — open your project in Claude Code or Cursor and the skills will load automatically whenever you ask something related to DataScienceUtils.
 
-**Step 9 — Verify the installation**
+**Step 10 — Verify the installation**
 
 After the installer exits, confirm the files are present:
 
@@ -393,7 +406,7 @@ On Mac / Linux, if ``find`` returns nothing, the skill files were not placed
 correctly. On Windows, if ``Get-ChildItem`` returns nothing, the same applies.
 In either case, re-run the installer or follow the Manual Installation section below.
 
-**Step 10 — First use**
+**Step 11 — First use**
 
 Open your project in your AI coding tool — no restart needed. Then give two concrete example prompts to try:
 

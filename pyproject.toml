@@ -57,31 +57,34 @@ path = "ds_utils/__init__.py"
 [project.optional-dependencies]
 test = [
     "pyarrow==23.0.1",
-    "pytest==9.0.2",
+    "pytest==9.0.3",
     "pytest-mock==3.15.1",
     "pytest-cov==7.1.0",
     "pytest-xdist==3.8.0",
     "pytest-mpl==0.19.0",
     "kaleido==1.2.0",
-    "ruff==0.15.9"
+    "ruff==0.15.11"
 ]
 dev = [
-    "build==1.4.2",
+    "build==1.4.3",
     "twine==6.2.0",
+]
+nlp = [
+    "sentence-transformers>=3.0.0",
 ]
 
 
 [dependency-groups]
 dev = [
     "pyarrow==23.0.1",
-    "pytest==9.0.2",
+    "pytest==9.0.3",
     "pytest-mock==3.15.1",
     "pytest-cov==7.1.0",
     "pytest-xdist==3.8.0",
     "pytest-mpl==0.19.0",
     "kaleido==1.2.0",
-    "ruff==0.15.9",
-    "build==1.4.2",
+    "ruff==0.15.11",
+    "build==1.4.3",
     "twine==6.2.0",
 ]
 

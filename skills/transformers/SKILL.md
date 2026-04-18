@@ -1,7 +1,7 @@
 ---
 name: ds-utils-transformers
 description: >
-  Sklearn pipeline transformers for multi-label binarization with get_feature_names_out and float64 output. Use when the user needs MultiLabelBinarizer in a Pipeline, ColumnTransformer, or set_output(transform="pandas"), or when feature names must propagate from multi-label columns.
+  Sklearn pipeline transformers for multi-label binarization and sentence embeddings. Use when the user needs MultiLabelBinarizer in a Pipeline, ColumnTransformer, or set_output(transform="pandas"), or when integrating sentence-transformers models into sklearn pipelines for NLP tasks.
 license: MIT
 metadata:
   author: Idan Morad
@@ -19,12 +19,16 @@ Sklearn-compatible wrappers for preprocessing steps that need the feature-names 
 pip install data-science-utils
 # or
 conda install -c idanmorad data-science-utils
+
+# For NLP features (SentenceEmbeddingTransformer):
+pip install data-science-utils[nlp]
 ```
 
 ## Import
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
 ```
 
 ---
@@ -36,7 +40,7 @@ Wraps `sklearn.preprocessing.MultiLabelBinarizer` so pipelines get `get_feature_
 **1. Direct Object Usage:**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
 X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
 mlb = MultiLabelBinarizerTransformer()
@@ -54,7 +58,7 @@ feature_names = mlb.get_feature_names_out()
 **2. Pipeline Usage with Pandas Output:**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 from sklearn.pipeline import Pipeline
 
 X = [["sci-fi", "action"], ["romance"], ["action", "comedy"]]
@@ -88,7 +92,7 @@ df = pipe.fit_transform(X)
 **Typical workflow**
 
 ```python
-from ds_utils.transformers import MultiLabelBinarizerTransformer
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 from sklearn.compose import ColumnTransformer
 
 # Single column "tags" in a DataFrame
@@ -101,3 +105,90 @@ pre = ColumnTransformer(
 )
 X_out = pre.fit_transform(df)
 ```
+
+---
+
+## SentenceEmbeddingTransformer
+
+Wraps [sentence-transformers](https://sbert.net/) models for use in sklearn pipelines. Produces dense embedding matrices from text inputs with lazy model loading, `None`/`NaN` handling, and `get_feature_names_out` support.
+
+> **Requires:** `pip install data-science-utils[nlp]`
+
+**1. Direct Usage:**
+
+```python
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
+
+texts = ["The quick brown fox", "jumps over the lazy dog", "Hello world"]
+embed = SentenceEmbeddingTransformer()
+embeddings = embed.fit_transform(texts)
+feature_names = embed.get_feature_names_out()
+```
+**Output (`embeddings`): will be a numpy array of shape `(n_samples, embedding_dimension)` (e.g. `(3, 384)` for the default `sentence-transformers/all-MiniLM-L6-v2` model), with `feature_names` corresponding to columns.**
+
+| dim_0    | dim_1    | dim_2    | ... | dim_383  |
+|----------|----------|----------|-----|----------|
+| -0.0123  |  0.0456  |  0.0789  | ... |  0.0012  |
+|  0.0345  | -0.0678  |  0.0901  | ... | -0.0234  |
+|  0.0567  |  0.0890  | -0.0123  | ... |  0.0456  |
+
+**2. Pipeline Usage with Classifier:**
+
+```python
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+
+pipeline = Pipeline([
+    ('embeddings', SentenceEmbeddingTransformer(normalize_embeddings=True)),
+    ('classifier', RandomForestClassifier()),
+])
+pipeline.fit(X_train, y_train)
+predictions = pipeline.predict(X_test)
+```
+
+**3. ColumnTransformer Usage (mixing text and numerical features):**
+
+```python
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
+df = pd.DataFrame({
+    "description": ["a product", "another item"],
+    "price": [9.99, 19.99],
+})
+pre = ColumnTransformer([
+    ("text", SentenceEmbeddingTransformer(), ["description"]),
+    ("num", StandardScaler(), ["price"]),
+])
+X_out = pre.fit_transform(df)
+```
+
+**Parameters (constructor):**
+
+- `model_name` — name or path of a sentence-transformers model (default: `'sentence-transformers/all-MiniLM-L6-v2'`).
+- `batch_size` — batch size for encoding (default: `32`).
+- `show_progress_bar` — show progress during encoding (default: `False`).
+- `normalize_embeddings` — L2-normalize embeddings to unit length (default: `False`).
+- `device` — computation device: `'cpu'`, `'cuda'`, etc. `None` auto-detects (default: `None`).
+- `precision` — embedding precision: `'float32'`, `'int8'`, `'uint8'`, `'binary'`, `'ubinary'` (default: `'float32'`).
+- `truncate_dim` — truncate embeddings to this dimension, useful for Matryoshka models (default: `None`).
+- `prompt_name` — name of a prompt from the model's prompts dictionary (default: `None`).
+- `prompt` — raw prompt string to prepend to inputs (default: `None`).
+
+**Returns from `transform`:** `numpy.ndarray`, shape `(n_samples, embedding_dimension)`.
+
+**Feature names:** `get_feature_names_out()` returns `dim_0`, `dim_1`, …, `dim_{n-1}`.
+
+**Lazy loading:** The `SentenceTransformer` model is loaded only when `fit()` is first called. Subsequent `fit()` calls reuse the cached model.
+
+**None/NaN handling:** `None` and `NaN` values in input are automatically replaced with empty strings before encoding.
+
+**Common mistakes:**
+
+- Calling `transform()` before `fit()`: raises `NotFittedError`. Always call `fit()` or `fit_transform()` first.
+- Passing a **DataFrame with more than one column**: this transformer expects a single text column.
+- Forgetting to install the `nlp` extras: raises `ImportError` with a helpful message.
+

@@ -38,6 +38,7 @@ INSTALL_PKG=true
 FORCE=false
 SILENT=false
 USER_TOOLS=""
+EXTRAS=""
 TOOLS=""
 PKG_MANAGER_OVERRIDE=""
 
@@ -124,7 +125,9 @@ checkbox_select() {
 
     printf "\n  \033[2m↑/↓ navigate · space toggle · enter confirm\033[0m\n\n" > /dev/tty
     printf "\033[?25l" > /dev/tty
-    trap 'printf "\033[?25h" > /dev/tty 2>/dev/null' EXIT
+    local old_trap
+    old_trap=$(trap -p EXIT)
+    trap 'printf "\033[?25h" > /dev/tty 2>/dev/null; eval "$old_trap"' EXIT
     _draw
 
     while true; do
@@ -362,20 +365,43 @@ select_package() {
     fi
 }
 
+# ── Optional extras selection ──────────────────────────────────────
+select_extras() {
+    local pkg_manager="$1"
+    [ "$INSTALL_PKG" = false ] && return
+    [ "$pkg_manager" = "conda" ] && return   # conda doesn't support pip extras
+
+    if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
+        echo ""
+        local ans
+        ans=$(prompt "Install optional NLP extras (sentence-transformers)? (y/N)" "n")
+        case "$ans" in
+            [Yy]* ) EXTRAS="nlp" ;;
+            * ) EXTRAS="" ;;
+        esac
+    fi
+}
+
 # ── Package manager install ────────────────────────────────────────
 install_package() {
     [ "$INSTALL_PKG" = false ] && return
 
     step "Installing data-science-utils Python package"
     local pkg_manager="$PKG_MANAGER"
-
     msg "Using: ${B}${pkg_manager}${N}"
+
+    # Build extras suffix: "data-science-utils[nlp]" or "data-science-utils"
+    local extras_suffix=""
+    if [ -n "$EXTRAS" ]; then
+        local joined
+        joined=$(echo "$EXTRAS" | tr ' ' ',')
+        extras_suffix="[${joined}]"
+    fi
 
     if [ "$pkg_manager" = "conda" ]; then
         conda install -y -c idanmorad data-science-utils 2>/dev/null \
             || die "conda install failed. Try: conda install -c idanmorad data-science-utils"
     elif [ "$pkg_manager" = "source" ]; then
-        # Clone the repo to a temp dir and install from source
         local tmp_dir
         tmp_dir=$(mktemp -d)
         msg "Cloning DataScienceUtils into ${tmp_dir}..."
@@ -385,10 +411,13 @@ install_package() {
         command -v pip3 >/dev/null 2>&1 || pip_cmd="pip"
         $pip_cmd install -q "$tmp_dir" \
             || die "pip install from source failed. Try manually: git clone ... && pip install ."
+        if [ -n "$EXTRAS" ] && echo "$EXTRAS" | grep -q "nlp"; then
+            $pip_cmd install -q "sentence-transformers" || warn "Could not install optional nlp extras."
+        fi
         rm -rf "$tmp_dir"
     else
         local pip_cmd="$pkg_manager"
-        $pip_cmd install -U data-science-utils \
+        $pip_cmd install -U "data-science-utils${extras_suffix}" \
             || die "pip install failed. Try: pip install data-science-utils"
     fi
 
@@ -474,6 +503,7 @@ summary() {
     echo -e "${G}${B}Installation complete!${N}"
     echo "────────────────────────────────────────"
     msg "Package:  data-science-utils $([ "$INSTALL_PKG" = true ] && echo "installed" || echo "skipped")"
+    msg "Extras:   $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
     msg "Scope:    ${SCOPE} (${base_dir})"
     msg "Tools:    $(echo "$TOOLS" | tr ' ' ', ')"
     echo ""
@@ -518,6 +548,11 @@ main() {
     select_package
     ok "Package: $([ "$INSTALL_PKG" = true ] && echo "$PKG_MANAGER" || echo "skip")"
 
+    # Select optional extras
+    step "Optional dependencies"
+    select_extras "$PKG_MANAGER"
+    ok "Extras: $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
+
     # Confirm
     if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
         local base_dir
@@ -528,6 +563,7 @@ main() {
         echo -e "  Tools:    ${G}$(echo "$TOOLS" | tr ' ' ', ')${N}"
         echo -e "  Scope:    ${G}${SCOPE} (${base_dir})${N}"
         echo -e "  Package:  ${G}$([ "$INSTALL_PKG" = true ] && echo "pip/conda install" || echo "skip")${N}"
+        echo -e "  Extras:   ${G}$([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")${N}"
         echo -e "  Skills:   ${G}${SKILLS}${N}"
         echo ""
         local confirm
