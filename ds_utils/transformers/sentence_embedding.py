@@ -95,6 +95,14 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         self.prompt_name = prompt_name
         self.prompt = prompt
 
+    def set_params(self, **params: Any) -> SentenceEmbeddingTransformer:
+        """Set the parameters of this estimator."""
+        if "precision" in params:
+            valid_precisions = ("float32", "int8", "uint8", "binary", "ubinary")
+            if params["precision"] not in valid_precisions:
+                raise ValueError(f"Invalid precision '{params['precision']}'. Expected one of {valid_precisions}.")
+        return super().set_params(**params)
+
     def _load_model(self) -> None:
         """Import and instantiate the ``SentenceTransformer`` model."""
         _check_sentence_transformers_installed()
@@ -102,13 +110,14 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         self.model_ = SentenceTransformer(self.model_name, device=self.device, truncate_dim=self.truncate_dim)
         self.embedding_dimension_ = self.model_.get_sentence_embedding_dimension()
+        self._loaded_model_name_ = self.model_name
 
     @staticmethod
     def _is_null(val: Any) -> bool:
         """Robustly check for None, np.nan, or pd.NA without triggering array ambiguity."""
         if val is None or val is pd.NA:
             return True
-        if isinstance(val, float) and np.isnan(val):
+        if isinstance(val, (float, np.floating)) and np.isnan(val):
             return True
         return False
 
@@ -152,12 +161,12 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         """
         valid_precisions = ("float32", "int8", "uint8", "binary", "ubinary")
         if self.precision not in valid_precisions:
-            raise ValueError(
-                f"Invalid precision '{self.precision}'. Expected one of {valid_precisions}."
-            )
+            raise ValueError(f"Invalid precision '{self.precision}'. Expected one of {valid_precisions}.")
 
         self.n_features_in_ = 1
-        if not hasattr(self, "model_"):
+        self._prepare_texts(X)
+
+        if not hasattr(self, "model_") or getattr(self, "_loaded_model_name_", None) != self.model_name:
             self._load_model()
         return self
 
@@ -166,6 +175,7 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         :param X: Same accepted forms as :meth:`fit`.
         :return: Embedding matrix of shape ``(n_samples, embedding_dimension_)``.
+                 The output dtype depends on the ``precision`` parameter (e.g., ``float32`` or ``uint8``).
         :raises sklearn.exceptions.NotFittedError: If :meth:`fit` has not been called.
         """
         check_is_fitted(self, "model_")
@@ -187,7 +197,8 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         Names follow ``dim_0``, ``dim_1``, …, ``dim_{n-1}``.
 
-        :param input_features: Ignored; present for sklearn API compatibility.
+        :param input_features: Names for the input column(s), or None. When provided, length must
+            match ``n_features_in_``.
         :return: ``numpy.ndarray`` of shape ``(embedding_dimension_,)``, dtype ``object``.
         """
         check_is_fitted(self, "embedding_dimension_")

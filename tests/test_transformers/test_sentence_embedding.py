@@ -30,7 +30,7 @@ def _make_mock_model(embedding_dim: int = EMBEDDING_DIM) -> MagicMock:
 
     def _encode(sentences, **kwargs):
         n = len(sentences)
-        return np.random.default_rng(42).standard_normal((n, embedding_dim)).astype(np.float32)
+        return np.random.default_rng().standard_normal((n, embedding_dim)).astype(np.float32)
 
     model.encode.side_effect = _encode
     return model
@@ -53,7 +53,7 @@ def patch_st(mocker):
 
 def test_import_error_message(mocker):
     """A clear message is raised when sentence-transformers is missing."""
-    mocker.patch.dict("sys.modules", {"sentence_transformers": None})
+    mocker.patch("importlib.util.find_spec", return_value=None)
     t = SentenceEmbeddingTransformer()
     with pytest.raises(ImportError, match="pip install data-science-utils\\[nlp\\]"):
         t.fit(["hello"])
@@ -121,6 +121,24 @@ def test_fit_reuses_model(patch_st):
     t.fit(["a"])
     t.fit(["b"])
     mock_cls.assert_called_once()
+
+
+def test_fit_reloads_on_model_name_change(patch_st):
+    """If model_name is changed, the next fit() call reloads the model."""
+    mock_cls, _ = patch_st
+    t = SentenceEmbeddingTransformer(model_name="model-A")
+    t.fit(["hello"])
+    assert mock_cls.call_count == 1
+
+    # Same model name -> no reload
+    t.fit(["world"])
+    assert mock_cls.call_count == 1
+
+    # Different model name -> reload
+    t.set_params(model_name="model-B")
+    t.fit(["test"])
+    assert mock_cls.call_count == 2
+    mock_cls.assert_called_with("model-B", device=None, truncate_dim=None)
 
 
 def test_fit_passes_device_and_truncate_dim(patch_st):
@@ -322,6 +340,13 @@ def test_set_params():
     t.set_params(batch_size=128, precision="int8")
     assert t.batch_size == 128
     assert t.precision == "int8"
+
+
+def test_set_params_invalid_precision():
+    """Setting an invalid precision via set_params raises ValueError."""
+    t = SentenceEmbeddingTransformer()
+    with pytest.raises(ValueError, match="Invalid precision 'invalid_prec'"):
+        t.set_params(precision="invalid_prec")
 
 
 # ── Empty input ──────────────────────────────────────────────────────────────
