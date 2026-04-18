@@ -104,7 +104,16 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         self.embedding_dimension_ = self.model_.get_sentence_embedding_dimension()
 
     @staticmethod
-    def _prepare_texts(X: ArrayLike) -> List[str]:
+    def _is_null(val: Any) -> bool:
+        """Robustly check for None, np.nan, or pd.NA without triggering array ambiguity."""
+        if val is None or val is pd.NA:
+            return True
+        if isinstance(val, float) and np.isnan(val):
+            return True
+        return False
+
+    @classmethod
+    def _prepare_texts(cls, X: ArrayLike) -> List[str]:
         """Convert input to a list of strings, replacing ``None``/``NaN`` with ``""``."""
         if isinstance(X, pd.DataFrame):
             if X.shape[1] != 1:
@@ -115,8 +124,8 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         elif isinstance(X, pd.Series):
             raw = X.tolist()
         elif isinstance(X, np.ndarray):
-            if X.ndim == 2:
-                if X.shape[1] != 1:
+            if X.ndim > 1:
+                if X.ndim > 2 or X.shape[1] != 1:
                     raise ValueError(
                         f"SentenceEmbeddingTransformer expects a single text column; got array with shape {X.shape}."
                     )
@@ -128,7 +137,7 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         else:
             raw = list(X)
 
-        return [str(t) if t is not None and not (isinstance(t, float) and pd.isna(t)) else "" for t in raw]
+        return ["" if cls._is_null(t) else str(t) for t in raw]
 
     def fit(self, X: ArrayLike, y: Any = None) -> SentenceEmbeddingTransformer:
         """Load the sentence-transformer model and record embedding metadata.
@@ -141,6 +150,12 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         :param y: Ignored; present for sklearn API compatibility.
         :return: This estimator, fitted.
         """
+        valid_precisions = ("float32", "int8", "uint8", "binary", "ubinary")
+        if self.precision not in valid_precisions:
+            raise ValueError(
+                f"Invalid precision '{self.precision}'. Expected one of {valid_precisions}."
+            )
+
         self.n_features_in_ = 1
         if not hasattr(self, "model_"):
             self._load_model()
@@ -176,4 +191,10 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
         :return: ``numpy.ndarray`` of shape ``(embedding_dimension_,)``, dtype ``object``.
         """
         check_is_fitted(self, "embedding_dimension_")
+        if input_features is not None:
+            input_features = np.asarray(input_features, dtype=object)
+            if len(input_features) != self.n_features_in_:
+                raise ValueError(
+                    f"input_features has {len(input_features)} element(s), expected {self.n_features_in_}."
+                )
         return np.asarray([f"dim_{i}" for i in range(self.embedding_dimension_)], dtype=object)

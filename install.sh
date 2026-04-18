@@ -370,10 +370,12 @@ select_extras() {
 
     if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
         echo ""
-        echo -e "  ${B}Optional dependencies:${N}"
-        EXTRAS=$(checkbox_select \
-            "NLP (sentence-transformers)|nlp|off|enables SentenceEmbeddingTransformer" \
-        )
+        local ans
+        ans=$(prompt "Install optional NLP extras (sentence-transformers)? (y/N)" "n")
+        case "$ans" in
+            [Yy]* ) EXTRAS="nlp" ;;
+            * ) EXTRAS="" ;;
+        esac
     fi
 }
 

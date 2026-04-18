@@ -257,13 +257,12 @@ function Get-Extras {
     if ($Silent) { return "" }
 
     Write-Host ""
-    Write-Host "  Optional dependencies:" -ForegroundColor White
-
-    $items = @(
-        @{ Label = "NLP (sentence-transformers)"; Value = "nlp"; Selected = $false; Hint = "enables SentenceEmbeddingTransformer" }
-    )
-    $selected = Show-Checkbox -Items $items
-    return ($selected -join ",")
+    $ans = Read-Host "  Install optional NLP extras (sentence-transformers)? (y/N) [n]"
+    if ($ans -match "^[yY]") {
+        return "nlp"
+    } else {
+        return ""
+    }
 }
 
 # ── Package manager install ────────────────────────────────────────

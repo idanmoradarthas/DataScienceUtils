@@ -247,21 +247,15 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
 
         [ Confirm ]
 
-**Step 6 — Optional dependencies checkbox**
+**Step 6 — Optional dependencies prompt**
 
 .. code-block:: text
 
-    Optional dependencies:
+    Install optional NLP extras (sentence-transformers)? (y/N) [n]
 
-      ↑/↓ navigate · space toggle · enter confirm
+This prompt lets you optionally install extra dependency groups (such as ``nlp``, which provides ``sentence-transformers``) along with the package. Pressing ``Enter`` defaults to ``no`` and installs only the core dependencies. Note: conda installations do not support this prompt and will skip it.
 
-    ❯ [ ] NLP (sentence-transformers)         enables SentenceEmbeddingTransformer
-
-        [ Confirm ]
-
-This selector lets you optionally install extra dependency groups (such as ``nlp``, which provides ``sentence-transformers``) along with the package. Skipping this installs only the core dependencies. Note: conda installations do not support this prompt and will skip it.
-
-On **Windows (PowerShell)**, the same selector appears with slightly different characters, but identical controls.
+On **Windows (PowerShell)**, the prompt is functionally identical.
 
 **Step 7 — Confirmation summary**
 

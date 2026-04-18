@@ -131,6 +131,13 @@ def test_fit_passes_device_and_truncate_dim(patch_st):
     mock_cls.assert_called_once_with(DEFAULT_MODEL, device="cuda:0", truncate_dim=128)
 
 
+def test_fit_invalid_precision():
+    """Invalid precision parameter raises ValueError."""
+    t = SentenceEmbeddingTransformer(precision="invalid_prec")
+    with pytest.raises(ValueError, match="Invalid precision 'invalid_prec'"):
+        t.fit(["hello"])
+
+
 # ── transform ─────────────────────────────────────────────────────────────────
 
 
@@ -186,9 +193,9 @@ def test_transform_rejects_multi_column(patch_st, X):
     ("X", "expected_texts"),
     [
         pytest.param(
-            pd.Series(["hello", None, np.nan, "world"]),
-            ["hello", "", "", "world"],
-            id="series_none_and_nan",
+            pd.Series(["hello", None, np.nan, pd.NA, "world"]),
+            ["hello", "", "", "", "world"],
+            id="series_none_and_nan_and_pdna",
         ),
         pytest.param(["text", None], ["text", ""], id="list_with_none"),
     ],
@@ -241,6 +248,23 @@ def test_get_feature_names_out(patch_st):
     assert names.dtype == object
     expected = [f"dim_{i}" for i in range(EMBEDDING_DIM)]
     assert list(names) == expected
+
+
+def test_get_feature_names_out_with_input_features(patch_st):
+    """get_feature_names_out accepts input_features if length matches n_features_in_."""
+    t = SentenceEmbeddingTransformer()
+    t.fit(["a"])
+    names = t.get_feature_names_out(["text_col"])
+    expected = [f"dim_{i}" for i in range(EMBEDDING_DIM)]
+    assert list(names) == expected
+
+
+def test_get_feature_names_out_invalid_input_features(patch_st):
+    """get_feature_names_out raises ValueError if input_features length is incorrect."""
+    t = SentenceEmbeddingTransformer()
+    t.fit(["a"])
+    with pytest.raises(ValueError, match="expected 1"):
+        t.get_feature_names_out(["col1", "col2"])
 
 
 def test_get_feature_names_out_before_fit():
