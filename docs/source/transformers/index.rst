@@ -10,3 +10,4 @@ and consistent output dtypes for pipelines and :class:`~sklearn.compose.ColumnTr
    :maxdepth: 2
 
    multi_label_binarizer
+   sentence_embedding

@@ -502,7 +502,7 @@ The output for ``terms`` will be the following table:
 
 ## Transformers
 
-The ``transformers`` package provides scikit-learn compatible wrappers for preprocessing steps that need ``get_feature_names_out`` (feature names in pipelines) and consistent ``float64`` output.
+The ``transformers`` package provides scikit-learn compatible wrappers for preprocessing steps that need ``get_feature_names_out`` (feature names in pipelines) and consistent output for downstream estimators.
 
 ### MultiLabelBinarizerTransformer
 
@@ -531,6 +531,53 @@ Both `X_transformed` (as a numpy array) and `df_transformed` (as a pandas DataFr
 | 1.0          | 0.0          | 0.0           | 1.0          |
 | 0.0          | 0.0          | 1.0           | 0.0          |
 | 1.0          | 1.0          | 0.0           | 0.0          |
+
+### SentenceEmbeddingTransformer
+
+Wraps [sentence-transformers](https://sbert.net/) models for use in sklearn pipelines. Produces dense embedding matrices from text inputs with lazy model loading, ``None``/``NaN`` handling, and ``get_feature_names_out`` support.
+
+> **Note:** Requires the optional ``nlp`` extras: ``pip install data-science-utils[nlp]``
+
+```python
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
+
+texts = ["The quick brown fox", "jumps over the lazy dog", "Hello world"]
+embed = SentenceEmbeddingTransformer()
+embeddings = embed.fit_transform(texts)
+feature_names = embed.get_feature_names_out()
+```
+
+Both `embeddings` (as a numpy array) and `feature_names` describe the same embedding matrix of shape `(n_samples, embedding_dimension)` (e.g. `(3, 384)` for the default `sentence-transformers/all-MiniLM-L6-v2` model).
+
+**Output:**
+
+| dim_0    | dim_1    | dim_2    | ... | dim_383  |
+|----------|----------|----------|-----|----------|
+| -0.0123  |  0.0456  |  0.0789  | ... |  0.0012  |
+|  0.0345  | -0.0678  |  0.0901  | ... | -0.0234  |
+|  0.0567  |  0.0890  | -0.0123  | ... |  0.0456  |
+
+Pipeline usage with a classifier:
+
+```python
+from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+
+pipeline = Pipeline([
+    ('embeddings', SentenceEmbeddingTransformer(normalize_embeddings=True)),
+    ('classifier', RandomForestClassifier()),
+])
+pipeline.fit(X_train, y_train)
+predictions = pipeline.predict(X_test)
+```
+
+Key features:
+- **Lazy loading**: the model is loaded only when ``fit()`` is first called
+- **Flexible input**: accepts lists, ``pd.Series``, single-column ``pd.DataFrame``, and ``np.ndarray``
+- **Configurable**: ``batch_size``, ``normalize_embeddings``, ``precision`` (``'float32'``, ``'int8'``, ``'binary'``, etc.), ``truncate_dim``, ``prompt``/``prompt_name``
+
+
 
 ## Unsupervised
 
@@ -820,6 +867,12 @@ conda install idanmorad::data-science-utils
 
 Data Science Utils has several dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
 automatically installed when you install the package using the methods above.
+
+For NLP features (``SentenceEmbeddingTransformer``), install with the optional ``nlp`` extras:
+
+```bash
+pip install data-science-utils[nlp]
+```
 
 
 ## Staying Updated
