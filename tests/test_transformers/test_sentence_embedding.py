@@ -53,16 +53,7 @@ def patch_st(mocker):
 
 def test_import_error_message(mocker):
     """A clear message is raised when sentence-transformers is missing."""
-    import builtins
-
-    real_import = builtins.__import__
-
-    def _fake_import(name, *args, **kwargs):
-        if name == "sentence_transformers":
-            raise ImportError("No module named 'sentence_transformers'")
-        return real_import(name, *args, **kwargs)
-
-    mocker.patch("builtins.__import__", side_effect=_fake_import)
+    mocker.patch.dict("sys.modules", {"sentence_transformers": None})
     t = SentenceEmbeddingTransformer()
     with pytest.raises(ImportError, match="pip install data-science-utils\\[nlp\\]"):
         t.fit(["hello"])

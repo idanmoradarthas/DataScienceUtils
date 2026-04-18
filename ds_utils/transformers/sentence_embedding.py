@@ -130,23 +130,30 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
             return True
         return False
 
-    @classmethod
-    def _prepare_texts(cls, X: ArrayLike) -> List[str]:
-        """Convert input to a list of strings, replacing ``None``/``NaN`` with ``""``."""
+    @staticmethod
+    def _validate_shape(X: ArrayLike) -> None:
+        """Validate that the input shape is 1D or a single-column 2D array."""
         if isinstance(X, pd.DataFrame):
             if X.shape[1] != 1:
                 raise ValueError(
                     f"SentenceEmbeddingTransformer expects a single text column; got DataFrame with shape {X.shape}."
                 )
+        elif isinstance(X, np.ndarray):
+            if X.ndim > 1 and (X.ndim > 2 or X.shape[1] != 1):
+                raise ValueError(
+                    f"SentenceEmbeddingTransformer expects a single text column; got array with shape {X.shape}."
+                )
+
+    @classmethod
+    def _prepare_texts(cls, X: ArrayLike) -> List[str]:
+        """Convert input to a list of strings, replacing ``None``/``NaN`` with ``""``."""
+        cls._validate_shape(X)
+        if isinstance(X, pd.DataFrame):
             raw = X.iloc[:, 0].tolist()
         elif isinstance(X, pd.Series):
             raw = X.tolist()
         elif isinstance(X, np.ndarray):
             if X.ndim > 1:
-                if X.ndim > 2 or X.shape[1] != 1:
-                    raise ValueError(
-                        f"SentenceEmbeddingTransformer expects a single text column; got array with shape {X.shape}."
-                    )
                 raw = X[:, 0].tolist()
             else:
                 raw = X.tolist()
@@ -174,9 +181,7 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         self.n_features_in_ = 1
 
-        # We call _prepare_texts here purely to fail fast on invalid shapes,
-        # adhering to the scikit-learn convention of validating X during fit.
-        self._prepare_texts(X)
+        self._validate_shape(X)
 
         if not hasattr(self, "model_") or getattr(self, "_loaded_model_name_", None) != self.model_name:
             self._load_model()
