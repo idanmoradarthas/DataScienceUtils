@@ -53,7 +53,16 @@ def patch_st(mocker):
 
 def test_import_error_message(mocker):
     """A clear message is raised when sentence-transformers is missing."""
-    mocker.patch("importlib.util.find_spec", return_value=None)
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _fake_import(name, *args, **kwargs):
+        if name == "sentence_transformers":
+            raise ImportError("No module named 'sentence_transformers'")
+        return real_import(name, *args, **kwargs)
+
+    mocker.patch("builtins.__import__", side_effect=_fake_import)
     t = SentenceEmbeddingTransformer()
     with pytest.raises(ImportError, match="pip install data-science-utils\\[nlp\\]"):
         t.fit(["hello"])
@@ -123,14 +132,14 @@ def test_fit_reuses_model(patch_st):
     mock_cls.assert_called_once()
 
 
-def test_fit_reloads_on_model_name_change(patch_st):
-    """If model_name is changed, the next fit() call reloads the model."""
+def test_fit_reloads_on_model_reload_params_change(patch_st):
+    """If model_name, device, or truncate_dim change, the next fit() call reloads the model."""
     mock_cls, _ = patch_st
-    t = SentenceEmbeddingTransformer(model_name="model-A")
+    t = SentenceEmbeddingTransformer(model_name="model-A", device="cpu", truncate_dim=128)
     t.fit(["hello"])
     assert mock_cls.call_count == 1
 
-    # Same model name -> no reload
+    # Same params -> no reload
     t.fit(["world"])
     assert mock_cls.call_count == 1
 
@@ -138,7 +147,19 @@ def test_fit_reloads_on_model_name_change(patch_st):
     t.set_params(model_name="model-B")
     t.fit(["test"])
     assert mock_cls.call_count == 2
-    mock_cls.assert_called_with("model-B", device=None, truncate_dim=None)
+    mock_cls.assert_called_with("model-B", device="cpu", truncate_dim=128)
+
+    # Different device -> reload
+    t.set_params(device="cuda")
+    t.fit(["test"])
+    assert mock_cls.call_count == 3
+    mock_cls.assert_called_with("model-B", device="cuda", truncate_dim=128)
+
+    # Different truncate_dim -> reload
+    t.set_params(truncate_dim=64)
+    t.fit(["test"])
+    assert mock_cls.call_count == 4
+    mock_cls.assert_called_with("model-B", device="cuda", truncate_dim=64)
 
 
 def test_fit_passes_device_and_truncate_dim(patch_st):
@@ -344,6 +365,7 @@ def test_set_params():
 
 def test_set_params_invalid_precision():
     """Setting an invalid precision via set_params raises ValueError."""
+    # No patch_st needed since set_params raises before loading the model.
     t = SentenceEmbeddingTransformer()
     with pytest.raises(ValueError, match="Invalid precision 'invalid_prec'"):
         t.set_params(precision="invalid_prec")

@@ -101,6 +101,15 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
             valid_precisions = ("float32", "int8", "uint8", "binary", "ubinary")
             if params["precision"] not in valid_precisions:
                 raise ValueError(f"Invalid precision '{params['precision']}'. Expected one of {valid_precisions}.")
+
+        # Invalidate cached model if model-loading params change
+        model_reload_params = {"model_name", "device", "truncate_dim"}
+        if model_reload_params & params.keys() and hasattr(self, "model_"):
+            del self.model_
+            del self.embedding_dimension_
+            if hasattr(self, "_loaded_model_name_"):
+                del self._loaded_model_name_
+
         return super().set_params(**params)
 
     def _load_model(self) -> None:
@@ -164,6 +173,9 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
             raise ValueError(f"Invalid precision '{self.precision}'. Expected one of {valid_precisions}.")
 
         self.n_features_in_ = 1
+
+        # We call _prepare_texts here purely to fail fast on invalid shapes,
+        # adhering to the scikit-learn convention of validating X during fit.
         self._prepare_texts(X)
 
         if not hasattr(self, "model_") or getattr(self, "_loaded_model_name_", None) != self.model_name:
@@ -175,7 +187,9 @@ class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         :param X: Same accepted forms as :meth:`fit`.
         :return: Embedding matrix of shape ``(n_samples, embedding_dimension_)``.
-                 The output dtype depends on the ``precision`` parameter (e.g., ``float32`` or ``uint8``).
+                 The output dtype depends on the ``precision`` parameter (e.g., ``float32`` or ``int8``).
+                 Note: For ``binary`` or ``ubinary`` precision, the output is a packed ``uint8`` array
+                 where dimensions represent packed bits rather than individual embedding dims.
         :raises sklearn.exceptions.NotFittedError: If :meth:`fit` has not been called.
         """
         check_is_fitted(self, "model_")

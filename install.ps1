@@ -77,6 +77,7 @@ function Show-Checkbox {
 
         $key = [Console]::ReadKey($true)
 
+        $confirmed = $false
         switch ($key.Key) {
             "UpArrow"   { if ($cursor -gt 0) { $cursor-- } }
             "DownArrow" { if ($cursor -lt $count) { $cursor++ } }
@@ -84,7 +85,7 @@ function Show-Checkbox {
                 if ($cursor -lt $count) {
                     $Items[$cursor].Selected = -not $Items[$cursor].Selected
                 } else {
-                    break
+                    $confirmed = $true
                 }
             }
             "Enter" {
@@ -93,11 +94,11 @@ function Show-Checkbox {
                 } else {
                     [Console]::SetCursorPosition(0, $startRow)
                     Render-Checkboxes
-                    break
+                    $confirmed = $true
                 }
             }
         }
-        if ($key.Key -eq "Enter" -and $cursor -eq $count) { break }
+        if ($confirmed -or ($key.Key -eq "Enter" -and $cursor -eq $count)) { break }
     }
 
     Write-Host ""
@@ -287,8 +288,12 @@ function Install-Package {
         git clone --depth 1 -q "https://github.com/idanmoradarthas/DataScienceUtils.git" $tmpDir
         if ($LASTEXITCODE -ne 0) { Write-Err "git clone failed. Check your internet connection." }
         $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }
-        & $pipCmd install -q "$tmpDir$extrasSuffix"
+        & $pipCmd install -q $tmpDir
         if ($LASTEXITCODE -ne 0) { Write-Err "pip install from source failed." }
+        if ($selectedExtras) {
+            Write-Msg "Installing optional extras..."
+            & $pipCmd install -q "sentence-transformers"
+        }
         Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
     } else {
         $pipCmd = if ($hasPip3) { "pip3" } else { "pip" }

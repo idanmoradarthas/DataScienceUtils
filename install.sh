@@ -125,7 +125,9 @@ checkbox_select() {
 
     printf "\n  \033[2m↑/↓ navigate · space toggle · enter confirm\033[0m\n\n" > /dev/tty
     printf "\033[?25l" > /dev/tty
-    trap 'printf "\033[?25h" > /dev/tty 2>/dev/null' EXIT
+    local old_trap
+    old_trap=$(trap -p EXIT)
+    trap 'printf "\033[?25h" > /dev/tty 2>/dev/null; eval "$old_trap"' EXIT
     _draw
 
     while true; do
@@ -365,8 +367,9 @@ select_package() {
 
 # ── Optional extras selection ──────────────────────────────────────
 select_extras() {
+    local pkg_manager="$1"
     [ "$INSTALL_PKG" = false ] && return
-    [ "$PKG_MANAGER" = "conda" ] && return   # conda doesn't support pip extras
+    [ "$pkg_manager" = "conda" ] && return   # conda doesn't support pip extras
 
     if [ "$SILENT" = false ] && [ -e /dev/tty ]; then
         echo ""
@@ -406,8 +409,11 @@ install_package() {
             || die "git clone failed. Check your internet connection."
         local pip_cmd="pip3"
         command -v pip3 >/dev/null 2>&1 || pip_cmd="pip"
-        $pip_cmd install -q "${tmp_dir}${extras_suffix}" \
+        $pip_cmd install -q "$tmp_dir" \
             || die "pip install from source failed. Try manually: git clone ... && pip install ."
+        if [ -n "$EXTRAS" ] && echo "$EXTRAS" | grep -q "nlp"; then
+            $pip_cmd install -q "sentence-transformers" || warn "Could not install optional nlp extras."
+        fi
         rm -rf "$tmp_dir"
     else
         local pip_cmd="$pkg_manager"
@@ -544,7 +550,7 @@ main() {
 
     # Select optional extras
     step "Optional dependencies"
-    select_extras
+    select_extras "$PKG_MANAGER"
     ok "Extras: $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
 
     # Confirm
