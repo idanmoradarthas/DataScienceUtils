@@ -161,14 +161,15 @@ def plot_precision_recall_curve_with_thresholds_annotations(
         except ValueError as e:
             raise ValueError(f"Error calculating Precision-Recall curve for classifier {classifier_name}: {str(e)}")
 
+        display_thresholds = np.append(thresholds, np.nan)
         fig.add_trace(
             go.Scatter(
                 x=recall_array,
                 y=precision_array,
                 mode=mode,
                 text=[
-                    f"Prob: {threshold:.2f}<br>Precision: {precision:.2f}<br>Recall: {recall:.2f}"
-                    for precision, recall, threshold in zip(precision_array, recall_array, thresholds)
+                    f"Prob: {'N/A' if np.isnan(t) else f'{t:.2f}'}<br>Precision: {p:.2f}<br>Recall: {r:.2f}"
+                    for p, r, t in zip(precision_array, recall_array, display_thresholds)
                 ],
                 name=classifier_name,
                 **kwargs,

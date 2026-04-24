@@ -28,6 +28,13 @@ def plotly_models_dict() -> Dict[str, Any]:
         return json.load(file)
 
 
+@pytest.fixture
+def plotly_models_pr_curve_dict() -> Dict[str, Any]:
+    """Load plotly models data for precision-recall curves from JSON file."""
+    with (RESOURCES_DIR / "plotly_models_pr_curve.json").open("r") as file:
+        return json.load(file)
+
+
 def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) -> plt.Figure:
     """Save plotly figure and convert to a matplotlib figure for comparison."""
     fig.write_image(str(path_to_save))
@@ -103,18 +110,23 @@ def test_plot_roc_curve_with_thresholds_annotations_exist_figure(mocker, request
 
 
 @pytest.mark.parametrize(
-    "plotly_graph_method",
-    [plot_roc_curve_with_thresholds_annotations, plot_precision_recall_curve_with_thresholds_annotations],
+    ("plotly_graph_method", "fixture_name", "expected_length"),
+    [
+        (plot_roc_curve_with_thresholds_annotations, "plotly_models_dict", 2239),
+        (plot_precision_recall_curve_with_thresholds_annotations, "plotly_models_pr_curve_dict", 1500),
+    ],
     ids=["plot_roc_curve_with_thresholds_annotations", "plot_precision_recall_curve_with_thresholds_annotations"],
 )
-def test_plotly_graph_method_shape_mismatch(plotly_graph_method, plotly_models_dict):
+def test_plotly_graph_method_shape_mismatch(plotly_graph_method, fixture_name, expected_length, request):
     """Test that plotly graph methods raise ValueError for shape mismatches."""
-    y_true = np.array(plotly_models_dict["y_true"][:1])
+    models_dict = request.getfixturevalue(fixture_name)
+    y_true = np.array(models_dict["y_true"][:1])
     classifiers_names_and_scores_dict = {
-        name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
+        name: np.array(data["y_scores"]) for name, data in models_dict.items() if name != "y_true"
     }
     with pytest.raises(
-        ValueError, match=r"Shape mismatch: y_true \(1,\) and y_scores \(2239,\) for classifier Decision Tree"
+        ValueError,
+        match=rf"Shape mismatch: y_true \(1,\) and y_scores \({expected_length},\) for classifier Decision Tree",
     ):
         plotly_graph_method(y_true, classifiers_names_and_scores_dict)
 
@@ -153,18 +165,18 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
 @pytest.mark.parametrize("add_random_classifier_line", [False, True], ids=["default", "with_random_classifier_line"])
 def test_plot_precision_recall_curve_with_thresholds_annotations(
-    mocker, request, add_random_classifier_line, plotly_models_dict
+    mocker, request, add_random_classifier_line, plotly_models_pr_curve_dict
 ):
     """Test plotting a Precision-Recall curve with threshold annotations."""
-    y_true = np.array(plotly_models_dict["y_true"])
+    y_true = np.array(plotly_models_pr_curve_dict["y_true"])
     classifiers_names_and_scores_dict = {
-        name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
+        name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
     }
 
     def _mock_precision_recall_curve(y_true, y_score, **kwargs):
         for classifier, scores in classifiers_names_and_scores_dict.items():
             if np.array_equal(scores, y_score):
-                data = plotly_models_dict[classifier]["precision_recall_curve"]
+                data = plotly_models_pr_curve_dict[classifier]["precision_recall_curve"]
                 return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
@@ -177,20 +189,22 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=15)
-def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(mocker, request, plotly_models_dict):
+def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(
+    mocker, request, plotly_models_pr_curve_dict
+):
     """Test plotting a Precision-Recall curve on an existing Figure object."""
     fig = go.Figure()
     fig.update_layout(title="Precision-Recall Curve")
 
-    y_true = np.array(plotly_models_dict["y_true"])
+    y_true = np.array(plotly_models_pr_curve_dict["y_true"])
     classifiers_names_and_scores_dict = {
-        name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
+        name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
     }
 
     def _mock_precision_recall_curve(y_true, y_score, **kwargs):
         for classifier, scores in classifiers_names_and_scores_dict.items():
             if np.array_equal(scores, y_score):
-                data = plotly_models_dict[classifier]["precision_recall_curve"]
+                data = plotly_models_pr_curve_dict[classifier]["precision_recall_curve"]
                 return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
@@ -200,11 +214,11 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(m
     return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
 
 
-def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocker, plotly_models_dict):
+def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocker, plotly_models_pr_curve_dict):
     """Test Precision-Recall curve plotting when underlying calculations fail."""
-    y_true = np.array(plotly_models_dict["y_true"])
+    y_true = np.array(plotly_models_pr_curve_dict["y_true"])
     classifiers_names_and_scores_dict = {
-        name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
+        name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
     }
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=ValueError)
