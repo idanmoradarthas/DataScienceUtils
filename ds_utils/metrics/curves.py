@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 from plotly import graph_objects as go
 from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
+from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 
 
 def plot_roc_curve_with_thresholds_annotations(
@@ -23,6 +23,7 @@ def plot_roc_curve_with_thresholds_annotations(
     fig: Optional[go.Figure] = None,
     mode: Optional[str] = "lines+markers",
     add_random_classifier_line: bool = True,
+    random_classifier_line_kw: Optional[Dict] = None,
     show_legend: bool = True,
     **kwargs,
 ) -> go.Figure:
@@ -46,6 +47,8 @@ def plot_roc_curve_with_thresholds_annotations(
     :param mode: str, default='lines+markers'. Determines the drawing mode for this scatter trace.
     :param add_random_classifier_line: bool, default=True. Whether to plot a diagonal dashed black line which
                                        represents a random classifier.
+    :param random_classifier_line_kw: dict, default=None. Keyword arguments to be passed to plotly's Scatter
+                                      for rendering the random classifier line (e.g., line color, style).
     :param show_legend: bool, default=True. Whether to display legend in the plot.
     :param kwargs: additional keyword arguments to be passed to the plot function.
     :return: The Figure object with the plot drawn onto it.
@@ -101,9 +104,16 @@ def plot_roc_curve_with_thresholds_annotations(
         )
 
     if add_random_classifier_line:  # Add dashed line for random classifier
+        default_random_classifier_kw = {
+            "line": dict(dash="dash", color="black"),
+            "name": "Random Classifier (AUC = 0.50)"
+        }
+        if random_classifier_line_kw is not None:
+            default_random_classifier_kw.update(random_classifier_line_kw)
+
         fig.add_trace(
             go.Scatter(
-                x=[0, 1], y=[0, 1], mode="lines", line=dict(dash="dash", color="black"), name="Random Classifier"
+                x=[0, 1], y=[0, 1], mode="lines", **default_random_classifier_kw
             )
         )
 
@@ -121,7 +131,8 @@ def plot_precision_recall_curve_with_thresholds_annotations(
     drop_intermediate: bool = True,
     fig: Optional[go.Figure] = None,
     mode: Optional[str] = "lines+markers",
-    add_random_classifier_line: bool = False,
+    plot_chance_level: bool = False,
+    chance_level_kw: Optional[Dict] = None,
     show_legend: bool = True,
     **kwargs,
 ) -> go.Figure:
@@ -135,8 +146,11 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                               a plotted Precision-Recall curve.
     :param fig: plotly's Figure object, optional. The figure to plot on.
     :param mode: str, default='lines+markers'. Determines the drawing mode for this scatter trace.
-    :param add_random_classifier_line: bool, default=False. Whether to plot a diagonal dashed black line which
-                                       represents a random classifier.
+    :param plot_chance_level: bool, default=False. Whether to plot the chance level. The chance level is the prevalence
+                              of the positive label computed from the data passed. Behavior is like sklearn:
+                              https://scikit-learn.org/stable/modules/generated/sklearn.metrics.PrecisionRecallDisplay.html
+    :param chance_level_kw: dict, default=None. Keyword arguments to be passed to plotly's Scatter for rendering the
+                            chance level line (e.g., line color, style).
     :param show_legend: bool, default=True. Whether to display legend in the plot.
     :param kwargs: additional keyword arguments to be passed to the plot function.
     :return: The Figure object with the plot drawn onto it.
@@ -158,6 +172,14 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                 sample_weight=sample_weight,
                 drop_intermediate=drop_intermediate,
             )
+
+            ap_kwargs = {}
+            if positive_label is not None:
+                ap_kwargs["pos_label"] = positive_label
+            if sample_weight is not None:
+                ap_kwargs["sample_weight"] = sample_weight
+
+            ap = average_precision_score(y_true, y_scores, **ap_kwargs)
         except ValueError as e:
             raise ValueError(f"Error calculating Precision-Recall curve for classifier {classifier_name}: {str(e)}")
 
@@ -171,15 +193,40 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                     f"Prob: {'N/A' if np.isnan(t) else f'{t:.2f}'}<br>Precision: {p:.2f}<br>Recall: {r:.2f}"
                     for p, r, t in zip(precision_array, recall_array, display_thresholds)
                 ],
-                name=classifier_name,
+                name=f"{classifier_name} (AP = {ap:0.2f})",
                 **kwargs,
             )
         )
 
-    if add_random_classifier_line:  # Add dashed line for random classifier
+    if plot_chance_level:
+        if positive_label is None:
+            # Determine positive label (same logic as sklearn)
+            unique_labels = np.unique(y_true)
+            if len(unique_labels) != 2:
+                raise ValueError("y_true must be binary for plotting chance level")
+            # Use the convention that the larger label is positive
+            positive_label = unique_labels[1]
+
+        if sample_weight is not None:
+            prevalence = np.sum(sample_weight[y_true == positive_label]) / np.sum(sample_weight)
+        else:
+            prevalence = np.sum(y_true == positive_label) / len(y_true)
+
+        # Default styling for chance level line
+        default_chance_level_kw = {
+            "line": dict(dash="dash", color="black"),
+            "name": f"Chance level (AP = {prevalence:0.2f})"
+        }
+        if chance_level_kw is not None:
+            default_chance_level_kw.update(chance_level_kw)
+
+        # Plot horizontal line at prevalence
         fig.add_trace(
             go.Scatter(
-                x=[1, 0], y=[0, 1], mode="lines", line=dict(dash="dash", color="black"), name="Random Classifier"
+                x=[0, 1],
+                y=[prevalence, prevalence],
+                mode="lines",
+                **default_chance_level_kw,
             )
         )
 

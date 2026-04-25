@@ -170,6 +170,7 @@ fig.show()
 - `multi_class` — str, Handling of multi-class ROC. (Default: "raise"). 
 - `mode` — str, Plotly trace drawing mode. (Default: "lines+markers").
 - `add_random_classifier_line` — bool. Plot the naive diagonal. (Default: True).
+- `random_classifier_line_kw` — dict, optional. Keyword arguments for styling the random classifier line.
 
 **Returns:** Plotly Figure.
 
@@ -207,7 +208,8 @@ fig.show()
 - `sample_weight` — array-like, optional. Sample weights.
 - `drop_intermediate` — bool, Whether to drop sub-optimal thresholds. (Default: True).
 - `mode` — str, Plotly trace drawing mode. (Default: "lines+markers").
-- `add_random_classifier_line` — bool. Plot the naive diagonal. (Default: False).
+- `plot_chance_level` — bool. Whether to plot the chance level prevalence line. (Default: False).
+- `chance_level_kw` — dict, optional. Keyword arguments for styling the chance level line.
 
 **Returns:** Plotly Figure.
 

@@ -46,8 +46,18 @@ def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) ->
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
-@pytest.mark.parametrize("add_random_classifier_line", [True, False], ids=["default", "without_random_classifier"])
-def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_classifier_line, plotly_models_dict):
+@pytest.mark.parametrize(
+    ("add_random_classifier_line", "random_classifier_line_kw"),
+    [
+        (True, None),
+        (False, None),
+        (True, {"line": dict(dash="dot", color="red", width=3), "name": "Custom Chance Level Name"}),
+    ],
+    ids=["default", "without_random_classifier", "random_classifier_styling"],
+)
+def test_plot_roc_curve_with_thresholds_annotations(
+    mocker, request, add_random_classifier_line, random_classifier_line_kw, plotly_models_dict
+):
     """Test ROC curve plotting when underlying calculations fail."""
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {
@@ -70,7 +80,10 @@ def test_plot_roc_curve_with_thresholds_annotations(mocker, request, add_random_
     mocker.patch("ds_utils.metrics.curves.roc_auc_score", side_effect=_mock_roc_auc_score)
 
     fig = plot_roc_curve_with_thresholds_annotations(
-        y_true, classifiers_names_and_scores_dict, add_random_classifier_line=add_random_classifier_line
+        y_true,
+        classifiers_names_and_scores_dict,
+        add_random_classifier_line=add_random_classifier_line,
+        random_classifier_line_kw=random_classifier_line_kw,
     )
 
     return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
@@ -163,9 +176,23 @@ def test_plot_roc_curve_with_thresholds_annotations_fail_calc(mocker, request, e
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
-@pytest.mark.parametrize("add_random_classifier_line", [False, True], ids=["default", "with_random_classifier_line"])
+@pytest.mark.parametrize(
+    ("plot_chance_level", "chance_level_kw", "use_weights"),
+    [
+        (False, None, False),
+        (True, None, False),
+        (True, {"line": dict(dash="dot", color="red", width=3), "name": "Custom Chance Level Name"}, False),
+        (True, None, True),
+    ],
+    ids=[
+        "default",
+        "with_chance_level",
+        "chance_level_styling",
+        "chance_level_sample_weights",
+    ],
+)
 def test_plot_precision_recall_curve_with_thresholds_annotations(
-    mocker, request, add_random_classifier_line, plotly_models_pr_curve_dict
+    mocker, request, plot_chance_level, chance_level_kw, use_weights, plotly_models_pr_curve_dict
 ):
     """Test plotting a Precision-Recall curve with threshold annotations."""
     y_true = np.array(plotly_models_pr_curve_dict["y_true"])
@@ -173,7 +200,9 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
         name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
     }
 
-    def _mock_precision_recall_curve(y_true, y_score, **kwargs):
+    weights = np.random.RandomState(42).random(len(y_true)) if use_weights else None
+
+    def _mock_precision_recall_curve(y_true, y_score, **kw):
         for classifier, scores in classifiers_names_and_scores_dict.items():
             if np.array_equal(scores, y_score):
                 data = plotly_models_pr_curve_dict[classifier]["precision_recall_curve"]
@@ -181,11 +210,15 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
 
-    fig = plot_precision_recall_curve_with_thresholds_annotations(
-        y_true, classifiers_names_and_scores_dict, add_random_classifier_line=add_random_classifier_line
+    fig_out = plot_precision_recall_curve_with_thresholds_annotations(
+        y_true,
+        classifiers_names_and_scores_dict,
+        plot_chance_level=plot_chance_level,
+        chance_level_kw=chance_level_kw,
+        sample_weight=weights,
     )
 
-    return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
+    return save_plotly_figure_and_return_matplot(fig_out, RESULT_DIR / f"{request.node.name}.png")
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=15)
@@ -224,3 +257,13 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocke
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=ValueError)
     with pytest.raises(ValueError, match="Error calculating Precision-Recall curve for classifier Decision Tree:"):
         plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
+
+
+def test_plot_precision_recall_curve_chance_level_non_binary(plotly_models_pr_curve_dict):
+    """Test that chance level plotting raises ValueError if y_true is not binary."""
+    y_true = np.array([0, 1, 2])
+    classifiers_names_and_scores_dict = {"Model": np.array([0.1, 0.4, 0.9])}
+    with pytest.raises(ValueError, match="y_true must be binary for plotting chance level"):
+        plot_precision_recall_curve_with_thresholds_annotations(
+            y_true, classifiers_names_and_scores_dict, plot_chance_level=True
+        )
