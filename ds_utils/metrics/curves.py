@@ -150,6 +150,8 @@ def plot_precision_recall_curve_with_thresholds_annotations(
     :param plot_chance_level: bool, default=False. Whether to plot the chance level. The chance level is the prevalence
                               of the positive label computed from the data passed. Behavior is like sklearn:
                               https://scikit-learn.org/stable/modules/generated/sklearn.metrics.PrecisionRecallDisplay.html
+                              When positive_label is None, the positive class is inferred as the larger of the two
+                              unique labels in y_true, consistent with scikit-learn's convention.
     :param chance_level_kw: dict, default=None. Keyword arguments to be passed to plotly's Scatter for rendering the
                             chance level line (e.g., line color, style).
     :param show_legend: bool, default=True. Whether to display legend in the plot.
@@ -178,7 +180,7 @@ def plot_precision_recall_curve_with_thresholds_annotations(
             precision_array, recall_array, thresholds = precision_recall_curve(
                 y_true,
                 y_scores,
-                pos_label=positive_label,
+                pos_label=effective_positive_label,
                 sample_weight=sample_weight,
                 drop_intermediate=drop_intermediate,
             )
@@ -187,8 +189,8 @@ def plot_precision_recall_curve_with_thresholds_annotations(
 
         try:
             ap_kwargs = {}
-            if positive_label is not None:
-                ap_kwargs["pos_label"] = positive_label
+            if effective_positive_label is not None:
+                ap_kwargs["pos_label"] = effective_positive_label
             if sample_weight is not None:
                 ap_kwargs["sample_weight"] = sample_weight
 

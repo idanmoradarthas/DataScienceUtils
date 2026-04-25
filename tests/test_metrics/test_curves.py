@@ -58,7 +58,7 @@ def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) ->
 def test_plot_roc_curve_with_thresholds_annotations(
     mocker, request, add_random_classifier_line, random_classifier_line_kw, plotly_models_dict
 ):
-    """Test ROC curve plotting when underlying calculations fail."""
+    """Test ROC curve plotting with various random classifier line configurations."""
     y_true = np.array(plotly_models_dict["y_true"])
     classifiers_names_and_scores_dict = {
         name: np.array(data["y_scores"]) for name, data in plotly_models_dict.items() if name != "y_true"
@@ -293,8 +293,9 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_ap_calc(mo
         plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
 
 
-def test_plot_precision_recall_curve_chance_level_non_binary():
+def test_plot_precision_recall_curve_chance_level_non_binary(mocker):
     """Test that chance level plotting raises ValueError if y_true is not binary."""
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve")  # should never be reached
     y_true = np.array([0, 1, 2])
     classifiers_names_and_scores_dict = {"Model": np.array([0.1, 0.4, 0.9])}
     with pytest.raises(ValueError, match="y_true must be binary for plotting chance level"):
