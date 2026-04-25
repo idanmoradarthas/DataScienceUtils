@@ -162,7 +162,9 @@ def plot_precision_recall_curve_with_thresholds_annotations(
     if fig is None:
         fig = go.Figure()  # Create a new figure if none is provided
 
-    # Determine the effective positive label early to fail-fast if non-binary
+    # When plot_chance_level=True and positive_label=None, resolve to the larger unique label
+    # (sklearn convention) and validate binary input. Otherwise, keep positive_label as-is —
+    # sklearn will apply its own default when pos_label=None.
     effective_positive_label = positive_label
     if plot_chance_level and effective_positive_label is None:
         unique_labels = np.unique(y_true)

@@ -295,13 +295,14 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_ap_calc(mo
 
 def test_plot_precision_recall_curve_chance_level_non_binary(mocker):
     """Test that chance level plotting raises ValueError if y_true is not binary."""
-    mocker.patch("ds_utils.metrics.curves.precision_recall_curve")  # should never be reached
+    mock_prc = mocker.patch("ds_utils.metrics.curves.precision_recall_curve")
     y_true = np.array([0, 1, 2])
     classifiers_names_and_scores_dict = {"Model": np.array([0.1, 0.4, 0.9])}
     with pytest.raises(ValueError, match="y_true must be binary for plotting chance level"):
         plot_precision_recall_curve_with_thresholds_annotations(
             y_true, classifiers_names_and_scores_dict, plot_chance_level=True
         )
+    mock_prc.assert_not_called()
 
 
 def test_plot_precision_recall_curve_chance_level_prevalence(mocker, plotly_models_pr_curve_dict):
@@ -339,7 +340,7 @@ def test_plot_precision_recall_curve_chance_level_explicit_positive_label(mocker
     # Test with positive_label=0 (prevalence should be 2/3)
     prevalence_0 = 2 / 3
 
-    mocker.patch(
+    mock_prc = mocker.patch(
         "ds_utils.metrics.curves.precision_recall_curve",
         return_value=(np.array([0, 1]), np.array([1, 0]), np.array([0.5])),
     )
@@ -348,6 +349,10 @@ def test_plot_precision_recall_curve_chance_level_explicit_positive_label(mocker
     fig = plot_precision_recall_curve_with_thresholds_annotations(
         y_true, classifiers_names_and_scores_dict, plot_chance_level=True, positive_label=0
     )
+
+    mock_prc.assert_called_once()
+    _, call_kwargs = mock_prc.call_args
+    assert call_kwargs.get("pos_label") == 0
 
     chance_level_trace = next(trace for trace in fig.data if "Chance level" in trace.name)
     assert np.allclose(chance_level_trace.y, [prevalence_0, prevalence_0])
