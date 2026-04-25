@@ -33,7 +33,7 @@ def plot_roc_curve_with_thresholds_annotations(
     :param classifiers_names_and_scores_dict: mapping from classifier name to classifier's score.
     :param positive_label: int, float, bool or str, default=None. The label of the positive class.
     :param sample_weight: array-like of shape (n_samples,), default=None. Sample weights.
-    :param drop_intermediate: bool, default=True. Whether to drop some suboptimal thresholds that would not appear on
+    :param drop_intermediate: bool, default=True. Whether to drop some suboptimal thresholds which would not appear on
                               a plotted ROC curve.
     :param average: {'micro', 'macro', 'samples', 'weighted'} or None, default='macro'. If not None, this determines
                     the type of averaging performed on the data.
@@ -98,6 +98,7 @@ def plot_roc_curve_with_thresholds_annotations(
                     f"Prob: {threshold:.2f}<br>FPR: {fpr:.2f}<br>TPR: {tpr:.2f}"
                     for fpr, tpr, threshold in zip(fpr_array, tpr_array, thresholds)
                 ],
+                hoverinfo="text",
                 name=f"{classifier_name} (AUC = {auc_score:.2f})",
                 **kwargs,
             )
@@ -113,7 +114,7 @@ def plot_roc_curve_with_thresholds_annotations(
 
         fig.add_trace(
             go.Scatter(
-                x=[0, 1], y=[0, 1], mode="lines", **default_random_classifier_kw
+                x=[0, 1], y=[0, 1], mode="lines", hoverinfo="name", **default_random_classifier_kw
             )
         )
 
@@ -142,8 +143,8 @@ def plot_precision_recall_curve_with_thresholds_annotations(
     :param classifiers_names_and_scores_dict: mapping from classifier name to classifier's score.
     :param positive_label: int, float, bool or str, default=None. The label of the positive class.
     :param sample_weight: array-like of shape (n_samples,), default=None. Sample weights.
-    :param drop_intermediate: bool, default=True. Whether to drop some suboptimal thresholds that would not appear on
-                              a plotted Precision-Recall curve.
+    :param drop_intermediate: bool, default=True. Whether to drop some suboptimal thresholds that don't change the
+                              precision. This is useful to create lighter Precision-Recall curves.
     :param fig: plotly's Figure object, optional. The figure to plot on.
     :param mode: str, default='lines+markers'. Determines the drawing mode for this scatter trace.
     :param plot_chance_level: bool, default=False. Whether to plot the chance level. The chance level is the prevalence
@@ -159,6 +160,15 @@ def plot_precision_recall_curve_with_thresholds_annotations(
     if fig is None:
         fig = go.Figure()  # Create a new figure if none is provided
 
+    # Determine the effective positive label early to fail-fast if non-binary
+    effective_positive_label = positive_label
+    if plot_chance_level and effective_positive_label is None:
+        unique_labels = np.unique(y_true)
+        if len(unique_labels) != 2:
+            raise ValueError("y_true must be binary for plotting chance level")
+        # Use the convention that the larger label is positive (consistent with sklearn)
+        effective_positive_label = unique_labels[1]
+
     for classifier_name, y_scores in classifiers_names_and_scores_dict.items():
         if y_true.shape != y_scores.shape:
             raise ValueError(
@@ -172,7 +182,10 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                 sample_weight=sample_weight,
                 drop_intermediate=drop_intermediate,
             )
+        except ValueError as e:
+            raise ValueError(f"Error calculating Precision-Recall curve for classifier {classifier_name}: {str(e)}")
 
+        try:
             ap_kwargs = {}
             if positive_label is not None:
                 ap_kwargs["pos_label"] = positive_label
@@ -181,7 +194,7 @@ def plot_precision_recall_curve_with_thresholds_annotations(
 
             ap = average_precision_score(y_true, y_scores, **ap_kwargs)
         except ValueError as e:
-            raise ValueError(f"Error calculating Precision-Recall curve for classifier {classifier_name}: {str(e)}")
+            raise ValueError(f"Error calculating Average Precision for classifier {classifier_name}: {str(e)}")
 
         display_thresholds = np.append(thresholds, np.nan)
         fig.add_trace(
@@ -193,24 +206,19 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                     f"Prob: {'N/A' if np.isnan(t) else f'{t:.2f}'}<br>Precision: {p:.2f}<br>Recall: {r:.2f}"
                     for p, r, t in zip(precision_array, recall_array, display_thresholds)
                 ],
+                hoverinfo="text",
                 name=f"{classifier_name} (AP = {ap:0.2f})",
                 **kwargs,
             )
         )
 
     if plot_chance_level:
-        if positive_label is None:
-            # Determine positive label (same logic as sklearn)
-            unique_labels = np.unique(y_true)
-            if len(unique_labels) != 2:
-                raise ValueError("y_true must be binary for plotting chance level")
-            # Use the convention that the larger label is positive
-            positive_label = unique_labels[1]
-
+        # Note: AP here refers to the chance-level Average Precision, which equals prevalence.
+        # This naming convention is consistent with scikit-learn's PrecisionRecallDisplay.
         if sample_weight is not None:
-            prevalence = np.sum(sample_weight[y_true == positive_label]) / np.sum(sample_weight)
+            prevalence = np.sum(sample_weight[y_true == effective_positive_label]) / np.sum(sample_weight)
         else:
-            prevalence = np.sum(y_true == positive_label) / len(y_true)
+            prevalence = np.sum(y_true == effective_positive_label) / len(y_true)
 
         # Default styling for chance level line
         default_chance_level_kw = {
@@ -226,6 +234,7 @@ def plot_precision_recall_curve_with_thresholds_annotations(
                 x=[0, 1],
                 y=[prevalence, prevalence],
                 mode="lines",
+                hoverinfo="name",
                 **default_chance_level_kw,
             )
         )

@@ -210,6 +210,13 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
 
+    def _mock_average_precision_score(y_true, y_score, **kw):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_pr_curve_dict[classifier]["average_precision_score"])
+
+    mocker.patch("ds_utils.metrics.curves.average_precision_score", side_effect=_mock_average_precision_score)
+
     fig_out = plot_precision_recall_curve_with_thresholds_annotations(
         y_true,
         classifiers_names_and_scores_dict,
@@ -242,6 +249,13 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(
 
     mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
 
+    def _mock_average_precision_score(y_true, y_score, **kw):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                return np.float64(plotly_models_pr_curve_dict[classifier]["average_precision_score"])
+
+    mocker.patch("ds_utils.metrics.curves.average_precision_score", side_effect=_mock_average_precision_score)
+
     fig = plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict, fig=fig)
 
     return save_plotly_figure_and_return_matplot(fig, RESULT_DIR / f"{request.node.name}.png")
@@ -259,7 +273,27 @@ def test_plot_precision_recall_curve_with_thresholds_annotations_fail_calc(mocke
         plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
 
 
-def test_plot_precision_recall_curve_chance_level_non_binary(plotly_models_pr_curve_dict):
+def test_plot_precision_recall_curve_with_thresholds_annotations_fail_ap_calc(mocker, plotly_models_pr_curve_dict):
+    """Test PR curve plotting when average_precision_score fails."""
+    y_true = np.array(plotly_models_pr_curve_dict["y_true"])
+    classifiers_names_and_scores_dict = {
+        name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
+    }
+
+    def _mock_precision_recall_curve(y_true, y_score, **kw):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_pr_curve_dict[classifier]["precision_recall_curve"]
+                return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+    mocker.patch("ds_utils.metrics.curves.average_precision_score", side_effect=ValueError)
+
+    with pytest.raises(ValueError, match="Error calculating Average Precision for classifier Decision Tree:"):
+        plot_precision_recall_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict)
+
+
+def test_plot_precision_recall_curve_chance_level_non_binary():
     """Test that chance level plotting raises ValueError if y_true is not binary."""
     y_true = np.array([0, 1, 2])
     classifiers_names_and_scores_dict = {"Model": np.array([0.1, 0.4, 0.9])}
@@ -267,3 +301,57 @@ def test_plot_precision_recall_curve_chance_level_non_binary(plotly_models_pr_cu
         plot_precision_recall_curve_with_thresholds_annotations(
             y_true, classifiers_names_and_scores_dict, plot_chance_level=True
         )
+
+
+def test_plot_precision_recall_curve_chance_level_prevalence(mocker, plotly_models_pr_curve_dict):
+    """Test that chance level line is plotted at correct prevalence."""
+    y_true = np.array(plotly_models_pr_curve_dict["y_true"])
+    classifiers_names_and_scores_dict = {
+        name: np.array(data["y_scores"]) for name, data in plotly_models_pr_curve_dict.items() if name != "y_true"
+    }
+
+    prevalence = np.sum(y_true == 1) / len(y_true)
+
+    def _mock_precision_recall_curve(y_true, y_score, **kwargs):
+        for classifier, scores in classifiers_names_and_scores_dict.items():
+            if np.array_equal(scores, y_score):
+                data = plotly_models_pr_curve_dict[classifier]["precision_recall_curve"]
+                return np.array(data["precision_array"]), np.array(data["recall_array"]), np.array(data["thresholds"])
+
+    mocker.patch("ds_utils.metrics.curves.precision_recall_curve", side_effect=_mock_precision_recall_curve)
+    mocker.patch("ds_utils.metrics.curves.average_precision_score", return_value=0.5)
+
+    fig = plot_precision_recall_curve_with_thresholds_annotations(
+        y_true, classifiers_names_and_scores_dict, plot_chance_level=True
+    )
+
+    chance_level_trace = next(trace for trace in fig.data if "Chance level" in trace.name)
+    assert np.allclose(chance_level_trace.x, [0, 1])
+    assert np.allclose(chance_level_trace.y, [prevalence, prevalence])
+
+
+def test_plot_precision_recall_curve_chance_level_explicit_positive_label(mocker):
+    """Test that prevalence is correctly calculated with an explicit positive label."""
+    y_true = np.array([0, 0, 1])
+    classifiers_names_and_scores_dict = {"Model": np.array([0.1, 0.2, 0.9])}
+
+    # Test with positive_label=0 (prevalence should be 2/3)
+    prevalence_0 = 2 / 3
+
+    mocker.patch(
+        "ds_utils.metrics.curves.precision_recall_curve",
+        return_value=(np.array([0, 1]), np.array([1, 0]), np.array([0.5])),
+    )
+    mocker.patch("ds_utils.metrics.curves.average_precision_score", return_value=0.5)
+
+    fig = plot_precision_recall_curve_with_thresholds_annotations(
+        y_true, classifiers_names_and_scores_dict, plot_chance_level=True, positive_label=0
+    )
+
+    chance_level_trace = next(trace for trace in fig.data if "Chance level" in trace.name)
+    assert np.allclose(chance_level_trace.y, [prevalence_0, prevalence_0])
+
+    # Note: AP here refers to the chance-level Average Precision, which equals prevalence.
+    # This naming convention is consistent with scikit-learn's PrecisionRecallDisplay.
+    expected_name = f"Chance level (AP = {prevalence_0:0.2f})"
+    assert chance_level_trace.name == expected_name
