@@ -107,16 +107,12 @@ def plot_roc_curve_with_thresholds_annotations(
     if add_random_classifier_line:  # Add dashed line for random classifier
         default_random_classifier_kw = {
             "line": dict(dash="dash", color="black"),
-            "name": "Random Classifier (AUC = 0.50)"
+            "name": "Random Classifier (AUC = 0.50)",
         }
         if random_classifier_line_kw is not None:
             default_random_classifier_kw.update(random_classifier_line_kw)
 
-        fig.add_trace(
-            go.Scatter(
-                x=[0, 1], y=[0, 1], mode="lines", hoverinfo="name", **default_random_classifier_kw
-            )
-        )
+        fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", hoverinfo="name", **default_random_classifier_kw))
 
     fig.update_layout(xaxis_title="False Positive Rate", yaxis_title="True Positive Rate", showlegend=show_legend)
 
@@ -227,7 +223,7 @@ def plot_precision_recall_curve_with_thresholds_annotations(
         # Default styling for chance level line
         default_chance_level_kw = {
             "line": dict(dash="dash", color="black"),
-            "name": f"Chance level (AP = {prevalence:0.2f})"
+            "name": f"Chance level (AP = {prevalence:0.2f})",
         }
         if chance_level_kw is not None:
             default_chance_level_kw.update(chance_level_kw)
