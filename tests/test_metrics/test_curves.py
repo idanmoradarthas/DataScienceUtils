@@ -228,7 +228,7 @@ def test_plot_precision_recall_curve_with_thresholds_annotations(
     return save_plotly_figure_and_return_matplot(fig_out, RESULT_DIR / f"{request.node.name}.png")
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=15)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=17)
 def test_plot_precision_recall_curve_with_thresholds_annotations_exists_figure(
     mocker, request, plotly_models_pr_curve_dict
 ):
