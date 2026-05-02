@@ -27,6 +27,7 @@ The API of the package is built to work with the Scikit-Learn API and Matplotlib
 The metrics module is organized into focused submodules:
 - **confusion_matrix** - Confusion matrix visualization and analysis
 - **curves** - ROC and Precision-Recall curves
+- **regression** - Regression Error Characteristic (REC) curves and Regression AUC
 - **time_series** - Time-series and forecasting directional metrics
 - **learning_curves** - Learning curve visualization
 - **probability_analysis** - Probability calibration and accuracy analysis
@@ -158,6 +159,38 @@ Output:
 Directional Accuracy: 100.00%
 Directional Bias: 1.00
 ```
+
+### Regression Error Characteristic (REC) Curve
+
+Plot REC curves with AUC (Area Over the Curve) annotations for multiple regression models. REC curves plot the error tolerance on the x-axis against the accuracy (proportion of predictions within that tolerance) on the y-axis. The AOC provides a normalized metric in [0, 1] where 0 is perfect prediction.
+
+```python
+from ds_utils.metrics.regression import plot_rec_curve_with_annotations, regression_auc_score
+import numpy as np
+
+# Generate dummy data
+y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+predictions = {
+    "Good Model": np.array([1.1, 2.2, 2.8, 4.1, 5.0, 5.9, 7.2, 7.8, 9.1, 10.0]),
+    "Bad Model": np.array([2.0, 3.5, 1.5, 5.5, 3.0, 8.0, 5.5, 9.5, 7.0, 12.0]),
+}
+
+# Plot REC curves
+fig = plot_rec_curve_with_annotations(y_true, predictions)
+fig.show()
+
+# Get standalone AOC score
+good_aoc = regression_auc_score(y_true, predictions["Good Model"])
+print(f"Good Model AOC: {good_aoc:.4f}")
+```
+
+Output:
+```
+Good Model AOC: 0.1000
+```
+
+![plot rec curve with annotations](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_metrics/test_regression/test_plot_rec_curve_basic.png)
+
 
 ### Plot Error Analysis Chart
 
