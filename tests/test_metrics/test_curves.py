@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from matplotlib import pyplot as plt
 import numpy as np
 from plotly import graph_objects as go
 import pytest
@@ -13,6 +12,7 @@ from ds_utils.metrics.curves import (
     plot_precision_recall_curve_with_thresholds_annotations,
     plot_roc_curve_with_thresholds_annotations,
 )
+from tests.utils import save_plotly_figure_and_return_matplot
 
 BASELINE_DIR = Path(__file__).parents[1] / "baseline_images" / Path(__file__).parent.name / Path(__file__).stem
 RESULT_DIR = Path(__file__).parents[1] / "result_images" / Path(__file__).parent.name / Path(__file__).stem
@@ -33,16 +33,6 @@ def plotly_models_pr_curve_dict() -> Dict[str, Any]:
     """Load plotly models data for precision-recall curves from JSON file."""
     with (RESOURCES_DIR / "plotly_models_pr_curve.json").open("r") as file:
         return json.load(file)
-
-
-def save_plotly_figure_and_return_matplot(fig: go.Figure, path_to_save: Path) -> plt.Figure:
-    """Save plotly figure and convert to a matplotlib figure for comparison."""
-    fig.write_image(str(path_to_save))
-    img = plt.imread(path_to_save)
-    figure, ax = plt.subplots()
-    ax.imshow(img)
-    ax.axis("off")
-    return figure
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)

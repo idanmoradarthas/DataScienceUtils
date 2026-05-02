@@ -32,6 +32,7 @@ from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_
 from ds_utils.metrics.probability_analysis import plot_error_analysis_chart
 from ds_utils.metrics.error_analysis import generate_error_analysis_report
 from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
+from ds_utils.metrics.regression import regression_auc_score, plot_rec_curve_with_annotations
 ```
 
 ---
@@ -425,7 +426,76 @@ Directional Bias: 1.00
 
 ---
 
-## Typical Workflow
+## regression_auc_score
+
+Calculates the Area Over the REC Curve (AOC) / Regression AUC for evaluating continuous predictions. Lower values indicate better model performance. The AOC is calculated as the area between the REC curve and the y=1 line.
+
+```python
+from ds_utils.metrics.regression import regression_auc_score
+import numpy as np
+
+# complete usage example
+y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+y_pred = np.array([1.5, 2.5, 3.5, 4.5, 5.5])
+auc_score = regression_auc_score(y_true, y_pred)
+print(f"Regression AOC: {auc_score:.4f}")
+```
+
+Output:
+```text
+Regression AOC: 0.1000
+```
+
+**Parameters:**
+- `y_true` — array-like of shape (n_samples,). True target values.
+- `y_pred` — array-like of shape (n_samples,). Predicted target values.
+- `sample_weight` — array-like of shape (n_samples,), default=None. Sample weights.
+- `normalize` — bool, default=True. If True, normalize by maximum absolute error to get a score in [0, 1] range.
+
+**Returns:** float in [0, 1] if `normalize=True`. Lower is better (0 = perfect, 1 = worst possible).
+
+**Common mistakes:**
+- Comparing unnormalized AOC across models with different test sets. Always use `normalize=True` for cross-dataset comparisons.
+- Assuming higher is better (like classification ROC AUC). For REC curves, **Area Over the Curve (AOC)** is used, so **lower is better**.
+
+---
+
+## plot_rec_curve_with_annotations
+
+Plots Regression Error Characteristic (REC) curves with AUC annotations using Plotly.
+
+```python
+from ds_utils.metrics.regression import plot_rec_curve_with_annotations
+import numpy as np
+
+# complete usage example
+y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+predictions = {
+    'Model A': np.array([1.1, 2.2, 3.3, 4.4, 5.5]),
+    'Model B': np.array([1.5, 2.5, 3.5, 4.5, 5.5]),
+}
+fig = plot_rec_curve_with_annotations(y_true, predictions)
+fig.show()
+```
+
+**Parameters:**
+- `y_true` — array-like of shape (n_samples,). True target values.
+- `regressors_names_and_predictions_dict` — dict, mapping from regressor name to predictions.
+- `sample_weight` — array-like of shape (n_samples,), default=None. Sample weights.
+- `normalize_auc` — bool, default=True. If True, normalize AOC by maximum absolute error to get a score in [0, 1] range.
+- `fig` — plotly's Figure object, optional. The figure to plot on.
+- `mode` — str, default='lines+markers'. Determines the drawing mode for this scatter trace.
+- `show_legend` — bool, default=True. Whether to display legend in the plot.
+
+**Returns:** Plotly Figure.
+
+**Common mistakes:**
+- Passing individual predictions directly; the function takes a dict of `{name: predictions_array}`.
+- Returning a matplotlib plot; the function returns a **Plotly Figure**, which requires `fig.show()`.
+
+---
+
+## Classification Workflow
 
 ```python
 import matplotlib.pyplot as plt
@@ -501,4 +571,34 @@ y_forecast_pred = np.array([101, 103, 97, 102, 98])
 da = directional_accuracy_score(y_forecast_true, y_forecast_pred)
 bias = directional_bias_score(y_forecast_true, y_forecast_pred)
 print(f"DA: {da:.2%}, Bias: {bias:.2f}")
+```
+
+---
+
+## Regression Workflow
+
+```python
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from ds_utils.metrics.regression import plot_rec_curve_with_annotations, regression_auc_score
+
+# 1. Train models and get predictions
+rf_reg = RandomForestRegressor(random_state=42)
+rf_reg.fit(X_train, y_train)
+
+y_pred_rf = rf_reg.predict(X_test)
+y_pred_baseline = np.full_like(y_test, y_train.mean()) # Baseline model predicting the mean
+
+predictions = {
+    "Random Forest": y_pred_rf,
+    "Mean Baseline": y_pred_baseline
+}
+
+# 2. Get standalone AOC score for a model
+rf_aoc = regression_auc_score(y_test, y_pred_rf)
+print(f"Random Forest AOC: {rf_aoc:.4f}")
+
+# 3. Plot REC curve comparing models
+fig = plot_rec_curve_with_annotations(y_test, predictions)
+fig.show()
 ```

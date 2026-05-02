@@ -14,3 +14,4 @@ The module of metrics contains methods that help to calculate and/or visualize e
    error_analysis
    learning_curves
    probability_analysis
+   regression
