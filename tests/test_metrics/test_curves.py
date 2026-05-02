@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from matplotlib import pyplot as plt
 import numpy as np
 from plotly import graph_objects as go
 import pytest

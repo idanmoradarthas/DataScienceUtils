@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-from matplotlib import pyplot as plt
 import numpy as np
 from plotly import graph_objects as go
 import pytest
