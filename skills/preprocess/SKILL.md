@@ -28,6 +28,7 @@ from ds_utils.preprocess.visualization import visualize_feature
 from ds_utils.preprocess.visualization import visualize_correlations
 from ds_utils.preprocess.visualization import plot_correlation_dendrogram
 from ds_utils.preprocess.visualization import plot_features_interaction
+from ds_utils.preprocess.visualization import plot_pca_explained_variance
 from ds_utils.preprocess.statistics import get_correlated_features
 from ds_utils.preprocess.statistics import extract_statistics_dataframe_per_label
 from ds_utils.preprocess.statistics import compute_mutual_information
@@ -150,6 +151,31 @@ plot_features_interaction(df, "feature1", "feature2", remove_na=False)
 
 ---
 
+## plot_pca_explained_variance
+
+Plots the cumulative explained variance ratio of PCA components.
+
+```python
+from ds_utils.preprocess.visualization import plot_pca_explained_variance
+
+# complete usage example
+plot_pca_explained_variance(df, use_scaling=True)
+```
+
+**Parameters:**
+- `X` — pd.DataFrame, The dataset with numerical features.
+- `use_scaling` — bool, Whether to scale the data before fitting PCA.
+- `scaler` — TransformerMixin, Scaler instance to use when `use_scaling` is True (default: StandardScaler).
+- `legend_loc` — str, Location of the legend (default: "lower right").
+- `ax` — axes.Axes, Matplotlib Axes to draw the plot on.
+
+**Returns:** matplotlib Axes.
+
+**Common mistakes:**
+- Passing a DataFrame with non-numeric columns.
+
+---
+
 ## get_correlated_features
 
 Extracts pairs of highly correlated features and their correlation to the target.
@@ -243,4 +269,5 @@ visualize_feature(df["age"])
 corr = df.corr()
 visualize_correlations(corr)
 results = get_correlated_features(corr, ["age", "income"], "is_churn")
+plot_pca_explained_variance(df[["age", "income", "balance"]])
 ```

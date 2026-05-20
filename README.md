@@ -405,6 +405,20 @@ plot_features_interaction(data, "feature_1", "feature_2")
 | **Boolean**     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_numeric_boolean.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_categorical_bool.png)     | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_both_bool.png)             |                                                                                                                                                                                    |
 | **Datetime**    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_numeric.png)    | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_categorical.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_bool_default.png) | ![](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_relationship_between_features/test_plot_relationship_between_features_datetime_datetime.png) |
 
+### Plot PCA Explained Variance
+
+This method plots the cumulative explained variance ratio of PCA components. It helps users quickly determine how many principal components are required to capture a desired proportion of variance in the data.
+Horizontal reference lines are drawn at 70% and 80% variance.
+
+```python
+from ds_utils.preprocess.visualization import plot_pca_explained_variance
+
+# Pass a dataframe containing only numerical features
+plot_pca_explained_variance(data_numerical, use_scaling=True)
+```
+
+![Plot PCA Explained Variance](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_preprocess/test_plot_pca_explained_variance/test_plot_pca_explained_variance_default.png)
+
 ### Extract Statistics DataFrame per Label
 
 This method calculates comprehensive statistical metrics for numerical features grouped by label values. Use this when

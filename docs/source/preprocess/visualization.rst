@@ -296,5 +296,41 @@ Choosing the Right Visualization
 - Use `get_correlated_features` and `visualize_correlations` to understand relationships between multiple features.
 - Use `plot_correlation_dendrogram` for a hierarchical view of feature relationships, especially useful for high-dimensional data.
 - Use `plot_features_interaction` to deep dive into the relationship between specific feature pairs.
+- Use `plot_pca_explained_variance` to determine how many principal components are required to capture a desired proportion of variance.
 
 By combining these visualizations, you can gain a comprehensive understanding of your dataset's structure, which is crucial for effective data preprocessing, feature engineering, and model selection.
+
+***************************
+Plot PCA Explained Variance
+***************************
+
+This method visualizes the cumulative explained variance ratio of PCA components. Use this when you want to:
+
+- Determine how many principal components are required to capture a desired proportion of the total variance in the data.
+- Perform dimensionality reduction using PCA.
+- Understand how variance is distributed across the components.
+
+.. autofunction:: ds_utils.preprocess.visualization.plot_pca_explained_variance
+
+Code Example
+============
+
+Here's how to use the code::
+
+    import pandas as pd
+    from matplotlib import pyplot as plt
+    from ds_utils.preprocess.visualization import plot_pca_explained_variance
+
+    data = pd.read_csv('path/to/dataset')
+    # Use only numeric features
+    numeric_data = data.select_dtypes(include="number")
+    
+    plot_pca_explained_variance(numeric_data, use_scaling=True)
+    plt.show()
+
+The plot displays the cumulative variance ratio as a line graph, with horizontal reference lines at 70% and 80% variance.
+
+.. image:: ../../../tests/baseline_images/test_preprocess/test_plot_pca_explained_variance/test_plot_pca_explained_variance_default.png
+    :align: center
+    :alt: Plot PCA Explained Variance
+
