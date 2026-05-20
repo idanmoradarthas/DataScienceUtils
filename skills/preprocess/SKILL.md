@@ -160,6 +160,9 @@ from ds_utils.preprocess.visualization import plot_pca_explained_variance
 
 # complete usage example
 plot_pca_explained_variance(df, use_scaling=True)
+
+# limit the number of components
+plot_pca_explained_variance(df, pca_kwargs={"n_components": 5})
 ```
 
 **Parameters:**
@@ -168,6 +171,7 @@ plot_pca_explained_variance(df, use_scaling=True)
 - `scaler` — TransformerMixin, Scaler instance to use when `use_scaling` is True (default: StandardScaler).
 - `legend_loc` — str, Location of the legend (default: "lower right").
 - `ax` — axes.Axes, Matplotlib Axes to draw the plot on.
+- `pca_kwargs` — dict, Additional keyword arguments passed directly to sklearn.decomposition.PCA.
 
 **Returns:** matplotlib Axes.
 

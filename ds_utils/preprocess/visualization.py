@@ -253,10 +253,10 @@ def plot_features_interaction(
 def plot_pca_explained_variance(
     X: pd.DataFrame,
     use_scaling: bool = True,
-    scaler: TransformerMixin = StandardScaler(),
+    scaler: Optional[TransformerMixin] = None,
     legend_loc: str = "lower right",
     ax: Optional[axes.Axes] = None,
-    *args,
+    pca_kwargs: Optional[dict] = None,
     **kwargs,
 ) -> axes.Axes:
     """Plot the cumulative explained variance ratio of PCA components.
@@ -267,10 +267,12 @@ def plot_pca_explained_variance(
 
     :param X: Input data with numerical features (rows = samples, columns = features).
     :param use_scaling: If True, scale the data using the provided scaler before fitting PCA.
-    :param scaler: Scaler instance to use when use_scaling is True.
+    :param scaler: Scaler instance to use when use_scaling is True. If None, StandardScaler is used.
     :param legend_loc: Location of the legend. Default is "lower right".
     :param ax: Matplotlib Axes to draw the plot on. If None, a new figure and Axes are created.
-    :param args: Additional arguments passed directly to sklearn.decomposition.PCA.
+    :param pca_kwargs: Additional keyword arguments passed directly to sklearn.decomposition.PCA
+                       (e.g., ``pca_kwargs={"n_components": 5}``). If None, PCA is initialized
+                       with its defaults.
     :param kwargs: Additional keyword arguments passed to axes.plot.
     :return: The Axes object containing the plot.
     :raises ValueError: If any column in X is non-numeric.
@@ -284,9 +286,13 @@ def plot_pca_explained_variance(
     X_array = X.to_numpy()
 
     if use_scaling:
-        X_array = scaler.fit_transform(X_array)
+        _scaler = scaler if scaler is not None else StandardScaler()
+        X_array = _scaler.fit_transform(X_array)
 
-    pca = PCA(*args)
+    if pca_kwargs is None:
+        pca_kwargs = {}
+
+    pca = PCA(**pca_kwargs)
     pca.fit(X_array)
 
     explained_variance_ratio = pca.explained_variance_ratio_
