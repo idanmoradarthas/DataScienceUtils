@@ -299,7 +299,7 @@ def plot_pca_explained_variance(
         linestyle="-",
         color="b",
         label="Cumulative explained variance",
-        **kwargs
+        **kwargs,
     )
 
     # Reference lines for common variance thresholds
