@@ -15,7 +15,9 @@ import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
 import seaborn as sns
-
+from sklearn.base import TransformerMixin
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from ds_utils.preprocess._plot_categorical import (
     _plot_categorical_feature1,
     _plot_categorical_vs_numeric,
@@ -244,5 +246,76 @@ def plot_features_interaction(
         ax = _plot_datetime_vs_numeric(feature_2, feature_1, plot_data, remove_na, ax, **kwargs)
     else:
         ax = _plot_numeric_features(feature_1, feature_2, plot_data, remove_na, ax, **kwargs)
+
+    return ax
+
+
+def plot_pca_explained_variance(
+    X: pd.DataFrame,
+    use_scaling: bool = True,
+    scaler: Optional[TransformerMixin] = None,
+    legend_loc: str = "lower right",
+    ax: Optional[axes.Axes] = None,
+    pca_kwargs: Optional[dict] = None,
+    **kwargs,
+) -> axes.Axes:
+    """Plot the cumulative explained variance ratio of PCA components.
+
+    This visualization helps determine how many principal components are needed
+    to capture a desired proportion of the total variance in the data.
+    Horizontal reference lines are drawn at 70% and 80% variance.
+
+    :param X: Input data with numerical features (rows = samples, columns = features).
+    :param use_scaling: If True, scale the data using the provided scaler before fitting PCA.
+    :param scaler: Scaler instance to use when use_scaling is True. If None, StandardScaler is used.
+    :param legend_loc: Location of the legend. Default is "lower right".
+    :param ax: Matplotlib Axes to draw the plot on. If None, a new figure and Axes are created.
+    :param pca_kwargs: Additional keyword arguments passed directly to sklearn.decomposition.PCA
+                       (e.g., ``pca_kwargs={"n_components": 5}``). If None, PCA is initialized
+                       with its defaults.
+    :param kwargs: Additional keyword arguments passed to axes.plot.
+    :return: The Axes object containing the plot.
+    :raises ValueError: If any column in X is non-numeric.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 5))
+
+    if not np.all(X.dtypes.apply(pd.api.types.is_numeric_dtype)):
+        raise ValueError("All columns in X must be numeric.")
+
+    X_array = X.to_numpy()
+
+    if use_scaling:
+        _scaler = scaler if scaler is not None else StandardScaler()
+        X_array = _scaler.fit_transform(X_array)
+
+    if pca_kwargs is None:
+        pca_kwargs = {}
+
+    pca = PCA(**pca_kwargs)
+    pca.fit(X_array)
+
+    explained_variance_ratio = pca.explained_variance_ratio_
+    cumulative_variance = np.cumsum(explained_variance_ratio)
+
+    ax.plot(
+        range(1, len(cumulative_variance) + 1),
+        cumulative_variance,
+        marker="o",
+        linestyle="-",
+        color="b",
+        label="Cumulative explained variance",
+        **kwargs,
+    )
+
+    # Reference lines for common variance thresholds
+    ax.axhline(0.70, color="gray", linestyle="--", linewidth=1, label="70% variance")
+    ax.axhline(0.80, color="gray", linestyle="--", linewidth=1, label="80% variance")
+
+    ax.set_xlabel("Number of Principal Components")
+    ax.set_ylabel("Cumulative Explained Variance Ratio")
+    ax.set_title("PCA - Cumulative Explained Variance")
+    ax.grid(True)
+    ax.legend(loc=legend_loc)
 
     return ax
