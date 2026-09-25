@@ -4,7 +4,7 @@ Regression Metrics
 Regression Error Characteristic (REC) curves provide a powerful framework for evaluating and comparing regression models, generalizing the Receiver Operating Characteristic (ROC) curve used in classification.
 
 Background and Theory
--------------------
+---------------------
 
 The REC curve was introduced by **Bi & Bennett (2003)** in *"Regression error characteristic curves"* (Proceedings of the Twentieth International Conference on Machine Learning, pp. 43-50) as a method to visualize the cumulative distribution of errors in regression modeling. 
 

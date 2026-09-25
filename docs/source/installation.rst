@@ -34,6 +34,7 @@ installer |pypi_version|::
 To install with optional dependencies (like NLP features that require ``sentence-transformers``), use the extras syntax::
 
     pip install "data-science-utils[nlp]"
+    pip install "data-science-utils[umap]"
 
 To upgrade Data Science Utils to the latest version, use::
 
@@ -51,6 +52,7 @@ If you prefer to install from source, you can clone the repository and install |
 To include optional dependencies when installing from source, use::
 
     pip install ".[nlp]"
+    pip install ".[umap]"
 
 Alternatively, you can install directly from GitHub using pip::
 
@@ -73,7 +75,7 @@ Note on Dependencies
 Data Science Utils has several core dependencies, including numpy, pandas, matplotlib, plotly and scikit-learn. These will be
 automatically installed when you install the package using the methods above. 
 
-Optional features (such as ``SentenceEmbeddingTransformer``) require additional dependencies (``sentence-transformers``) which must be installed explicitly using the ``[nlp]`` extra or separately via conda.
+Optional features require extra dependencies: ``SentenceEmbeddingTransformer`` needs ``sentence-transformers`` (``[nlp]`` extra), and UMAP cluster visualization needs ``umap-learn`` (``[umap]`` extra).
 
 Staying Updated
 ===============

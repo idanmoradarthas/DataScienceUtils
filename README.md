@@ -714,11 +714,44 @@ from ds_utils.unsupervised import plot_loss_vs_cluster_number
 data = pd.read_csv(path / to / dataset)
 
 plot_loss_vs_cluster_number(data, 3, 20, euclidean)
-
 plt.show()
 ```
 
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
+
+### Plot Clusters
+
+This method creates a 2D scatter plot of clustering results. Each cluster is shown
+in a distinct color. For high-dimensional data (more than 2 features),
+dimensionality reduction is applied automatically. Supports PCA (default), t-SNE,
+and UMAP. Cluster centroids can optionally be displayed.
+
+Available in both matplotlib and Plotly backends.
+
+> **Note:** UMAP requires the optional ``umap`` extras: ``pip install data-science-utils[umap]``
+
+**Matplotlib:**
+```python
+from ds_utils.unsupervised import plot_clusters
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+
+estimator = KMeans(n_clusters=8, random_state=42)
+estimator.fit(data)
+
+plot_clusters(data.values, estimator.labels_, estimator.cluster_centers_)
+plt.show()
+```
+
+**Plotly (interactive):**
+```python
+from ds_utils.unsupervised import plot_clusters_plotly
+
+fig = plot_clusters_plotly(data.values, estimator.labels_, estimator.cluster_centers_)
+fig.show()
+```
+
+![Plot Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_clusters_pca_with_centroids.png)
 
 ## XAI (Explainable AI)
 
@@ -919,6 +952,12 @@ For NLP features (``SentenceEmbeddingTransformer``), install with the optional `
 
 ```bash
 pip install data-science-utils[nlp]
+```
+
+For UMAP-based cluster visualization (``plot_clusters(..., reduction_method="umap")``), install with the optional ``umap`` extras:
+
+```bash
+pip install data-science-utils[umap]
 ```
 
 
