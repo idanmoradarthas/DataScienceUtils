@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Cluster Visualization**: Added `plot_clusters` (matplotlib) and `plot_clusters_plotly` to the unsupervised module for 2D scatter plots of clustering results, with optional centroid overlay and PCA/t-SNE/UMAP dimensionality reduction.
+- **Optional UMAP Extra**: Added `data-science-utils[umap]` for `umap-learn` support in cluster visualization.
+
 ## [1.9.0] - 2025-10-08
 
 ### Added

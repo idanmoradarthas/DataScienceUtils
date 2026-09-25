@@ -1,7 +1,7 @@
 ---
 name: ds-utils-unsupervised
 description: >
-  Provides evaluation and visualization for unsupervised learning and clustering. Use when the user asks to plot cluster cardinality, wants to visualize cluster magnitude, compare magnitude versus cardinality to find anomalies, or needs to determine the optimal number of clusters in a Python data science project using sklearn-compatible models.
+  Provides evaluation and visualization for unsupervised learning and clustering. Use when the user asks to plot cluster cardinality, wants to visualize cluster magnitude, compare magnitude versus cardinality to find anomalies, needs to determine the optimal number of clusters, or wants a 2D scatter plot of clustering results (PCA/t-SNE/UMAP, matplotlib or Plotly) in a Python data science project using sklearn-compatible models.
 license: MIT
 metadata:
   author: Idan Morad
@@ -28,6 +28,8 @@ from ds_utils.unsupervised import plot_cluster_cardinality
 from ds_utils.unsupervised import plot_cluster_magnitude
 from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 from ds_utils.unsupervised import plot_loss_vs_cluster_number
+from ds_utils.unsupervised import plot_clusters
+from ds_utils.unsupervised import plot_clusters_plotly
 ```
 
 ---
@@ -155,6 +157,62 @@ plt.show()
 
 ---
 
+## plot_clusters
+
+Creates a 2D scatter plot of clustering results. For data with more than 2 features, PCA (default), t-SNE, or UMAP is applied automatically. Cluster centroids can optionally be overlaid.
+
+```python
+from ds_utils.unsupervised import plot_clusters
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+
+estimator = KMeans(n_clusters=8, random_state=42)
+estimator.fit(X)
+
+plot_clusters(X, estimator.labels_, estimator.cluster_centers_, reduction_method="pca", random_state=42)
+plt.show()
+```
+
+**Parameters:**
+- `X` — array-like of shape (n_samples, n_features). Numeric 2D array with at least 2 features.
+- `cluster_labels` — array-like of shape (n_samples,). Cluster labels.
+- `cluster_centers` — array-like of shape (n_clusters, n_features), optional. Centroids to overlay.
+- `reduction_method` — `'pca'` (default), `'tsne'`, or `'umap'`. Used only when `n_features > 2`.
+- `random_state` — int, optional. Passed to the dimensionality reduction algorithm.
+- `ax` — matplotlib Axes, optional.
+
+**Returns:** matplotlib Axes.
+
+**Common mistakes:**
+- `X` must be numeric. Use `df.select_dtypes(include="number").values` if needed.
+- `reduction_method="umap"` requires `umap-learn` (`pip install data-science-utils[umap]`).
+- t-SNE cannot transform new points, so centroids are skipped (with a warning) when `reduction_method="tsne"`.
+
+---
+
+## plot_clusters_plotly
+
+Creates an interactive Plotly scatter plot of clustering results. Same reduction options as `plot_clusters`.
+
+```python
+from ds_utils.unsupervised import plot_clusters_plotly
+
+fig = plot_clusters_plotly(X, estimator.labels_, estimator.cluster_centers_)
+fig.show()
+```
+
+**Parameters:**
+- Same as `plot_clusters`, except `fig` (plotly Figure, optional) replaces `ax`.
+- `show_legend` — bool, default=True.
+
+**Returns:** `plotly.graph_objects.Figure` (not a matplotlib Axes).
+
+**Common mistakes:**
+- Call `.show()` on the returned figure.
+- Do not treat the return value as a matplotlib Axes.
+
+---
+
 ## Typical Workflow
 
 ```python
@@ -162,7 +220,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
-from ds_utils.unsupervised import plot_loss_vs_cluster_number, plot_magnitude_vs_cardinality
+from ds_utils.unsupervised import plot_loss_vs_cluster_number, plot_magnitude_vs_cardinality, plot_clusters
 
 # Find optimal k
 plot_loss_vs_cluster_number(
@@ -180,5 +238,9 @@ kmeans.fit(X)
 
 # Analyze clusters
 plot_magnitude_vs_cardinality(X, kmeans.labels_, kmeans.cluster_centers_, euclidean)
+plt.show()
+
+# Visualize clusters
+plot_clusters(X, kmeans.labels_, kmeans.cluster_centers_, random_state=42)
 plt.show()
 ```

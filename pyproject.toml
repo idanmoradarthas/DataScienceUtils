@@ -72,6 +72,9 @@ dev = [
 nlp = [
     "sentence-transformers>=3.0.0",
 ]
+umap = [
+    "umap-learn>=0.5.5",
+]
 
 
 [dependency-groups]
