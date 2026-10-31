@@ -1,0 +1,3 @@
+# Requirements for evaluating Agent Skills with NVIDIA SkillEvaluator
+skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git
+skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
