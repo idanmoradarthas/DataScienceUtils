@@ -30,7 +30,7 @@ Text analytics, split-safe tag feature binarization, and significant term extrac
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `pandas`, `scikit-learn`.
 
@@ -119,12 +119,19 @@ corpus = pd.DataFrame(
 
 complaints_subset = corpus[corpus["is_complaint"] == 1]
 
-# Extract terms that distinguish complaints from the full corpus
-term_scores = extract_significant_terms_from_subset(corpus, complaints_subset, field_name="text")
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Extract terms that distinguish complaints from the full corpus (using stop_words='english')
+term_scores = extract_significant_terms_from_subset(
+    corpus,
+    complaints_subset,
+    field_name="text",
+    vectorizer=CountVectorizer(stop_words="english"),
+)
 top_distinctive = term_scores.sort_values(ascending=False).head(5)
 print("Top distinctive terms in complaints:\n", top_distinctive)
 ```
-- **Interpretation**: Higher scores (0.0 to 1.0) indicate terms strongly over-represented in the subset compared to the general baseline.
+- **Interpretation**: Higher scores indicate terms strongly over-represented in the subset compared to the general baseline (formula: `subset_freq / (superset_freq - subset_freq + 1)`, which is not bounded by 1.0).
 - **Action**: Use discovered significant terms as domain-informed keyword features or prioritize them in root-cause investigations.
 
 ---
@@ -176,6 +183,8 @@ predictions = clf.predict(test_feat[tag_cols])
 
 - **No persistent transformer instance**: `append_tags_to_frame` is a functional helper that transforms train and test together. It does not return a fitted object to persist for standalone inference on future rows. For an sklearn `Pipeline` / `ColumnTransformer` with `fit` and `transform`, use `MultiLabelBinarizerTransformer` from `ds-utils-transformers`.
 - **Delimited strings only**: Expects comma-delimited strings (e.g. `"tag1,tag2"`). For Python lists of strings, use `MultiLabelBinarizerTransformer`.
+- **Case sensitivity**: `lowercase=False` by default; distinct casings (e.g. `"Python"` and `"python"`) yield separate columns unless `lowercase=True` is explicitly passed.
+- **Vocabulary cap**: `max_features=500` by default silently caps the number of encoded tag columns to the top 500 tags. Pass `max_features=None` to encode all distinct tags.
 
 ## Troubleshooting
 
@@ -183,5 +192,6 @@ predictions = clf.predict(test_feat[tag_cols])
 |---|---|---|
 | Mismatched columns in train and test | Called `append_tags_to_frame` separately on train and test | Call `append_tags_to_frame(train, test, ...)` together in one call |
 | Test vocabulary leaked into model | Concatenated train and test before calling `append_tags_to_frame` | Keep train and test strictly partitioned |
-| `TypeError: expected string or bytes-like object` | Tag column contains missing (`NaN`) or non-string values | Impute missing tags with empty string `""` before calling |
+| Silent all-zero indicator rows | Missing (`NaN`, `None`) or non-string values in the tag column | Missing or non-string entries are handled silently by producing all zeros across tag indicators |
+| Common stop words ranked as significant | Default CountVectorizer does not filter English stop words | Pass `vectorizer=CountVectorizer(stop_words='english')` to `extract_significant_terms_from_subset` |
 | Need to serialize transformer for production inference | `append_tags_to_frame` cannot be pickled as an sklearn estimator | Use `MultiLabelBinarizerTransformer` from `ds-utils-transformers` in an sklearn Pipeline |

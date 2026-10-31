@@ -77,7 +77,7 @@ plots a stacked bar chart with the results. [Original code](https://github.com/E
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
 visualize_accuracy_grouped_by_probability(
-    test["target"], 1, classifier.predict_proba(test[selected_features]), display_breakdown=False
+    test["target"], 1, classifier.predict_proba(test[selected_features])[:, 1], display_breakdown=False
 )
 ```
 
@@ -859,8 +859,6 @@ The installer will:
 
 For a full step-by-step guide, see the
 [AI Skills documentation](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html).
-For instructions on validating and evaluating skills with NVIDIA SkillEvaluator, see the
-[Agent Skills Evaluation Guide](skills/README.md).
 
 ### 2. Install from PyPI
 

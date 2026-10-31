@@ -32,7 +32,7 @@ Production-ready, scikit-learn compatible transformers for multi-label lists and
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `pandas`, `scikit-learn`.
 - Optional dependency for `SentenceEmbeddingTransformer`: `pip install data-science-utils[nlp]` (provides `sentence-transformers` and `torch`).
@@ -189,13 +189,13 @@ assert any("python" in c for c in processed.columns)
 
 - **Input dimensionality**: Both transformers expect a single column. When used in `ColumnTransformer`, pass a single column string (e.g. `"skills"`) or a single-element list (e.g. `["title"]`).
 - **NLP Extras required**: `SentenceEmbeddingTransformer` requires `pip install data-science-utils[nlp]`. It raises an `ImportError` if `sentence-transformers` is missing.
-- **Multi-label formatting**: Input to `MultiLabelBinarizerTransformer` must be an iterable of iterables. Passing a flat list of strings will treat each character as a label.
+- **String splitting**: `MultiLabelBinarizerTransformer` does not automatically split comma-separated strings (e.g. `"tagA,tagB"` is treated as a single label `label_tagA_tagB`). For delimited strings, split values into lists first or use `append_tags_to_frame` from `ds-utils-strings`.
 
 ## Troubleshooting
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
-| `ImportError: SentenceEmbeddingTransformer requires 'sentence-transformers'` | Optional NLP extra is not installed | Run `pip install data-science-utils[nlp]` or `pip install sentence-transformers` |
-| `MultiLabelBinarizer` creates one column per letter (e.g., `'a'`, `'b'`) | Passed a flat list of strings `["tag1", "tag2"]` as `X` | Pass a list of lists `[["tag1", "tag2"]]` so each row has its own tag iterable |
+| `ImportError: sentence-transformers is required for SentenceEmbeddingTransformer. Install it with:  pip install data-science-utils[nlp]` | Optional NLP extra is not installed | Run `pip install data-science-utils[nlp]` |
+| Comma-separated tags treated as one feature (e.g., `label_tag1_tag2`) | Passed comma-delimited string without splitting into list | Split string into list `['tag1', 'tag2']` or use `append_tags_to_frame` from `ds-utils-strings` |
 | `NotFittedError` when calling `.transform()` | Transformer was not fitted | Ensure `.fit()` or `.fit_transform()` is invoked before calling `.transform()` |
 | `ValueError: MultiLabelBinarizerTransformer expects a single column` | Passed multiple columns in `ColumnTransformer` | Target exactly one column: `("tags", MultiLabelBinarizerTransformer(), "col_name")` |

@@ -28,32 +28,32 @@ Visualizes a single feature's distribution based on its data type.
 ### Signature
 ```python
 visualize_feature(
-    series: pd.Series,
+    series: pandas.Series,
     remove_na: bool = False,
+    *,
     include_outliers: bool = True,
     outlier_iqr_multiplier: float = 1.5,
     first_day_of_week: str = "Monday",
     show_counts: bool = True,
-    order: Union[str, list, None] = None,
-) -> matplotlib.axes.Axes
+    order: Union[List[str], str, NoneType] = None,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
+    **kwargs,
+) -> matplotlib.axes._axes.Axes
 ```
 
 ### Parameters
-- `series` (*pd.Series*): The feature to visualize.
+- `series` (*pandas.Series*): The feature to visualize.
 - `remove_na` (*bool*, default `False`): Whether to explicitly remove NAs before plotting.
-- `include_outliers` (*bool*, default `True`): For float features, whether to include outliers in the violin plot.
-- `outlier_iqr_multiplier` (*float*, default `1.5`): IQR multiplier for outlier fence computation if `include_outliers=False`.
-- `first_day_of_week` (*str*, default `"Monday"`): Start day for datetime heatmaps (e.g., `"Monday"` or `"Sunday"`).
-- `show_counts` (*bool*, default `True`): Whether to display count labels on categorical bar charts.
-- `order` (*str* or *list*, default `None`): Custom sorting for categories (e.g. `"count_desc"` or `["High", "Low"]`).
+- `include_outliers` (*keyword-only*, *bool*, default `True`): For float features, whether to include outliers in the violin plot.
+- `outlier_iqr_multiplier` (*keyword-only*, *float*, default `1.5`): IQR multiplier for outlier fence computation if `include_outliers=False`.
+- `first_day_of_week` (*keyword-only*, *str*, default `"Monday"`): Start day for datetime heatmaps (e.g., `"Monday"` or `"Sunday"`).
+- `show_counts` (*keyword-only*, *bool*, default `True`): Whether to display count labels on categorical bar charts.
+- `order` (*keyword-only*, *str* or *list*, default `None`): Custom sorting for categories (e.g. `"count_desc"` or `["High", "Low"]`).
+- `ax` (*keyword-only*, optional, default `None`): Target axes for rendering.
+- `**kwargs`: Forwarded to underlying plotting functions.
 
 ### Returns
-- `matplotlib.axes.Axes`: The matplotlib Axes containing the plot.
-
-### Common Mistakes
-- Passing a DataFrame (`df[["col"]]`) instead of a Series (`df["col"]`).
-- Expecting a target overlay: `visualize_feature` is strictly univariate.
-- Features with >10 unique values will show the top 10 categories, grouping the rest into `"Other values"`.
+- `matplotlib.axes._axes.Axes`: The matplotlib Axes containing the plot.
 
 ---
 
@@ -64,27 +64,20 @@ Visualizes a correlation matrix as an annotated heatmap.
 ### Signature
 ```python
 visualize_correlations(
-    correlation_matrix: pd.DataFrame,
-    annot: bool = True,
-    fmt: str = ".2f",
-    cmap: str = "coolwarm",
-    ax: Optional[matplotlib.axes.Axes] = None,
+    correlation_matrix: pandas.DataFrame,
+    *,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
     **kwargs,
-) -> matplotlib.axes.Axes
+) -> matplotlib.axes._axes.Axes
 ```
 
 ### Parameters
-- `correlation_matrix` (*pd.DataFrame*): Pre-computed correlation matrix (e.g. `df.corr()`).
-- `annot` (*bool*, default `True`): Whether to write the data value in each cell.
-- `fmt` (*str*, default `".2f"`): String formatting code to use when adding annotations.
-- `cmap` (*str*, default `"coolwarm"`): Colormap name.
-- `ax` (*matplotlib.axes.Axes*, optional): Target axes for rendering.
+- `correlation_matrix` (*pandas.DataFrame*): Pre-computed correlation matrix (e.g. `df.corr()`).
+- `ax` (*keyword-only*, optional, default `None`): Target axes for rendering.
+- `**kwargs`: Additional keyword arguments passed directly to `seaborn.heatmap` (e.g., `annot=True`, `cmap="coolwarm"`).
 
 ### Returns
-- `matplotlib.axes.Axes`: The matplotlib Axes containing the heatmap.
-
-### Common Mistakes
-- Passing raw data `df` instead of pre-computed `df.corr()`.
+- `matplotlib.axes._axes.Axes`: The matplotlib Axes containing the heatmap.
 
 ---
 
@@ -95,21 +88,22 @@ Plots a hierarchical clustering dendrogram based on a correlation matrix.
 ### Signature
 ```python
 plot_correlation_dendrogram(
-    correlation_matrix: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    correlation_matrix: pandas.DataFrame,
+    cluster_distance_method: Union[str, Callable] = "average",
+    *,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
     **kwargs,
-) -> matplotlib.axes.Axes
+) -> matplotlib.axes._axes.Axes
 ```
 
 ### Parameters
-- `correlation_matrix` (*pd.DataFrame*): Pre-computed correlation matrix.
-- `ax` (*matplotlib.axes.Axes*, optional): Target axes for rendering.
+- `correlation_matrix` (*pandas.DataFrame*): Pre-computed correlation matrix.
+- `cluster_distance_method` (*Union[str, Callable]*, default `"average"`): Linkage method for hierarchical clustering (e.g., `"average"`, `"single"`, `"complete"`).
+- `ax` (*keyword-only*, optional, default `None`): Target axes for rendering.
+- `**kwargs`: Forwarded to `scipy.cluster.hierarchy.dendrogram`.
 
 ### Returns
-- `matplotlib.axes.Axes`: The matplotlib Axes containing the dendrogram.
-
-### Common Mistakes
-- Passing the raw DataFrame instead of `df.corr()`.
+- `matplotlib.axes._axes.Axes`: The matplotlib Axes containing the dendrogram.
 
 ---
 
@@ -120,30 +114,41 @@ Plots the joint distribution and relationship between two features.
 ### Signature
 ```python
 plot_features_interaction(
-    data_frame: pd.DataFrame,
+    data: pandas.DataFrame,
     feature_1: str,
     feature_2: str,
+    *,
     remove_na: bool = False,
-    ax: Optional[matplotlib.axes.Axes] = None,
-) -> matplotlib.axes.Axes
+    include_outliers: bool = True,
+    outlier_iqr_multiplier: float = 1.5,
+    show_ratios: bool = False,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
+    **kwargs,
+) -> matplotlib.axes._axes.Axes
 ```
 
 ### Parameters
-- `data_frame` (*pd.DataFrame*): The dataset.
+- `data` (*pandas.DataFrame*): The input dataset.
 - `feature_1` (*str*): First feature column name.
 - `feature_2` (*str*): Second feature column name.
-- `remove_na` (*bool*, default `False`): Whether to remove NA/null values before plotting. When `False`, missing values are shown as rug plots or separate bars.
-- `ax` (*matplotlib.axes.Axes*, optional): Target axes for rendering.
+- `remove_na` (*keyword-only*, *bool*, default `False`): Whether to remove NA/null values before plotting. When `False`, missingness patterns are visualized using marginal rug plots or missing category bars.
+- `include_outliers` (*keyword-only*, *bool*, default `True`): Whether to include values outside the IQR fence for categorical-vs-numeric violin plots.
+- `outlier_iqr_multiplier` (*keyword-only*, *float*, default `1.5`): Multiplier for IQR fence trimming in categorical-vs-numeric plots.
+- `show_ratios` (*keyword-only*, *bool*, default `False`): If `True`, display proportions instead of absolute counts when both features are categorical-like.
+- `ax` (*keyword-only*, optional, default `None`): Target axes for rendering.
+- `**kwargs`: Forwarded to underlying plotting functions (`seaborn.violinplot`, `Axes.scatter`, etc.).
 
 ### Dtype Interaction Matrix
+Rebuilt from docstring and `docs/source/preprocess/visualization.rst`:
+
 | feature_1 ↓  feature_2 → | Numeric | Categorical / Bool | Datetime |
 |---|---|---|---|
-| **Numeric** | Scatter plot | Box plot | Line plot |
-| **Categorical / Bool** | Box plot | Shared histogram | Violin plot |
-| **Datetime** | Line plot | Violin plot | Line plot |
+| **Numeric** | Scatter plot | Violin plot by category | Line/scatter over time |
+| **Categorical / Bool** | Violin plot by category | Overlaid histograms per category | Violin plot by category |
+| **Datetime** | Line/scatter over time | Violin plot by category | Scatter plot (complete cases) |
 
 ### Returns
-- `matplotlib.axes.Axes`: The matplotlib Axes.
+- `matplotlib.axes._axes.Axes`: The matplotlib Axes.
 
 ---
 
@@ -154,28 +159,27 @@ Plots the cumulative explained variance ratio of PCA components.
 ### Signature
 ```python
 plot_pca_explained_variance(
-    X: pd.DataFrame,
+    X: pandas.DataFrame,
     use_scaling: bool = True,
-    scaler: Optional[Any] = None,
+    scaler: Optional[sklearn.base.TransformerMixin] = None,
     legend_loc: str = "lower right",
-    ax: Optional[matplotlib.axes.Axes] = None,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
     pca_kwargs: Optional[dict] = None,
-) -> matplotlib.axes.Axes
+    **kwargs,
+) -> matplotlib.axes._axes.Axes
 ```
 
 ### Parameters
-- `X` (*pd.DataFrame*): The dataset containing numerical features.
+- `X` (*pandas.DataFrame*): The dataset containing numerical features.
 - `use_scaling` (*bool*, default `True`): Whether to scale data before PCA.
-- `scaler` (*TransformerMixin*, optional): Scaler instance (default: `StandardScaler()`).
+- `scaler` (*Optional[TransformerMixin]*, default `None`): Scaler instance (defaults to `StandardScaler()` if `use_scaling=True`).
 - `legend_loc` (*str*, default `"lower right"`): Location of the legend.
-- `ax` (*matplotlib.axes.Axes*, optional): Target axes.
-- `pca_kwargs` (*dict*, optional): Additional kwargs passed to `sklearn.decomposition.PCA`.
+- `ax` (*keyword-only*, optional, default `None`): Target axes.
+- `pca_kwargs` (*Optional[dict]*, default `None`): Additional kwargs passed to `sklearn.decomposition.PCA`.
+- `**kwargs`: Forwarded to underlying axes plot calls.
 
 ### Returns
-- `matplotlib.axes.Axes`: The matplotlib Axes.
-
-### Common Mistakes
-- Passing DataFrames with non-numeric or un-encoded categorical columns.
+- `matplotlib.axes._axes.Axes`: The matplotlib Axes.
 
 ---
 
@@ -186,29 +190,21 @@ Extracts pairs of highly correlated features and their correlation to the target
 ### Signature
 ```python
 get_correlated_features(
-    correlation_matrix: pd.DataFrame,
+    correlation_matrix: pandas.DataFrame,
     features: List[str],
-    target: str,
+    target_feature: str,
     threshold: float = 0.95,
-) -> pd.DataFrame
+) -> pandas.DataFrame
 ```
 
 ### Parameters
-- `correlation_matrix` (*pd.DataFrame*): Pre-computed correlation matrix.
-- `features` (*list of str*): List of feature names to consider.
-- `target` (*str*): Target column name in the correlation matrix.
+- `correlation_matrix` (*pandas.DataFrame*): Pre-computed correlation matrix.
+- `features` (*List[str]*): List of feature names to consider.
+- `target_feature` (*str*): Target column name in the correlation matrix.
 - `threshold` (*float*, default `0.95`): Minimum absolute correlation between two features to report.
 
 ### Returns
-- `pd.DataFrame`: Columns: `['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr']`.
-
-### Output Example
-| level_0 | level_1 | level_0_level_1_corr | level_0_target_corr | level_1_target_corr |
-|---------|---------|----------------------|---------------------|---------------------|
-| featureA| featureB| 0.95                 | 0.51                | 0.48                |
-
-### Decision Rule
-When `featureA` and `featureB` have high collinearity (`level_0_level_1_corr` > threshold), drop the feature with the lower correlation to the target (`min(abs(level_0_target_corr), abs(level_1_target_corr))`).
+- `pandas.DataFrame`: Columns: `['level_0', 'level_1', 'level_0_level_1_corr', 'level_0_target_corr', 'level_1_target_corr']`.
 
 ---
 
@@ -219,25 +215,19 @@ Calculates summary statistics for a numerical feature grouped by label values.
 ### Signature
 ```python
 extract_statistics_dataframe_per_label(
-    df: pd.DataFrame,
+    df: pandas.DataFrame,
     feature_name: str,
     label_name: str,
-) -> pd.DataFrame
+) -> pandas.DataFrame
 ```
 
 ### Parameters
-- `df` (*pd.DataFrame*): Input dataset.
+- `df` (*pandas.DataFrame*): Input dataset.
 - `feature_name` (*str*): Numerical feature to describe.
 - `label_name` (*str*): Categorical label or target column.
 
 ### Returns
-- `pd.DataFrame`: Grouped summary table.
-
-### Output Example
-| category | count | null_count | mean  | min | 1_percentile | 5_percentile | 25_percentile | median | 75_percentile | 95_percentile | 99_percentile | max |
-|----------|-------|------------|-------|-----|--------------|--------------|---------------|--------|---------------|---------------|---------------|-----|
-| Group_A  | 100   | 0          | 25.5  | 10  | 11.2         | 12.0         | 15.0          | 25.0   | 35.0          | 45.0          | 49.0          | 50  |
-| Group_B  | 150   | 2          | 45.0  | 20  | 21.0         | 22.0         | 30.0          | 45.0   | 60.0          | 75.0          | 80.0          | 85  |
+- `pandas.DataFrame`: Grouped summary table.
 
 ---
 
@@ -248,25 +238,29 @@ Computes mutual information scores between features and a target label.
 ### Signature
 ```python
 compute_mutual_information(
-    df: pd.DataFrame,
+    df: pandas.DataFrame,
     features: List[str],
     label_col: str,
-    random_state: Optional[int] = None,
-) -> pd.DataFrame
+    *,
+    n_neighbors: int = 3,
+    random_state: Union[int, numpy.random.mtrand.RandomState, NoneType] = None,
+    n_jobs: Optional[int] = None,
+    numerical_imputer: sklearn.base.TransformerMixin = SimpleImputer(),
+    discrete_imputer: sklearn.base.TransformerMixin = SimpleImputer(strategy="most_frequent"),
+    discrete_encoder: sklearn.base.TransformerMixin = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
+) -> pandas.DataFrame
 ```
 
 ### Parameters
-- `df` (*pd.DataFrame*): The dataset.
-- `features` (*list of str*): Feature column names to test.
+- `df` (*pandas.DataFrame*): The dataset.
+- `features` (*List[str]*): Feature column names to test.
 - `label_col` (*str*): Target column name.
-- `random_state` (*int*, optional): Random state for reproducibility.
+- `n_neighbors` (*keyword-only*, *int*, default `3`): Number of neighbors to use for MI estimation.
+- `random_state` (*keyword-only*, optional, default `None`): Random state for reproducibility.
+- `n_jobs` (*keyword-only*, optional, default `None`): Number of parallel jobs.
+- `numerical_imputer` (*keyword-only*, default `SimpleImputer()`): Transformer for numeric null imputation.
+- `discrete_imputer` (*keyword-only*, default `SimpleImputer(strategy="most_frequent")`): Transformer for discrete null imputation.
+- `discrete_encoder` (*keyword-only*, default `OrdinalEncoder(...)`): Transformer for discrete encoding.
 
 ### Returns
-- `pd.DataFrame`: Columns `['feature_name', 'mi_score']`, sorted descending by `mi_score`.
-
-### Output Example
-| feature_name | mi_score |
-|--------------|----------|
-| feature1     | 0.245    |
-| feature3     | 0.182    |
-| feature2     | 0.091    |
+- `pandas.DataFrame`: Columns `['feature_name', 'mi_score']`, sorted descending by `mi_score`.

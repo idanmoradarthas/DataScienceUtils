@@ -431,13 +431,12 @@ install_package() {
 }
 
 # ── Skills installation helper ────────────────────────────────────
-# Installs one skill into a target directory. Tracks outcome in arrays.
 _install_one_skill() {
     local target_label="$1"
     local skill="$2"
     local dest="$3"
 
-    # Check if a valid installation is already present
+    # Complete installation check: both SKILL.md and references/api_reference.md must exist and be non-empty
     if [ -f "$dest/SKILL.md" ] && [ -s "$dest/SKILL.md" ] && \
        [ -f "$dest/references/api_reference.md" ] && [ -s "$dest/references/api_reference.md" ] && \
        [ "$FORCE" = false ]; then
@@ -454,7 +453,6 @@ _install_one_skill() {
     local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
     local fetch_failed=false
 
-    # Download to temporary files first to protect pre-existing content on failure
     local tmp_skill="$dest/SKILL.md.tmp.$$"
     local tmp_ref="$dest/references/api_reference.md.tmp.$$"
 
@@ -473,11 +471,13 @@ _install_one_skill() {
         INSTALLED_SKILLS+=("${target_label}|${skill}|${dest}")
     else
         rm -f "$tmp_skill" "$tmp_ref" 2>/dev/null || true
-        # Clean up only if directory did not exist before
         if [ "$existed_before" = false ]; then
             rm -rf "$dest" 2>/dev/null || true
         fi
         warn "Could not fetch complete ${skill} skill for ${target_label} (URLs: ${url}, ${ref_url})"
+        if [ "$SILENT" = true ]; then
+            echo "Error: Could not fetch complete ${skill} skill for ${target_label} (URLs: ${url}, ${ref_url})" >&2
+        fi
         FAILED_SKILLS+=("${target_label}|${skill}|${dest}")
     fi
 }
@@ -514,7 +514,6 @@ install_skills() {
     done
 
     # ── Cross-client: Agent Skills standard path (.agents/skills/) ────
-    # Skip if antigravity was selected — it already installs to .agents/skills/
     if ! echo "$TOOLS" | grep -qw "antigravity"; then
         step "Installing to cross-client path (.agents/skills/)"
         local agents_dir
@@ -594,7 +593,7 @@ summary() {
             local rem="${item#*|}"
             local skl="${rem%%|*}"
             local dst="${rem#*|}"
-            msg "  ${R}✗${N} ${tgt}: ds-utils-${skl} (cleaned up)"
+            msg "  ${R}✗${N} ${tgt}: ds-utils-${skl} (failed download, cleaned up partial files)"
         done
     fi
 
@@ -612,6 +611,7 @@ summary() {
         msg "2. The skills will be auto-loaded — no configuration needed"
         msg "3. Try: ${D}\"Use ds_utils to plot a confusion matrix for my classifier\"${N}"
         echo ""
+        return 0
     else
         echo ""
         msg "${B}Resolution:${N}"
@@ -676,8 +676,8 @@ main() {
     # Install skills
     install_skills
 
-    # Done - exit nonzero if summary reports any failures
-    summary || exit 1
+    # Done
+    summary
 }
 
 main "$@"

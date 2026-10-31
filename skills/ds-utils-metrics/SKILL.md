@@ -30,7 +30,7 @@ Comprehensive model evaluation, interactive threshold tuning, probability calibr
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `plotly`.
 - Trained scikit-learn compatible estimator or prediction arrays (`y_true`, `y_pred`, `y_proba`).
@@ -44,7 +44,7 @@ Comprehensive model evaluation, interactive threshold tuning, probability calibr
 | Per-class errors & summary rates (FPR, FNR) | `plot_confusion_matrix` | Matplotlib | `y_true`, `y_pred`, `labels=[0, 1]` list |
 | Optimal decision threshold tuning (ROC) | `plot_roc_curve_with_thresholds_annotations` | Plotly | `y_true`, `{name: proba[:, positive_class_idx]}` |
 | Precision-recall balance on imbalanced data | `plot_precision_recall_curve_with_thresholds_annotations` | Plotly | `y_true`, `{name: proba[:, positive_class_idx]}` |
-| Probability calibration / reliability grouping | `visualize_accuracy_grouped_by_probability` | Matplotlib | `y_true`, `labeled_class`, **1D proba array** |
+| Coarse probability overconfidence check | `visualize_accuracy_grouped_by_probability` | Matplotlib | `y_true`, `labeled_class`, 1D probability array |
 | Data-size sensitivity & sample efficiency | `plot_metric_growth_per_labeled_instances` | Matplotlib | `X_tr, y_tr, X_te, y_te`, `{name: unfitted_model}` |
 | Probability distribution by error type (FP/FN) | `plot_error_analysis_chart` | Matplotlib | `y_true`, `y_pred`, `y_proba` |
 | Systematic error slicing across feature cohorts | `generate_error_analysis_report` | Pandas DataFrame | `X`, `y_true`, `y_pred` |
@@ -118,8 +118,8 @@ fig_pr = plot_precision_recall_curve_with_thresholds_annotations(y_true, models_
 - **Interpretation**: Hover over curve points to inspect the concrete threshold that achieves the required precision or recall.
 - **Action**: Adopt the annotated threshold for decision cutoffs instead of defaulting to 0.5.
 
-##### Step 3: Probability Calibration Inspection (`visualize_accuracy_grouped_by_probability`)
-Verify whether predicted probabilities reflect empirical correctness.
+##### Step 3: Coarse Probability Overconfidence Check (`visualize_accuracy_grouped_by_probability`)
+Inspect stacked TP/TN/FP/FN counts per probability bin to detect overconfidence or decision skew.
 - **Input requirement**: Accepts a **1D probability array** corresponding to `labeled_class`. Extract it dynamically using `clf.classes_` (e.g. `col_idx = int(np.where(clf.classes_ == labeled_class)[0][0]); y_proba_1d = clf.predict_proba(X)[:, col_idx]`).
 
 ```python
@@ -128,8 +128,8 @@ from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_
 ax_cal = visualize_accuracy_grouped_by_probability(y_true, labeled_class=1, probabilities=y_proba_pos)
 plt.close()
 ```
-- **Interpretation**: If samples with predicted probability ~0.80 only demonstrate 50% empirical accuracy, the model is overconfident.
-- **Action**: Apply Platt scaling (`CalibratedClassifierCV`) before relying on probabilities in business operations. Note: for an explicit calibration curve plot, use standard `sklearn.calibration.CalibrationDisplay`.
+- **Interpretation**: Displays stacked counts of correct and incorrect predictions across probability bins as a coarse overconfidence check (not a strict reliability diagram).
+- **Action**: If high-confidence bins show significant incorrect proportions, calibrate probabilities using `sklearn.calibration.CalibratedClassifierCV` or plot a full calibration curve with `sklearn.calibration.CalibrationDisplay`.
 
 ##### Step 4: Slicing Errors Across Cohorts (`generate_error_analysis_report`)
 Diagnose which demographic, regional, or numerical segments suffer from heightened error rates.
@@ -208,13 +208,16 @@ from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 from ds_utils.metrics.error_analysis import generate_error_analysis_report
 
-# 1. Synthetic evaluation data
+from sklearn.model_selection import train_test_split
+
+# 1. Synthetic data and train/test split
 np.random.seed(42)
-X_test = pd.DataFrame({"age": np.random.randint(18, 70, 80), "score": np.random.randn(80)})
-y_test = (X_test["score"] + np.random.normal(0, 0.5, 80) > 0).astype(int).values
+X_all = pd.DataFrame({"age": np.random.randint(18, 70, 100), "score": np.random.randn(100)})
+y_all = (X_all["score"] + np.random.normal(0, 0.5, 100) > 0).astype(int).values
+X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.3, random_state=42)
 
 clf = LogisticRegression()
-clf.fit(X_test, y_test)
+clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
 y_proba_2d = clf.predict_proba(X_test)
 
@@ -246,5 +249,6 @@ cohort_report = generate_error_analysis_report(X_test, y_test, y_pred, bins=3)
 |---|---|---|
 | `TypeError: 'Figure' object is not callable` or plot not showing | Calling `.show()` as a matplotlib method or treating Plotly figure as matplotlib Axes | Use `fig.show()` for Plotly figures (`plot_roc...`, `plot_rec...`) and `plt.show()` for matplotlib |
 | `ValueError: Per-column arrays must each be 1-dimensional` in `visualize_accuracy_grouped_by_probability` | Passed full 2D probability matrix instead of 1D column | Select the 1D column matching `labeled_class`: `proba[:, np.where(clf.classes_ == labeled_class)[0][0]]` |
-| `KeyError: positive_label` in ROC curves | Passed classifier objects instead of `{name: 1D_array}` | Construct dictionary: `{"model": proba[:, positive_class_idx]}` |
-| `ValueError: len(y_true) must be at least 2` | Passed single point to `directional_accuracy_score` with default baseline | Provide at least 2 time steps or supply an explicit `baseline` array |
+| `AttributeError: 'LogisticRegression' object has no attribute 'shape'` | Passed fitted estimator instance instead of predicted probabilities to ROC/PR functions | Pass dictionary of predicted probability arrays: `{"model": proba[:, pos_idx]}` |
+| `ValueError: Shape mismatch: y_true (n,) and y_scores (n, 2) for classifier <name>` | Passed full 2D probability matrix instead of 1D positive-class scores to ROC/PR curves | Extract 1D array of positive-class scores: `proba[:, pos_idx]` |
+| `ValueError: Time-series mode (baseline=None) requires at least 2 samples.` | Passed single sample to `directional_accuracy_score` with default baseline | Provide at least 2 time steps or supply an explicit `baseline` array |

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Evaluates Agent Skills under skills/ using NVIDIA SkillEvaluator.
 # Executes quality checks and Tier 1 static validation across all skills,
@@ -7,7 +7,7 @@
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || exit 1
 
 # 1. Verify prerequisite CLI
 if ! command -v skillevaluator >/dev/null 2>&1; then
@@ -22,14 +22,21 @@ echo "    NVIDIA SkillEvaluator Runner - DataScienceUtils"
 echo "=========================================================="
 skillevaluator --version
 
-# Track per-skill exit statuses
-declare -A QUALITY_STATUS
-declare -A TIER1_STATUS
+# Use parallel indexed arrays for bash 3.2 compatibility (macOS default)
+SKILL_NAMES=()
+Q_CODES=()
+T_CODES=()
 OVERALL_FAILED=0
 
-for skill_dir in skills/*/; do
+# Isolate reports output to a fresh temp directory so repo root reports/ is never deleted
+EVAL_TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$EVAL_TEMP_DIR"' EXIT
+
+for skill_dir in "$SCRIPT_DIR"/skills/*/; do
   [ -d "$skill_dir" ] || continue
   skill_name=$(basename "$skill_dir")
+  SKILL_NAMES+=("$skill_name")
+
   echo ""
   echo "----------------------------------------------------------"
   echo ">>> Evaluating: ${skill_name}"
@@ -37,9 +44,12 @@ for skill_dir in skills/*/; do
 
   # [1/2] Quality Check (Default threshold >= 70)
   echo "Running quality-check on ${skill_name}..."
-  skillevaluator quality-check "$skill_dir"
+  (
+    cd "$EVAL_TEMP_DIR" || exit 1
+    skillevaluator quality-check "$skill_dir" -o "$EVAL_TEMP_DIR/quality-$skill_name"
+  )
   q_exit=$?
-  QUALITY_STATUS["$skill_name"]=$q_exit
+  Q_CODES+=("$q_exit")
   if [ $q_exit -ne 0 ]; then
     echo "! quality-check failed for ${skill_name} (exit=${q_exit})"
     OVERALL_FAILED=1
@@ -49,9 +59,12 @@ for skill_dir in skills/*/; do
 
   # [2/2] Tier 1 Static Validation (--no-llm keyless mode)
   echo "Running tier1 --no-llm on ${skill_name}..."
-  skillevaluator tier1 --no-llm "$skill_dir"
+  (
+    cd "$EVAL_TEMP_DIR" || exit 1
+    skillevaluator tier1 --no-llm "$skill_dir" -o "$EVAL_TEMP_DIR/tier1-$skill_name"
+  )
   t_exit=$?
-  TIER1_STATUS["$skill_name"]=$t_exit
+  T_CODES+=("$t_exit")
   if [ $t_exit -ne 0 ]; then
     echo "! tier1 check incomplete or failed for ${skill_name} (exit=${t_exit})"
     OVERALL_FAILED=1
@@ -60,20 +73,16 @@ for skill_dir in skills/*/; do
   fi
 done
 
-# Clean up generated local reports directory if created
-rm -rf reports
-
 echo ""
 echo "=========================================================="
 echo "                  EVALUATION SUMMARY"
 echo "=========================================================="
 printf "%-26s | %-15s | %-15s\n" "Skill" "Quality Check" "Tier 1 Static"
 echo "----------------------------------------------------------"
-for skill_dir in skills/*/; do
-  [ -d "$skill_dir" ] || continue
-  s_name=$(basename "$skill_dir")
-  q_code=${QUALITY_STATUS["$s_name"]}
-  t_code=${TIER1_STATUS["$s_name"]}
+for i in "${!SKILL_NAMES[@]}"; do
+  s_name="${SKILL_NAMES[$i]}"
+  q_code="${Q_CODES[$i]}"
+  t_code="${T_CODES[$i]}"
   q_str="PASS (0)"
   [ "$q_code" -ne 0 ] && q_str="FAIL ($q_code)"
   t_str="PASS (0)"

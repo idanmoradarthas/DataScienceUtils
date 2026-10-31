@@ -317,22 +317,34 @@ If any line shows ``!`` (warning) instead, see Troubleshooting.
     ────────────────────────────────────────
     Package:  installed
     Extras:   none
-    Scope:    project
+    Scope:    project (/home/user/my-project)
     Tools:    Claude Code, Cursor
 
-    Skills installed:
-      ds-utils-metrics
-      ds-utils-preprocess
-      ds-utils-unsupervised
-      ds-utils-strings
-      ds-utils-transformers
-      ds-utils-xai
+    Installation Outcome (12 total checks):
+      Newly installed:          12
+      Already present (skipped): 0
+      Failed downloads:         0
 
-    Cross-client path: .agents/skills/  (all Agent Skills-compatible tools)
+    Newly installed skills:
+      ✓ claude: ds-utils-metrics → .claude/skills/ds-utils-metrics
+      ✓ claude: ds-utils-preprocess → .claude/skills/ds-utils-preprocess
+      ✓ claude: ds-utils-unsupervised → .claude/skills/ds-utils-unsupervised
+      ✓ claude: ds-utils-strings → .claude/skills/ds-utils-strings
+      ✓ claude: ds-utils-transformers → .claude/skills/ds-utils-transformers
+      ✓ claude: ds-utils-xai → .claude/skills/ds-utils-xai
+      ✓ cross-client: ds-utils-metrics → .agents/skills/ds-utils-metrics
+      ✓ cross-client: ds-utils-preprocess → .agents/skills/ds-utils-preprocess
+      ✓ cross-client: ds-utils-unsupervised → .agents/skills/ds-utils-unsupervised
+      ✓ cross-client: ds-utils-strings → .agents/skills/ds-utils-strings
+      ✓ cross-client: ds-utils-transformers → .agents/skills/ds-utils-transformers
+      ✓ cross-client: ds-utils-xai → .agents/skills/ds-utils-xai
+
+    Cross-client path:
+      .agents/skills/ (readable by all Agent Skills-compatible tools)
 
     Next steps:
     1. Open your project in your AI coding tool
-    2. Skills are auto-loaded — no config needed
+    2. The skills will be auto-loaded — no configuration needed
     3. Try: "Use ds_utils to plot a confusion matrix for my classifier"
 
 The skills are now active. No further configuration is needed — open your project in Claude Code or Cursor and the skills will load automatically whenever you ask something related to DataScienceUtils.
@@ -477,20 +489,36 @@ PowerShell equivalent — download first, then run with parameters:
 Manual Installation
 -------------------
 If you prefer not to use the automated installer, you can install skills
-manually. Download the ``SKILL.md`` files from the
-`skills directory on GitHub
+manually. Download both the ``SKILL.md`` and ``references/api_reference.md`` files
+for each skill from the `skills directory on GitHub
 <https://github.com/idanmoradarthas/DataScienceUtils/tree/master/skills>`_
 and place them in the paths below. Installing to ``.agents/skills/`` is
 recommended as a baseline — it ensures skills are discoverable by any
 present or future `Agent Skills <https://agentskills.io>`_-compatible tool.
+For instructions on validating and testing skills with NVIDIA SkillEvaluator,
+see the `Agent Skills Evaluation Guide <https://github.com/idanmoradarthas/DataScienceUtils/blob/master/skills/README.md>`_.
 
-* **Cross-client (recommended)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
-* **Claude Code**: ``.claude/skills/ds-utils-<module>/SKILL.md``
-* **Cursor**: ``.cursor/rules/ds-utils-<module>/SKILL.md``
-* **GitHub Copilot**: ``.github/instructions/ds-utils-<module>/SKILL.md``
-* **Gemini CLI**: ``.gemini/skills/ds-utils-<module>/SKILL.md``
-* **Antigravity (project)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
-* **Antigravity (global)**: ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
+* **Cross-client (recommended)**:
+  - ``.agents/skills/ds-utils-<module>/SKILL.md``
+  - ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+* **Claude Code**:
+  - ``.claude/skills/ds-utils-<module>/SKILL.md``
+  - ``.claude/skills/ds-utils-<module>/references/api_reference.md``
+* **Cursor**:
+  - ``.cursor/rules/ds-utils-<module>/SKILL.md``
+  - ``.cursor/rules/ds-utils-<module>/references/api_reference.md``
+* **GitHub Copilot**:
+  - ``.github/instructions/ds-utils-<module>/SKILL.md``
+  - ``.github/instructions/ds-utils-<module>/references/api_reference.md``
+* **Gemini CLI**:
+  - ``.gemini/skills/ds-utils-<module>/SKILL.md``
+  - ``.gemini/skills/ds-utils-<module>/references/api_reference.md``
+* **Antigravity (project)**:
+  - ``.agents/skills/ds-utils-<module>/SKILL.md``
+  - ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+* **Antigravity (global)**:
+  - ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
+  - ``~/.gemini/antigravity/skills/ds-utils-<module>/references/api_reference.md``
 
 Available Skills
 ----------------

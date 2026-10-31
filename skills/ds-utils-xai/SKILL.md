@@ -30,7 +30,7 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `scikit-learn`, `matplotlib`, `pydotplus`.
 - System Graphviz installation (`apt-get install graphviz` or `brew install graphviz`) for `draw_dot_data` and `draw_tree`.
@@ -42,7 +42,7 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 | Interpretation Goal | Function | Target Model | Output Type |
 |---|---|---|---|
 | Rank features by global impact | `plot_features_importance` | Any tree model with `.feature_importances_` | Matplotlib Axes |
-| Visualize decision tree structure | `draw_dot_data` / `draw_tree` | Single `DecisionTreeClassifier/Regressor` | Matplotlib Axes |
+| Visualize decision tree structure | `draw_dot_data` / `draw_tree` | Single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Matplotlib Axes |
 | Convert tree rules into Python code | `generate_decision_paths` | Single `DecisionTreeClassifier` | Python string |
 
 Exhaustive signatures, parameters, and return details are in [references/api_reference.md](references/api_reference.md).
@@ -117,7 +117,7 @@ plt.close()
 - **What to look for**: Deep paths with few samples, purity of leaf nodes, and sanity-check split thresholds.
 
 #### Step 3: Rule Logic Export (`generate_decision_paths`)
-Extract executable Python code from tree rules for auditability or deterministic rule-engine deployment.
+Extract executable Python code from tree rules for auditability or deterministic rule-engine deployment. Note: `generate_decision_paths` issues a `DeprecationWarning` recommending native `sklearn.tree.export_text`. Similarly, `draw_tree` emits a `DeprecationWarning` recommending native `sklearn.tree.plot_tree`.
 
 ```python
 from ds_utils.xai import generate_decision_paths
@@ -164,13 +164,13 @@ assert "def tree(" in rules
 
 - **Tree models only**: `plot_features_importance` relies on `.feature_importances_`. It does not support linear models (`coef_`).
 - **Graphviz binary dependency**: `draw_dot_data` and `draw_tree` invoke `pydotplus`, which requires Graphviz (`dot` CLI) installed in the operating system environment.
-- **Single-tree rule extraction**: `generate_decision_paths` and `draw_tree` operate only on single decision tree estimators (`DecisionTreeClassifier`), not ensemble models like `RandomForestClassifier`.
+- **Single-tree model scope**: `draw_tree` operates on single decision tree estimators (`DecisionTreeClassifier` or `DecisionTreeRegressor`); `generate_decision_paths` specifically extracts classification rules from `DecisionTreeClassifier`. Neither works on ensemble models like `RandomForestClassifier`.
 
 ## Troubleshooting
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
 | `ValueError: feature_names and feature_importance must have the same length` | Length mismatch between feature list and importance array | Ensure `len(feature_names) == len(clf.feature_importances_)` |
-| `FileNotFoundError: [Errno 2] "dot" not found in path` | System Graphviz binary is not installed | Install Graphviz via system package manager (`apt-get install graphviz`) or use `sklearn.tree.plot_tree` |
+| `ValueError: Failed to create graph from dot data: GraphViz's executables not found` | System Graphviz binary is not installed in PATH | Install Graphviz via system package manager (`apt-get install graphviz` or `brew install graphviz`) or use `sklearn.tree.plot_tree` |
 | `AttributeError: 'LogisticRegression' object has no attribute 'feature_importances_'` | Passing non-tree model | Use tree models (e.g. Random Forest, Decision Tree, XGBoost) |
 | `ValueError: dot_data must not be empty` | `export_graphviz` produced empty output | Set `out_file=None` in `export_graphviz(...)` to return string |

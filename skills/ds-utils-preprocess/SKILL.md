@@ -29,7 +29,7 @@ Comprehensive exploratory data analysis (EDA), feature interaction visualization
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `scipy`.
 - Input data formatted as a Pandas DataFrame or Series.
@@ -263,7 +263,7 @@ X_test_final = test[selected_features]
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
-| `AttributeError: 'DataFrame' object has no attribute 'name'` | Passed DataFrame `df[['col']]` to `visualize_feature` | Pass a 1D Series `df['col']` |
+| `AttributeError: 'DataFrame' object has no attribute 'unique'` | Passed DataFrame `df[['col']]` to `visualize_feature` | Pass a 1D Series `df['col']` |
 | `KeyError: 'target'` in `get_correlated_features` | Target column was omitted when computing `df.corr()` | Ensure `df[[...features, target]].corr()` includes the target column |
-| `ValueError: could not convert string to float` in PCA | DataFrame contains non-numeric / string columns | Filter or encode non-numeric columns before calling `plot_pca_explained_variance` |
+| `ValueError: All columns in X must be numeric.` in PCA | DataFrame contains non-numeric or un-encoded categorical columns | Filter or encode non-numeric columns before calling `plot_pca_explained_variance` |
 | Suboptimal test performance / Overfitting | Leakage from running `get_correlated_features` or MI on full data | Perform train/test split first and calculate statistics exclusively on training data |

@@ -10,17 +10,44 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
+  if [ -n "${MOCK_PID:-}" ]; then
+    kill "$MOCK_PID" 2>/dev/null || true
+    wait "$MOCK_PID" 2>/dev/null || true
+  fi
   rm -rf "$TEST_TMP"
 }
 trap cleanup EXIT
 
 echo "=== Running Comprehensive Installer Test Suite ==="
 
+# Get a random free port between 20000 and 40000
+get_free_port() {
+  python3 -c '
+import socket
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind(("", 0))
+    print(s.getsockname()[1])
+'
+}
+
+# Wait for server on port
+wait_for_port() {
+  local port=$1
+  for _ in $(seq 1 50); do
+    if curl -s "http://127.0.0.1:$port" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  echo "Timeout waiting for port $port" >&2
+  return 1
+}
+
 # Start mock HTTP server
-PORT=18893
+PORT=$(get_free_port)
 python3 -m http.server "$PORT" --directory "$REPO_ROOT" >/dev/null 2>&1 &
 SERVER_PID=$!
-sleep 1
+wait_for_port "$PORT"
 
 # Scenario 1: Complete success
 echo ""
@@ -58,56 +85,91 @@ else
   exit 1
 fi
 
-# Scenario 3: One early failure followed by later successes
+# Scenario 3: Upgrading legacy install that has only SKILL.md and no references/
 echo ""
-echo "--- Scenario 3: Early Failure Followed by Later Successes ---"
+echo "--- Scenario 3: Refresh Legacy Install (missing references/) ---"
+DIR_LEGACY="$TEST_TMP/scenario_legacy"
+mkdir -p "$DIR_LEGACY/.claude/skills/ds-utils-metrics"
+echo "old skill" > "$DIR_LEGACY/.claude/skills/ds-utils-metrics/SKILL.md"
+(
+  cd "$DIR_LEGACY"
+  RAW_URL="http://127.0.0.1:$PORT" bash "$REPO_ROOT/install.sh" --skills-only --silent --tools claude
+)
+RC_LEGACY=$?
+if [ $RC_LEGACY -eq 0 ] && [ -f "$DIR_LEGACY/.claude/skills/ds-utils-metrics/references/api_reference.md" ]; then
+  echo "✓ Scenario 3 passed: Incomplete legacy installation refreshed with references without requiring --force."
+else
+  echo "✗ Scenario 3 FAILED! rc=$RC_LEGACY" >&2
+  exit 1
+fi
+
+# Scenario 4: Overwrite with --force
+echo ""
+echo "--- Scenario 4: Overwrite with --force ---"
+echo "modified content" > "$DIR1/.claude/skills/ds-utils-metrics/SKILL.md"
+(
+  cd "$DIR1"
+  RAW_URL="http://127.0.0.1:$PORT" bash "$REPO_ROOT/install.sh" --skills-only --silent --tools claude --force
+)
+RC_FORCE=$?
+if [ $RC_FORCE -eq 0 ] && ! grep -q "modified content" "$DIR1/.claude/skills/ds-utils-metrics/SKILL.md"; then
+  echo "✓ Scenario 4 passed: --force successfully overwrites modified files."
+else
+  echo "✗ Scenario 4 FAILED! rc=$RC_FORCE" >&2
+  exit 1
+fi
+
+# Scenario 5: One early failure followed by later successes
+echo ""
+echo "--- Scenario 5: Early Failure Followed by Later Successes ---"
 MOCK_ROOT="$TEST_TMP/mock_repo"
 mkdir -p "$MOCK_ROOT/skills"
 cp -r "$REPO_ROOT/skills/"* "$MOCK_ROOT/skills/"
 # Sabotage metrics skill by removing SKILL.md
 rm -f "$MOCK_ROOT/skills/ds-utils-metrics/SKILL.md"
 
-PORT_MOCK=18894
+PORT_MOCK=$(get_free_port)
 python3 -m http.server "$PORT_MOCK" --directory "$MOCK_ROOT" >/dev/null 2>&1 &
 MOCK_PID=$!
-sleep 1
+wait_for_port "$PORT_MOCK"
 
-DIR3="$TEST_TMP/scenario3"
-mkdir -p "$DIR3"
+DIR5="$TEST_TMP/scenario5"
+mkdir -p "$DIR5"
 (
-  cd "$DIR3"
+  cd "$DIR5"
   RAW_URL="http://127.0.0.1:$PORT_MOCK" bash "$REPO_ROOT/install.sh" --skills-only --silent --tools claude
 )
-RC3=$?
+RC5=$?
 kill "$MOCK_PID" 2>/dev/null || true
+unset MOCK_PID
 
 # metrics must have failed and been cleaned up, while preprocess and other skills succeeded
-if [ $RC3 -ne 0 ] && \
-   [ ! -d "$DIR3/.claude/skills/ds-utils-metrics" ] && \
-   [ -f "$DIR3/.claude/skills/ds-utils-preprocess/SKILL.md" ] && \
-   [ -f "$DIR3/.claude/skills/ds-utils-preprocess/references/api_reference.md" ]; then
-  echo "✓ Scenario 3 passed: Early failure continued to install later skills and exited non-zero ($RC3)."
+if [ $RC5 -ne 0 ] && \
+   [ ! -d "$DIR5/.claude/skills/ds-utils-metrics" ] && \
+   [ -f "$DIR5/.claude/skills/ds-utils-preprocess/SKILL.md" ] && \
+   [ -f "$DIR5/.claude/skills/ds-utils-preprocess/references/api_reference.md" ]; then
+  echo "✓ Scenario 5 passed: Early failure continued to install later skills and exited non-zero ($RC5)."
 else
-  echo "✗ Scenario 3 FAILED! rc=$RC3" >&2
+  echo "✗ Scenario 5 FAILED! rc=$RC5" >&2
   exit 1
 fi
 
-# Scenario 4: All downloads failing
+# Scenario 6: All downloads failing
 echo ""
-echo "--- Scenario 4: All Downloads Failing ---"
-DIR4="$TEST_TMP/scenario4"
-mkdir -p "$DIR4"
+echo "--- Scenario 6: All Downloads Failing ---"
+DIR6="$TEST_TMP/scenario6"
+mkdir -p "$DIR6"
 (
-  cd "$DIR4"
+  cd "$DIR6"
   RAW_URL="http://127.0.0.1:1" bash "$REPO_ROOT/install.sh" --skills-only --silent --tools claude
 )
-RC4=$?
-if [ $RC4 -ne 0 ] && [ ! -d "$DIR4/.claude/skills/ds-utils-metrics" ]; then
-  echo "✓ Scenario 4 passed: All failing exited non-zero ($RC4) and left no partial files."
+RC6=$?
+if [ $RC6 -ne 0 ] && [ ! -d "$DIR6/.claude/skills/ds-utils-metrics" ]; then
+  echo "✓ Scenario 6 passed: All failing exited non-zero ($RC6) and left no partial files."
 else
-  echo "✗ Scenario 4 FAILED! rc=$RC4" >&2
+  echo "✗ Scenario 6 FAILED! rc=$RC6" >&2
   exit 1
 fi
 
 echo ""
-echo "=== All 4 installer scenarios passed with 100% truthful outcomes! ==="
+echo "=== All 6 installer scenarios passed with 100% truthful outcomes! ==="

@@ -25,14 +25,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$RAW_URL = "https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master"
+$RAW_URL = if ($env:RAW_URL) { $env:RAW_URL } else { "https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master" }
 $SKILLS  = @("metrics", "preprocess", "unsupervised", "strings", "transformers", "xai")
 $SCOPE   = if ($Global) { "global" } else { "project" }
 
 # ── Colors ───────────────────────────────────────────────────────
 function Write-Ok($msg)   { Write-Host "  " -NoNewline; Write-Host "✓ " -ForegroundColor Green -NoNewline; Write-Host $msg }
 function Write-Warn($msg) { Write-Host "  " -NoNewline; Write-Host "! " -ForegroundColor Yellow -NoNewline; Write-Host $msg }
-function Write-Err($msg)  { Write-Host "  " -NoNewline; Write-Host "✗ " -ForegroundColor Red -NoNewline; Write-Host $msg; exit 1 }
+function Exit-Or-Return($code) {
+    if ($PSCommandPath) {
+        exit $code
+    } else {
+        $global:LASTEXITCODE = $code
+        return
+    }
+}
+
+function Write-Err($msg)  {
+    Write-Host "  " -NoNewline
+    Write-Host "✗ " -ForegroundColor Red -NoNewline
+    Write-Host $msg
+    Exit-Or-Return 1
+}
 function Write-Step($msg) { Write-Host ""; Write-Host $msg -ForegroundColor White }
 function Write-Msg($msg)  { if (-not $Silent) { Write-Host "  $msg" } }
 function Write-Dim($msg)  { if (-not $Silent) { Write-Host "  $msg" -ForegroundColor DarkGray } }
@@ -303,66 +317,6 @@ function Install-Package {
     Write-Ok "data-science-utils installed"
 }
 
-# Outcome tracking arrays
-$script:InstalledSkills = @()
-$script:SkippedSkills   = @()
-$script:FailedSkills    = @()
-
-function Install-SingleSkill {
-    param(
-        [string]$TargetLabel,
-        [string]$SkillName,
-        [string]$DestPath
-    )
-
-    $skillFile = Join-Path $DestPath "SKILL.md"
-    $refDir    = Join-Path $DestPath "references"
-    $refFile   = Join-Path $refDir "api_reference.md"
-
-    # Check for valid pre-existing installation
-    if ((Test-Path $skillFile) -and (Test-Path $refFile) -and (-not $Force)) {
-        $lenSkill = (Get-Item $skillFile).Length
-        $lenRef   = (Get-Item $refFile).Length
-        if ($lenSkill -gt 0 -and $lenRef -gt 0) {
-            Write-Ok "$SkillName already present for $TargetLabel (use -Force to overwrite)"
-            $script:SkippedSkills += [PSCustomObject]@{ Target = $TargetLabel; Skill = $SkillName; Dest = $DestPath }
-            return
-        }
-    }
-
-    $existedBefore = Test-Path $DestPath
-    New-Item -ItemType Directory -Force -Path $refDir | Out-Null
-
-    $url     = "$RAW_URL/skills/ds-utils-$SkillName/SKILL.md"
-    $refUrl  = "$RAW_URL/skills/ds-utils-$SkillName/references/api_reference.md"
-    $tmpSkill = "$skillFile.tmp.$PID"
-    $tmpRef   = "$refFile.tmp.$PID"
-    $fetchFailed = $false
-
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $tmpSkill -UseBasicParsing -ErrorAction Stop
-        if ((Get-Item $tmpSkill).Length -eq 0) { throw "Empty SKILL.md downloaded" }
-
-        Invoke-WebRequest -Uri $refUrl -OutFile $tmpRef -UseBasicParsing -ErrorAction Stop
-        if ((Get-Item $tmpRef).Length -eq 0) { throw "Empty api_reference.md downloaded" }
-
-        Move-Item -Path $tmpSkill -Destination $skillFile -Force
-        Move-Item -Path $tmpRef -Destination $refFile -Force
-
-        $relPath = $DestPath.Replace($HOME, "~")
-        Write-Ok "$SkillName → $relPath"
-        $script:InstalledSkills += [PSCustomObject]@{ Target = $TargetLabel; Skill = $SkillName; Dest = $DestPath }
-    } catch {
-        Remove-Item $tmpSkill -Force -ErrorAction SilentlyContinue
-        Remove-Item $tmpRef -Force -ErrorAction SilentlyContinue
-        if (-not $existedBefore) {
-            Remove-Item $DestPath -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        Write-Warn "Could not fetch complete $SkillName skill for $TargetLabel"
-        $script:FailedSkills += [PSCustomObject]@{ Target = $TargetLabel; Skill = $SkillName; Dest = $DestPath }
-    }
-}
-
 # ── Skills installation ───────────────────────────────────────────
 function Install-Skills {
     param([array]$SelectedTools, [string]$InstallScope)
@@ -392,7 +346,28 @@ function Install-Skills {
 
         foreach ($skill in $SKILLS) {
             $dest = Join-Path $skillsDir "ds-utils-$skill"
-            Install-SingleSkill -TargetLabel $tool -SkillName $skill -DestPath $dest
+
+            if ((Test-Path $dest) -and -not $Force) {
+                Write-Ok "$skill skill already present for $tool (use -Force to overwrite)"
+                continue
+            }
+
+            $refDir  = Join-Path $dest "references"
+            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
+            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
+            $outFile = Join-Path $dest "SKILL.md"
+            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
+            $refFile = Join-Path $refDir "api_reference.md"
+
+            try {
+                Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
+                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
+                $relPath = $dest.Replace($HOME, "~")
+                Write-Ok "$skill → $relPath"
+            } catch {
+                Write-Warn "Could not fetch complete $skill skill"
+                Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 
@@ -408,7 +383,26 @@ function Install-Skills {
 
         foreach ($skill in $SKILLS) {
             $dest = Join-Path $agentsDir "ds-utils-$skill"
-            Install-SingleSkill -TargetLabel "cross-client" -SkillName $skill -DestPath $dest
+            if ((Test-Path $dest) -and -not $Force) {
+                Write-Ok "$skill already present in .agents\skills (use -Force to overwrite)"
+                continue
+            }
+            $refDir  = Join-Path $dest "references"
+            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
+            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
+            $outFile = Join-Path $dest "SKILL.md"
+            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
+            $refFile = Join-Path $refDir "api_reference.md"
+
+            try {
+                Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
+                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
+                $relPath = $dest.Replace($HOME, "~")
+                Write-Ok "$skill → $relPath"
+            } catch {
+                Write-Warn "Could not fetch complete $skill skill"
+                Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
@@ -450,80 +444,31 @@ if (-not $Silent) {
     $confirm = Read-Host "  Proceed with installation? (y/n) [y]"
     if ($confirm -ne "" -and $confirm -notin @("y","Y","yes")) {
         Write-Msg "Installation cancelled."
-        exit 0
+            Exit-Or-Return 0
+            return
     }
 }
 
 Install-Package -pkgManager $pkgManager -selectedExtras $selectedExtras
 Install-Skills -SelectedTools $selectedTools -InstallScope $SCOPE
 
-$numInstalled = $script:InstalledSkills.Count
-$numSkipped   = $script:SkippedSkills.Count
-$numFailed    = $script:FailedSkills.Count
-$totalAttempts = $numInstalled + $numSkipped + $numFailed
-
 Write-Host ""
-if ($numFailed -eq 0) {
-    Write-Host "Installation complete!" -ForegroundColor Green
-} elseif ($numInstalled -gt 0 -or $numSkipped -gt 0) {
-    Write-Host "Installation completed with errors (partial installation)" -ForegroundColor Yellow
-} else {
-    Write-Host "Installation failed (no skills installed)" -ForegroundColor Red
-}
+Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host "────────────────────────────────────────"
 Write-Msg "Package:  $(if ($SkillsOnly) { 'skipped' } else { 'installed' })"
 Write-Msg "Extras:   $(if ($selectedExtras) { $selectedExtras } else { 'none' })"
 Write-Msg "Scope:    $SCOPE"
 Write-Msg "Tools:    $($selectedTools -join ', ')"
 Write-Host ""
-Write-Msg "Installation Outcome ($totalAttempts total checks):"
-Write-Host "  Newly installed:          $numInstalled" -ForegroundColor Green
-Write-Host "  Already present (skipped): $numSkipped" -ForegroundColor Yellow
-Write-Host "  Failed downloads:         $numFailed" -ForegroundColor Red
-
-if ($numInstalled -gt 0) {
-    Write-Host ""
-    Write-Msg "Newly installed skills:"
-    foreach ($item in $script:InstalledSkills) {
-        $rel = $item.Dest.Replace($HOME, "~")
-        Write-Host "  [OK] $($item.Target): ds-utils-$($item.Skill) -> $rel" -ForegroundColor Green
-    }
-}
-
-if ($numSkipped -gt 0) {
-    Write-Host ""
-    Write-Msg "Pre-existing skills (preserved, not re-downloaded):"
-    foreach ($item in $script:SkippedSkills) {
-        $rel = $item.Dest.Replace($HOME, "~")
-        Write-Host "  [-]  $($item.Target): ds-utils-$($item.Skill) -> $rel" -ForegroundColor Yellow
-    }
-}
-
-if ($numFailed -gt 0) {
-    Write-Host ""
-    Write-Msg "Failed skill downloads:"
-    foreach ($item in $script:FailedSkills) {
-        Write-Host "  [X]  $($item.Target): ds-utils-$($item.Skill) (cleaned up)" -ForegroundColor Red
-    }
-}
-
+Write-Msg "Skills installed:"
+foreach ($s in $SKILLS) { Write-Host "    ds-utils-$s" -ForegroundColor Cyan }
 Write-Host ""
 Write-Msg "Cross-client path:"
 $agentsBase = if ($SCOPE -eq "global") { "~\.agents\skills" } else { ".agents\skills" }
 Write-Host "    $agentsBase  (readable by all Agent Skills-compatible tools)" -ForegroundColor DarkGray
-
-if ($numFailed -eq 0) {
-    Write-Host ""
-    Write-Msg "Next steps:"
-    Write-Msg "1. Open your project in your AI coding tool"
-    Write-Msg "2. Skills are auto-loaded — no config needed"
-    Write-Msg "3. Try: `"Use ds_utils to plot a confusion matrix for my classifier`""
-    Write-Host ""
-    exit 0
-} else {
-    Write-Host ""
-    Write-Msg "Resolution:"
-    Write-Msg "Check your network connection and retry with -Force"
-    Write-Host ""
-    exit 1
-}
+Write-Host ""
+Write-Msg "Next steps:"
+Write-Msg "1. Open your project in your AI coding tool"
+Write-Msg "2. Skills are auto-loaded — no config needed"
+Write-Msg "3. Try: `"Use ds_utils to plot a confusion matrix for my classifier`""
+Write-Host ""

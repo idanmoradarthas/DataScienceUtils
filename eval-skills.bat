@@ -20,6 +20,10 @@ echo ==========================================================
 skillevaluator --version
 
 set OVERALL_FAILED=0
+set TEMP_EVAL_DIR=%TEMP%\eval_skills_%RANDOM%_%RANDOM%
+mkdir "%TEMP_EVAL_DIR%" >nul 2>nul
+
+set COUNT=0
 
 for /d %%D in (skills\*) do (
     set "SKILL_NAME=%%~nxD"
@@ -29,30 +33,44 @@ for /d %%D in (skills\*) do (
     echo ----------------------------------------------------------
 
     echo Running quality-check on !SKILL_NAME!...
-    skillevaluator quality-check "%%D"
+    skillevaluator quality-check "%%D" -o "%TEMP_EVAL_DIR%\quality-!SKILL_NAME!"
     set "Q_EXIT=!ERRORLEVEL!"
-    if !Q_EXIT! neq 0 (
-        echo ! quality-check failed for !SKILL_NAME! ^(exit=!Q_EXIT!^)
-        set OVERALL_FAILED=1
-    ) else (
-        echo [OK] quality-check passed for !SKILL_NAME!
-    )
 
     echo Running tier1 --no-llm on !SKILL_NAME!...
-    skillevaluator tier1 --no-llm "%%D"
+    skillevaluator tier1 --no-llm "%%D" -o "%TEMP_EVAL_DIR%\tier1-!SKILL_NAME!"
     set "T_EXIT=!ERRORLEVEL!"
-    if !T_EXIT! neq 0 (
-        echo ! tier1 check incomplete or failed for !SKILL_NAME! ^(exit=!T_EXIT!^)
-        set OVERALL_FAILED=1
-    ) else (
-        echo [OK] tier1 check passed for !SKILL_NAME!
-    )
+
+    set /a COUNT+=1
+    set "SKILL_NAME_!COUNT!=!SKILL_NAME!"
+    set "Q_EXIT_!COUNT!=!Q_EXIT!"
+    set "T_EXIT_!COUNT!=!T_EXIT!"
+
+    if !Q_EXIT! neq 0 set OVERALL_FAILED=1
+    if !T_EXIT! neq 0 set OVERALL_FAILED=1
 )
 
-if exist reports rmdir /s /q reports
+REM Clean up only our temp evaluation directory
+rmdir /s /q "%TEMP_EVAL_DIR%" >nul 2>nul
 
 echo.
 echo ==========================================================
+echo                   EVALUATION SUMMARY
+echo ==========================================================
+echo Skill                      ^| Quality Check   ^| Tier 1 Static
+echo ----------------------------------------------------------
+for /l %%I in (1,1,%COUNT%) do (
+    set "S_NAME=!SKILL_NAME_%%I!                          "
+    set "S_NAME=!S_NAME:~0,26!"
+    set "Q_STATUS=PASS (0)       "
+    if !Q_EXIT_%%I! neq 0 set "Q_STATUS=FAIL (!Q_EXIT_%%I!)        "
+    set "Q_STATUS=!Q_STATUS:~0,15!"
+    set "T_STATUS=PASS (0)       "
+    if !T_EXIT_%%I! neq 0 set "T_STATUS=FAIL/INCOMPL (!T_EXIT_%%I!)"
+    set "T_STATUS=!T_STATUS:~0,15!"
+    echo !S_NAME! ^| !Q_STATUS! ^| !T_STATUS!
+)
+echo ==========================================================
+
 if %OVERALL_FAILED% neq 0 (
     echo Evaluation completed with one or more check failures or incomplete coverage. >&2
     exit /b 1

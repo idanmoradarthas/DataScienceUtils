@@ -77,3 +77,81 @@ jobs:
 
       - name: Run Ruff Linter
         run: uvx ruff check .
+
+  skills-scripts-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run Installer Test Suite
+        run: bash tests/test_installer.sh
+
+      - name: Run Hermetic Evaluator Test Suite
+        run: bash tests/test_evaluator.sh
+
+  skills-installer-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Test install.ps1 Success and Failure Paths
+        shell: powershell
+        run: |
+          # 1. Start local mock HTTP server serving repository root
+          $serverProcess = Start-Process python -ArgumentList "-m", "http.server", "18895" -PassThru
+          Start-Sleep -Seconds 2
+
+          try {
+              $env:RAW_URL = "http://127.0.0.1:18895"
+              $testDir = Join-Path $env:TEMP "test_install_ps1_success"
+              New-Item -ItemType Directory -Force -Path $testDir | Out-Null
+
+              Push-Location $testDir
+              powershell -File (Join-Path $env:GITHUB_WORKSPACE "install.ps1") -SkillsOnly -Silent -Tools claude
+              $successExit = $LASTEXITCODE
+              Pop-Location
+
+              if ($successExit -ne 0) {
+                  throw "install.ps1 failed on valid server with exit code $successExit"
+              }
+
+              # Verify all 6 skills and api_reference.md exist
+              $skills = @("metrics", "preprocess", "unsupervised", "strings", "transformers", "xai")
+              foreach ($s in $skills) {
+                  $skillPath = Join-Path $testDir ".claude\skills\ds-utils-$s\SKILL.md"
+                  $refPath   = Join-Path $testDir ".claude\skills\ds-utils-$s\references\api_reference.md"
+                  if (-not (Test-Path $skillPath)) { throw "Missing $skillPath" }
+                  if (-not (Test-Path $refPath))   { throw "Missing $refPath" }
+              }
+              Write-Host "Success path verified: all files present and exit code 0."
+
+              # 2. Test failure path (unreachable URL)
+              $failDir = Join-Path $env:TEMP "test_install_ps1_fail"
+              New-Item -ItemType Directory -Force -Path $failDir | Out-Null
+              $env:RAW_URL = "http://127.0.0.1:1"
+
+              Push-Location $failDir
+              powershell -File (Join-Path $env:GITHUB_WORKSPACE "install.ps1") -SkillsOnly -Silent -Tools claude
+              $failExit = $LASTEXITCODE
+              Pop-Location
+
+              if ($failExit -eq 0) {
+                  throw "install.ps1 unexpectedly succeeded with exit code 0 on unreachable server"
+              }
+              Write-Host "Failure path verified: exited non-zero ($failExit) on download failure."
+          } finally {
+              Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
+          }

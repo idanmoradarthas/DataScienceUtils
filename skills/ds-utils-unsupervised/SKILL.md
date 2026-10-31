@@ -30,7 +30,7 @@ Tools for choosing cluster count and diagnosing clustering quality using cardina
 
 ## Prerequisites
 
-- Python 3.10 or higher.
+- Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
 - Core dependencies: `numpy`, `pandas`, `scikit-learn`, `scipy`, `matplotlib`.
 
@@ -192,14 +192,13 @@ plt.close()
 ## Limitations
 
 - **Centroid-based algorithms only**: All functions expect centroid coordinates (`cluster_centers_`) and discrete partition labels. They do not support soft clustering, DBSCAN, or agglomerative clustering without centroids.
-- **Master branch scope**: Functions `plot_clusters` and `plot_clusters_plotly` are part of unmerged PR #128 and are not available on master.
 - **Distance function callable**: Distance parameters must be callable functions, not strings.
 
 ## Troubleshooting
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
-| `TypeError: 'str' object is not callable` | Passed `"euclidean"` as a string | Pass callable `scipy.spatial.distance.euclidean` |
+| `ValueError: No valid results were obtained. Check your input data and parameters.` (preceded by `Error occurred for k=...: 'str' object is not callable`) | Passed string metric (e.g. `"euclidean"`) instead of callable | Pass callable metric function, e.g., `scipy.spatial.distance.euclidean` |
 | `TypeError: missing 2 required positional arguments: 'k_min' and 'k_max'` | Omitted `k_min` or `k_max` | Specify both integers explicitly, e.g. `k_min=2, k_max=10` |
 | `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` | Using DBSCAN or model without centroids | Compute centroids manually or use with `sklearn.cluster.KMeans` |
 | Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig("cluster.png")` |
