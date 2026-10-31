@@ -456,7 +456,7 @@ install_skills() {
                 continue
             fi
             mkdir -p "$dest"
-            local url="${RAW_URL}/skills/${skill}/SKILL.md"
+            local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
             if curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
                 ok "${skill} → ${dest#$HOME/}"
             else
@@ -482,7 +482,7 @@ install_skills() {
                 continue
             fi
             mkdir -p "$dest"
-            local url="${RAW_URL}/skills/${skill}/SKILL.md"
+            local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
             if curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
                 ok "${skill} → ${dest#$HOME/}"
             else

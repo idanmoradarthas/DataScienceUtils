@@ -339,7 +339,7 @@ function Install-Skills {
             }
 
             New-Item -ItemType Directory -Force -Path $dest | Out-Null
-            $url     = "$RAW_URL/skills/$skill/SKILL.md"
+            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
             $outFile = Join-Path $dest "SKILL.md"
 
             try {
@@ -370,7 +370,7 @@ function Install-Skills {
                 continue
             }
             New-Item -ItemType Directory -Force -Path $dest | Out-Null
-            $url     = "$RAW_URL/skills/$skill/SKILL.md"
+            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
             $outFile = Join-Path $dest "SKILL.md"
             try {
                 Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
