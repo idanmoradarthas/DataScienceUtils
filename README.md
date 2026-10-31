@@ -859,6 +859,8 @@ The installer will:
 
 For a full step-by-step guide, see the
 [AI Skills documentation](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html).
+For instructions on validating and evaluating skills with NVIDIA SkillEvaluator, see the
+[Agent Skills Evaluation Guide](skills/README.md).
 
 ### 2. Install from PyPI
 

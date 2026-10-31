@@ -20,7 +20,7 @@ set -e
 
 # ── Config ───────────────────────────────────────────────────────
 REPO="idanmoradarthas/DataScienceUtils"
-RAW_URL="https://raw.githubusercontent.com/${REPO}/master"
+RAW_URL="${RAW_URL:-https://raw.githubusercontent.com/${REPO}/master}"
 SKILLS="metrics preprocess unsupervised strings transformers xai"
 
 # ── Colors ───────────────────────────────────────────────────────
@@ -42,12 +42,18 @@ EXTRAS=""
 TOOLS=""
 PKG_MANAGER_OVERRIDE=""
 
+# Outcome tracking per target and skill
+# Formats stored: "<tool_or_cross>|<skill>|<destination_path>"
+INSTALLED_SKILLS=()
+SKIPPED_SKILLS=()
+FAILED_SKILLS=()
+
 # ── Output helpers ───────────────────────────────────────────────
-msg()  { [ "$SILENT" = false ] && echo -e "  $*"; }
-ok()   { [ "$SILENT" = false ] && echo -e "  ${G}✓${N} $*"; }
-warn() { [ "$SILENT" = false ] && echo -e "  ${Y}!${N} $*"; }
+msg()  { [ "$SILENT" = false ] && echo -e "  $*" || true; }
+ok()   { [ "$SILENT" = false ] && echo -e "  ${G}✓${N} $*" || true; }
+warn() { [ "$SILENT" = false ] && echo -e "  ${Y}!${N} $*" || true; }
 die()  { echo -e "  ${R}✗${N} $*" >&2; exit 1; }
-step() { [ "$SILENT" = false ] && echo -e "\n${B}$*${N}"; }
+step() { [ "$SILENT" = false ] && echo -e "\n${B}$*${N}" || true; }
 
 # ── Argument parsing ─────────────────────────────────────────────
 while [ $# -gt 0 ]; do
@@ -424,6 +430,58 @@ install_package() {
     ok "data-science-utils installed"
 }
 
+# ── Skills installation helper ────────────────────────────────────
+# Installs one skill into a target directory. Tracks outcome in arrays.
+_install_one_skill() {
+    local target_label="$1"
+    local skill="$2"
+    local dest="$3"
+
+    # Check if a valid installation is already present
+    if [ -f "$dest/SKILL.md" ] && [ -s "$dest/SKILL.md" ] && \
+       [ -f "$dest/references/api_reference.md" ] && [ -s "$dest/references/api_reference.md" ] && \
+       [ "$FORCE" = false ]; then
+        ok "${skill} already present for ${target_label} (use --force to overwrite)"
+        SKIPPED_SKILLS+=("${target_label}|${skill}|${dest}")
+        return 0
+    fi
+
+    local existed_before=false
+    [ -d "$dest" ] && existed_before=true
+
+    mkdir -p "$dest/references"
+    local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
+    local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
+    local fetch_failed=false
+
+    # Download to temporary files first to protect pre-existing content on failure
+    local tmp_skill="$dest/SKILL.md.tmp.$$"
+    local tmp_ref="$dest/references/api_reference.md.tmp.$$"
+
+    if ! curl -fsSL "$url" -o "$tmp_skill" 2>/dev/null || [ ! -s "$tmp_skill" ]; then
+        fetch_failed=true
+    fi
+
+    if ! curl -fsSL "$ref_url" -o "$tmp_ref" 2>/dev/null || [ ! -s "$tmp_ref" ]; then
+        fetch_failed=true
+    fi
+
+    if [ "$fetch_failed" = false ]; then
+        mv -f "$tmp_skill" "$dest/SKILL.md"
+        mv -f "$tmp_ref" "$dest/references/api_reference.md"
+        ok "${skill} → ${dest#$HOME/}"
+        INSTALLED_SKILLS+=("${target_label}|${skill}|${dest}")
+    else
+        rm -f "$tmp_skill" "$tmp_ref" 2>/dev/null || true
+        # Clean up only if directory did not exist before
+        if [ "$existed_before" = false ]; then
+            rm -rf "$dest" 2>/dev/null || true
+        fi
+        warn "Could not fetch complete ${skill} skill for ${target_label} (URLs: ${url}, ${ref_url})"
+        FAILED_SKILLS+=("${target_label}|${skill}|${dest}")
+    fi
+}
+
 # ── Skills installation ───────────────────────────────────────────
 install_skills() {
     step "Installing ds_utils skills"
@@ -451,28 +509,7 @@ install_skills() {
 
         for skill in $SKILLS; do
             local dest="$skills_dir/ds-utils-${skill}"
-            if [ -d "$dest" ] && [ "$FORCE" = false ]; then
-                ok "${skill} skill already present for ${tool} (use --force to overwrite)"
-                continue
-            fi
-            mkdir -p "$dest/references"
-            local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
-            local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
-            local fetch_failed=false
-
-            if ! curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
-                fetch_failed=true
-            fi
-            if ! curl -fsSL "$ref_url" -o "$dest/references/api_reference.md" 2>/dev/null; then
-                fetch_failed=true
-            fi
-
-            if [ "$fetch_failed" = false ]; then
-                ok "${skill} → ${dest#$HOME/}"
-            else
-                warn "Could not fetch complete ${skill} skill (URLs: ${url}, ${ref_url})"
-                rm -rf "$dest" 2>/dev/null || true
-            fi
+            _install_one_skill "$tool" "$skill" "$dest"
         done
     done
 
@@ -487,62 +524,101 @@ install_skills() {
 
         for skill in $SKILLS; do
             local dest="$agents_dir/ds-utils-${skill}"
-            if [ -d "$dest" ] && [ "$FORCE" = false ]; then
-                ok "${skill} already present in .agents/skills (use --force to overwrite)"
-                continue
-            fi
-            mkdir -p "$dest/references"
-            local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
-            local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
-            local fetch_failed=false
-
-            if ! curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
-                fetch_failed=true
-            fi
-            if ! curl -fsSL "$ref_url" -o "$dest/references/api_reference.md" 2>/dev/null; then
-                fetch_failed=true
-            fi
-
-            if [ "$fetch_failed" = false ]; then
-                ok "${skill} → ${dest#$HOME/}"
-            else
-                warn "Could not fetch complete ${skill} skill"
-                rm -rf "$dest" 2>/dev/null || true
-            fi
+            _install_one_skill "cross-client" "$skill" "$dest"
         done
     fi
 }
 
 # ── Summary ───────────────────────────────────────────────────────
 summary() {
-    [ "$SILENT" = true ] && return
     local base_dir
     [ "$SCOPE" = "global" ] && base_dir="~" || base_dir="."
 
+    local num_installed=${#INSTALLED_SKILLS[@]}
+    local num_skipped=${#SKIPPED_SKILLS[@]}
+    local num_failed=${#FAILED_SKILLS[@]}
+    local total_attempts=$((num_installed + num_skipped + num_failed))
+
+    if [ "$SILENT" = true ]; then
+        [ "$num_failed" -eq 0 ] && return 0 || return 1
+    fi
+
     echo ""
-    echo -e "${G}${B}Installation complete!${N}"
+    if [ "$num_failed" -eq 0 ]; then
+        echo -e "${G}${B}Installation complete!${N}"
+    elif [ "$num_installed" -gt 0 ] || [ "$num_skipped" -gt 0 ]; then
+        echo -e "${Y}${B}Installation completed with errors (partial installation)${N}"
+    else
+        echo -e "${R}${B}Installation failed (no skills installed)${N}"
+    fi
     echo "────────────────────────────────────────"
     msg "Package:  data-science-utils $([ "$INSTALL_PKG" = true ] && echo "installed" || echo "skipped")"
     msg "Extras:   $([ -n "$EXTRAS" ] && echo "$EXTRAS" || echo "none")"
     msg "Scope:    ${SCOPE} (${base_dir})"
     msg "Tools:    $(echo "$TOOLS" | tr ' ' ', ')"
     echo ""
-    msg "${B}Skills installed:${N}"
-    for skill in $SKILLS; do
-        msg "  ${BL}ds-utils-${skill}${N}"
-    done
+    msg "${B}Installation Outcome (${total_attempts} total checks):${N}"
+    msg "  ${G}Newly installed:${N} ${num_installed}"
+    msg "  ${Y}Already present (skipped):${N} ${num_skipped}"
+    msg "  ${R}Failed downloads:${N} ${num_failed}"
+
+    if [ "$num_installed" -gt 0 ]; then
+        echo ""
+        msg "${B}Newly installed skills:${N}"
+        for item in "${INSTALLED_SKILLS[@]}"; do
+            local tgt="${item%%|*}"
+            local rem="${item#*|}"
+            local skl="${rem%%|*}"
+            local dst="${rem#*|}"
+            msg "  ${G}✓${N} ${tgt}: ds-utils-${skl} → ${dst#$HOME/}"
+        done
+    fi
+
+    if [ "$num_skipped" -gt 0 ]; then
+        echo ""
+        msg "${B}Pre-existing skills (preserved, not re-downloaded):${N}"
+        for item in "${SKIPPED_SKILLS[@]}"; do
+            local tgt="${item%%|*}"
+            local rem="${item#*|}"
+            local skl="${rem%%|*}"
+            local dst="${rem#*|}"
+            msg "  ${Y}-${N} ${tgt}: ds-utils-${skl} → ${dst#$HOME/}"
+        done
+    fi
+
+    if [ "$num_failed" -gt 0 ]; then
+        echo ""
+        msg "${B}Failed skill downloads:${N}"
+        for item in "${FAILED_SKILLS[@]}"; do
+            local tgt="${item%%|*}"
+            local rem="${item#*|}"
+            local skl="${rem%%|*}"
+            local dst="${rem#*|}"
+            msg "  ${R}✗${N} ${tgt}: ds-utils-${skl} (cleaned up)"
+        done
+    fi
+
     msg ""
     msg "${B}Cross-client path:${N}"
     local agents_base
     [ "$SCOPE" = "global" ] && agents_base="~/.agents/skills" \
                             || agents_base=".agents/skills"
     msg "  ${BL}${agents_base}/${N} ${D}(readable by all Agent Skills-compatible tools)${N}"
-    echo ""
-    msg "${B}Next steps:${N}"
-    msg "1. Open your project in your AI coding tool"
-    msg "2. The skills will be auto-loaded — no configuration needed"
-    msg "3. Try: ${D}\"Use ds_utils to plot a confusion matrix for my classifier\"${N}"
-    echo ""
+
+    if [ "$num_failed" -eq 0 ]; then
+        echo ""
+        msg "${B}Next steps:${N}"
+        msg "1. Open your project in your AI coding tool"
+        msg "2. The skills will be auto-loaded — no configuration needed"
+        msg "3. Try: ${D}\"Use ds_utils to plot a confusion matrix for my classifier\"${N}"
+        echo ""
+    else
+        echo ""
+        msg "${B}Resolution:${N}"
+        msg "Check your network connection and retry with: ${D}--force${N}"
+        echo ""
+        return 1
+    fi
 }
 
 # ── Main ──────────────────────────────────────────────────────────
@@ -600,8 +676,8 @@ main() {
     # Install skills
     install_skills
 
-    # Done
-    summary
+    # Done - exit nonzero if summary reports any failures
+    summary || exit 1
 }
 
 main "$@"

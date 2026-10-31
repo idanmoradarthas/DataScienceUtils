@@ -3,6 +3,7 @@
 # Evaluates Agent Skills under skills/ using NVIDIA SkillEvaluator.
 # Executes quality checks and Tier 1 static validation across all skills,
 # reports individual statuses, and exits non-zero if any required check fails.
+# For full setup instructions and scanner prerequisites, see skills/README.md.
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

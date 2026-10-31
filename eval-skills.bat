@@ -4,6 +4,7 @@ setlocal enabledelayedexpansion
 REM Evaluates Agent Skills under skills\ using NVIDIA SkillEvaluator.
 REM Executes quality checks and Tier 1 static validation across all skills,
 REM reports individual statuses, and exits non-zero if any required check fails.
+REM For full setup instructions and scanner prerequisites, see skills\README.md.
 
 where skillevaluator >nul 2>nul
 if %ERRORLEVEL% neq 0 (
