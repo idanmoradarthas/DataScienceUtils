@@ -27,6 +27,13 @@ Comprehensive exploratory data analysis (EDA), feature interaction visualization
 - **When to use**: During preliminary EDA, feature hygiene assessment, multicollinearity pruning, and feature relevance ranking before model training.
 - **When NOT to use**: For post-modeling error analysis, model metric evaluation (use `ds-utils-metrics`), clustering quality scoring (use `ds-utils-unsupervised`), or text tag encoding (use `ds-utils-strings`).
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `scipy`.
+- Input data formatted as a Pandas DataFrame or Series.
+
 ## Instructions
 
 ### Task-to-Approach Map

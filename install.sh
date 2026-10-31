@@ -455,13 +455,23 @@ install_skills() {
                 ok "${skill} skill already present for ${tool} (use --force to overwrite)"
                 continue
             fi
-            mkdir -p "$dest"
+            mkdir -p "$dest/references"
             local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
-            if curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
+            local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
+            local fetch_failed=false
+
+            if ! curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
+                fetch_failed=true
+            fi
+            if ! curl -fsSL "$ref_url" -o "$dest/references/api_reference.md" 2>/dev/null; then
+                fetch_failed=true
+            fi
+
+            if [ "$fetch_failed" = false ]; then
                 ok "${skill} → ${dest#$HOME/}"
             else
-                warn "Could not fetch ${skill} skill (URL: ${url})"
-                rmdir "$dest" 2>/dev/null || true
+                warn "Could not fetch complete ${skill} skill (URLs: ${url}, ${ref_url})"
+                rm -rf "$dest" 2>/dev/null || true
             fi
         done
     done
@@ -481,13 +491,23 @@ install_skills() {
                 ok "${skill} already present in .agents/skills (use --force to overwrite)"
                 continue
             fi
-            mkdir -p "$dest"
+            mkdir -p "$dest/references"
             local url="${RAW_URL}/skills/ds-utils-${skill}/SKILL.md"
-            if curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
+            local ref_url="${RAW_URL}/skills/ds-utils-${skill}/references/api_reference.md"
+            local fetch_failed=false
+
+            if ! curl -fsSL "$url" -o "$dest/SKILL.md" 2>/dev/null; then
+                fetch_failed=true
+            fi
+            if ! curl -fsSL "$ref_url" -o "$dest/references/api_reference.md" 2>/dev/null; then
+                fetch_failed=true
+            fi
+
+            if [ "$fetch_failed" = false ]; then
                 ok "${skill} → ${dest#$HOME/}"
             else
-                warn "Could not fetch ${skill} skill"
-                rmdir "$dest" 2>/dev/null || true
+                warn "Could not fetch complete ${skill} skill"
+                rm -rf "$dest" 2>/dev/null || true
             fi
         done
     fi

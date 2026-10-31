@@ -338,16 +338,20 @@ function Install-Skills {
                 continue
             }
 
-            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+            $refDir  = Join-Path $dest "references"
+            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
             $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
             $outFile = Join-Path $dest "SKILL.md"
+            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
+            $refFile = Join-Path $refDir "api_reference.md"
 
             try {
                 Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
+                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
                 $relPath = $dest.Replace($HOME, "~")
                 Write-Ok "$skill → $relPath"
             } catch {
-                Write-Warn "Could not fetch $skill skill"
+                Write-Warn "Could not fetch complete $skill skill"
                 Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
@@ -369,15 +373,20 @@ function Install-Skills {
                 Write-Ok "$skill already present in .agents\skills (use -Force to overwrite)"
                 continue
             }
-            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+            $refDir  = Join-Path $dest "references"
+            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
             $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
             $outFile = Join-Path $dest "SKILL.md"
+            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
+            $refFile = Join-Path $refDir "api_reference.md"
+
             try {
                 Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
+                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
                 $relPath = $dest.Replace($HOME, "~")
                 Write-Ok "$skill → $relPath"
             } catch {
-                Write-Warn "Could not fetch $skill skill"
+                Write-Warn "Could not fetch complete $skill skill"
                 Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
             }
         }

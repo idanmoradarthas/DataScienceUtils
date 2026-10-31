@@ -28,6 +28,12 @@ Text analytics, split-safe tag feature binarization, and significant term extrac
 - **When to use**: Encoding comma-separated metadata tags into binary features across train and test sets, or extracting distinctive vocabulary from specific document cohorts.
 - **When NOT to use**: For dense semantic sentence embeddings (use `ds-utils-transformers`), multi-label list pipelines with persistent estimators (use `MultiLabelBinarizerTransformer` in `ds-utils-transformers`), or tabular feature distributions (use `ds-utils-preprocess`).
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`.
+
 ## Instructions
 
 ### Task-to-Approach Map

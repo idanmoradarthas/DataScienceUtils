@@ -28,6 +28,13 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 - **When to use**: Explaining tree ensembles (Random Forest, Gradient Boosting, LightGBM, XGBoost) and visualizing single decision tree decision rules.
 - **When NOT to use**: For linear model coefficient analysis (`coef_`), SHAP/LIME game-theoretic values, neural networks, or unsupervised clustering.
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `scikit-learn`, `matplotlib`, `pydotplus`.
+- System Graphviz installation (`apt-get install graphviz` or `brew install graphviz`) for `draw_dot_data` and `draw_tree`.
+
 ## Instructions
 
 ### Task-to-Approach Map

@@ -28,6 +28,12 @@ Tools for choosing cluster count and diagnosing clustering quality using cardina
 - **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, and spotting anomalous or diffuse clusters.
 - **When NOT to use**: For supervised classification/regression metrics (use `ds-utils-metrics`), PCA explained variance (use `ds-utils-preprocess`), or density-based clustering like DBSCAN without centroids.
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `scipy`, `matplotlib`.
+
 ## Instructions
 
 ### Task-to-Approach Map

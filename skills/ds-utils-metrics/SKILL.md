@@ -28,6 +28,13 @@ Comprehensive model evaluation, interactive threshold tuning, probability calibr
 - **When to use**: Model validation, comparing competing candidate classifiers, selecting probability decision thresholds, diagnosing error concentrations across feature sub-populations, or forecasting trend directional accuracy.
 - **When NOT to use**: For data exploration prior to training (use `ds-utils-preprocess`), tree interpretability diagrams (use `ds-utils-xai`), or clustering evaluation (use `ds-utils-unsupervised`).
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `plotly`.
+- Trained scikit-learn compatible estimator or prediction arrays (`y_true`, `y_pred`, `y_proba`).
+
 ## Instructions
 
 ### Task-to-Approach Map

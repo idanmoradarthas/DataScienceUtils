@@ -30,6 +30,13 @@ Production-ready, scikit-learn compatible transformers for multi-label lists and
 - **When to use**: Building composite feature processing pipelines combining tabular, categorical lists, and unstructured text into a single deployable scikit-learn Pipeline.
 - **When NOT to use**: For standalone functional tag appending without pipeline persistence (use `ds-utils-strings`), or exploratory correlation plots (use `ds-utils-preprocess`).
 
+## Prerequisites
+
+- Python 3.10 or higher.
+- `data-science-utils` package installed (`pip install data-science-utils`).
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`.
+- Optional dependency for `SentenceEmbeddingTransformer`: `pip install data-science-utils[nlp]` (provides `sentence-transformers` and `torch`).
+
 ## Instructions
 
 ### Task-to-Approach Map
