@@ -33,10 +33,11 @@ dependencies = [
     "numpy>=1.26.3",
     "scipy>=1.11.4",
     "pandas>=3.0.0",
-    "matplotlib>=3.10.6",
+    "matplotlib>=3.10.6,<3.11",
     "seaborn>=0.12.2",
     "scikit-learn>=1.2.2",
     "pydotplus>=2.0.2",
+    "pyparsing<3.3.0",
     "joblib>=1.2.0",
     "plotly>=6.1.1"
 ]
