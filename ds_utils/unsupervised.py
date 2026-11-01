@@ -13,7 +13,7 @@ from plotly import graph_objects as go
 
 try:
     from umap import UMAP
-except ImportError:
+except ImportError:  # pragma: no cover
     UMAP = None
 
 
