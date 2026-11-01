@@ -78,10 +78,7 @@ import matplotlib.pyplot as plt
 
 # complete usage example
 plot_metric_growth_per_labeled_instances(
-    x_train, y_train, x_test, y_test,
-    {
-        "Decision Tree": DecisionTreeClassifier(random_state=42)
-    }
+    x_train, y_train, x_test, y_test, {"Decision Tree": DecisionTreeClassifier(random_state=42)}
 )
 plt.tight_layout()
 plt.show()
@@ -116,12 +113,7 @@ from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_
 import matplotlib.pyplot as plt
 
 # complete usage example
-visualize_accuracy_grouped_by_probability(
-    y_test,
-    1,
-    clf.predict_proba(X_test),
-    display_breakdown=False
-)
+visualize_accuracy_grouped_by_probability(y_test, 1, clf.predict_proba(X_test), display_breakdown=False)
 plt.tight_layout()
 plt.show()
 ```
@@ -149,14 +141,8 @@ Plots ROC curves with threshold annotations using Plotly.
 from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 
 # complete usage example
-classifiers_proba = {
-    "Decision Tree": clf.predict_proba(X_test)[:, 1]
-}
-fig = plot_roc_curve_with_thresholds_annotations(
-    y_test,
-    classifiers_proba,
-    positive_label=1
-)
+classifiers_proba = {"Decision Tree": clf.predict_proba(X_test)[:, 1]}
+fig = plot_roc_curve_with_thresholds_annotations(y_test, classifiers_proba, positive_label=1)
 fig.show()
 ```
 
@@ -191,14 +177,8 @@ Plots Precision-Recall curves with threshold annotations using Plotly.
 from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_annotations
 
 # complete usage example
-classifiers_proba = {
-    "Decision Tree": clf.predict_proba(X_test)[:, 1]
-}
-fig = plot_precision_recall_curve_with_thresholds_annotations(
-    y_test,
-    classifiers_proba,
-    positive_label=1
-)
+classifiers_proba = {"Decision Tree": clf.predict_proba(X_test)[:, 1]}
+fig = plot_precision_recall_curve_with_thresholds_annotations(y_test, classifiers_proba, positive_label=1)
 fig.show()
 ```
 
@@ -250,11 +230,7 @@ import matplotlib.pyplot as plt
 y_pred = clf.predict(X_test)
 y_proba = clf.predict_proba(X_test)
 
-plot_error_analysis_chart(
-    y_test, y_pred, y_proba,
-    positive_class=1,
-    classes=clf.classes_.tolist()
-)
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1, classes=clf.classes_.tolist())
 plt.show()
 ```
 
@@ -286,21 +262,25 @@ import numpy as np
 from ds_utils.metrics.error_analysis import generate_error_analysis_report
 
 # Setup dummy data with numerical and categorical features
-X_test = pd.DataFrame({
-    "age": [25, 30, 45, 50, 22, 35, 40, 60],
-    "region": ["North", "South", "North", "West", "East", "South", "West", "North"]
-})
+X_test = pd.DataFrame(
+    {
+        "age": [25, 30, 45, 50, 22, 35, 40, 60],
+        "region": ["North", "South", "North", "West", "East", "South", "West", "North"],
+    }
+)
 y_test = np.array([0, 1, 0, 1, 0, 1, 0, 1])
-y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1]) # Errors at index 2 and 5
+y_pred = np.array([0, 1, 1, 1, 0, 0, 0, 1])  # Errors at index 2 and 5
 
 # complete usage example
 report_df = generate_error_analysis_report(
-    X_test, y_test, y_pred,
+    X_test,
+    y_test,
+    y_pred,
     feature_columns=["age", "region"],
     bins=3,
     min_count=1,
     sort_metric="error_rate",
-    ascending=False
+    ascending=False,
 )
 print(report_df.head())
 ```
@@ -471,8 +451,8 @@ import numpy as np
 # complete usage example
 y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
 predictions = {
-    'Model A': np.array([1.1, 2.2, 3.3, 4.4, 5.5]),
-    'Model B': np.array([1.5, 2.5, 3.5, 4.5, 5.5]),
+    "Model A": np.array([1.1, 2.2, 3.3, 4.4, 5.5]),
+    "Model B": np.array([1.5, 2.5, 3.5, 4.5, 5.5]),
 }
 fig = plot_rec_curve_with_annotations(y_true, predictions)
 fig.show()
@@ -511,7 +491,7 @@ from ds_utils.metrics.error_analysis import generate_error_analysis_report
 
 clf = DecisionTreeClassifier(random_state=42)
 clf.fit(X_train, y_train)
-y_pred  = clf.predict(X_test)
+y_pred = clf.predict(X_test)
 y_proba = clf.predict_proba(X_test)
 
 # 1. Confusion matrix
@@ -521,7 +501,10 @@ plt.show()
 
 # 2. Learning curve — how accuracy grows with more training data
 plot_metric_growth_per_labeled_instances(
-    X_train, y_train, X_test, y_test,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     {"Decision Tree": DecisionTreeClassifier(random_state=42)},
 )
 plt.tight_layout()
@@ -556,16 +539,13 @@ plt.tight_layout()
 plt.show()
 
 # 7. Error Analysis block report
-report_df = generate_error_analysis_report(
-    X_test, y_test, y_pred,
-    feature_columns=None,
-    bins=3
-)
+report_df = generate_error_analysis_report(X_test, y_test, y_pred, feature_columns=None, bins=3)
 print(report_df)
 
 # 8. Directional Metrics (for time-series/forecasting with continuous targets)
 # Note: these metrics require continuous regression/forecasting outputs, not classifier labels.
 from ds_utils.metrics.time_series import directional_accuracy_score, directional_bias_score
+
 y_forecast_true = np.array([100, 102, 98, 101, 99])
 y_forecast_pred = np.array([101, 103, 97, 102, 98])
 da = directional_accuracy_score(y_forecast_true, y_forecast_pred)
@@ -587,12 +567,9 @@ rf_reg = RandomForestRegressor(random_state=42)
 rf_reg.fit(X_train, y_train)
 
 y_pred_rf = rf_reg.predict(X_test)
-y_pred_baseline = np.full_like(y_test, y_train.mean()) # Baseline model predicting the mean
+y_pred_baseline = np.full_like(y_test, y_train.mean())  # Baseline model predicting the mean
 
-predictions = {
-    "Random Forest": y_pred_rf,
-    "Mean Baseline": y_pred_baseline
-}
+predictions = {"Random Forest": y_pred_rf, "Mean Baseline": y_pred_baseline}
 
 # 2. Get standalone AOC score for a model
 rf_aoc = regression_auc_score(y_test, y_pred_rf)

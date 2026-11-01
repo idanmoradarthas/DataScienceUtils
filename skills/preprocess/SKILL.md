@@ -45,13 +45,13 @@ from ds_utils.preprocess.visualization import visualize_feature
 
 # complete usage example
 visualize_feature(
-    df["feature_name"], 
-    remove_na=False, 
-    include_outliers=True, 
+    df["feature_name"],
+    remove_na=False,
+    include_outliers=True,
     outlier_iqr_multiplier=1.5,
-    first_day_of_week="Monday", 
-    show_counts=True, 
-    order=None
+    first_day_of_week="Monday",
+    show_counts=True,
+    order=None,
 )
 ```
 

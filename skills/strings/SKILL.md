@@ -38,9 +38,7 @@ Extracts tags from a specified field and creates new binary columns (One-Hot Enc
 from ds_utils.strings import append_tags_to_frame
 
 # complete usage example
-x_train_tags, x_test_tags = append_tags_to_frame(
-    x_train, x_test, "article_tags", prefix="tag_"
-)
+x_train_tags, x_test_tags = append_tags_to_frame(x_train, x_test, "article_tags", prefix="tag_")
 ```
 
 **Parameters:**
@@ -73,7 +71,7 @@ Identifies terms that are statistically overrepresented in a subset of documents
 from ds_utils.strings import extract_significant_terms_from_subset
 
 # complete usage example
-subset = df[df['label'] == 'interesting']
+subset = df[df["label"] == "interesting"]
 terms_scores = extract_significant_terms_from_subset(df, subset, "text_column")
 ```
 

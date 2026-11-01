@@ -55,11 +55,14 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 plot_metric_growth_per_labeled_instances(
-    x_train, y_train, x_test, y_test,
+    x_train,
+    y_train,
+    x_test,
+    y_test,
     {
         "DecisionTreeClassifier": DecisionTreeClassifier(random_state=0),
-        "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5)
-    }
+        "RandomForestClassifier": RandomForestClassifier(random_state=0, n_estimators=5),
+    },
 )
 ```
 
@@ -74,10 +77,7 @@ plots a stacked bar chart with the results. [Original code](https://github.com/E
 from ds_utils.metrics.probability_analysis import visualize_accuracy_grouped_by_probability
 
 visualize_accuracy_grouped_by_probability(
-    test["target"],
-    1,
-    classifier.predict_proba(test[selected_features]),
-    display_breakdown=False
+    test["target"], 1, classifier.predict_proba(test[selected_features]), display_breakdown=False
 )
 ```
 
@@ -99,13 +99,9 @@ from ds_utils.metrics.curves import plot_roc_curve_with_thresholds_annotations
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1],
 }
-fig = plot_roc_curve_with_thresholds_annotations(
-    y_true,
-    classifiers_names_and_scores_dict,
-    positive_label=1
-)
+fig = plot_roc_curve_with_thresholds_annotations(y_true, classifiers_names_and_scores_dict, positive_label=1)
 fig.show()
 ```
 
@@ -121,12 +117,10 @@ from ds_utils.metrics.curves import plot_precision_recall_curve_with_thresholds_
 classifiers_names_and_scores_dict = {
     "Decision Tree": tree_clf.predict_proba(X_test)[:, 1],
     "Random Forest": rf_clf.predict_proba(X_test)[:, 1],
-    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1]
+    "XGBoost": xgb_clf.predict_proba(X_test)[:, 1],
 }
 fig = plot_precision_recall_curve_with_thresholds_annotations(
-    y_true,
-    classifiers_names_and_scores_dict,
-    positive_label=1
+    y_true, classifiers_names_and_scores_dict, positive_label=1
 )
 fig.show()
 ```
@@ -219,11 +213,7 @@ For multi-class classification, pass the full 2-D probability matrix and specify
 ```python
 y_proba = clf.predict_proba(X_test)
 
-plot_error_analysis_chart(
-    y_test, y_pred, y_proba,
-    positive_class=1,
-    classes=clf.classes_.tolist()
-)
+plot_error_analysis_chart(y_test, y_pred, y_proba, positive_class=1, classes=clf.classes_.tolist())
 plt.show()
 ```
 
@@ -247,9 +237,7 @@ data = load_breast_cancer()
 X = pd.DataFrame(data.data, columns=data.feature_names)
 
 # Add a categorical feature for demonstration
-X["size_category"] = pd.cut(
-    X["mean radius"], bins=3, labels=["small", "medium", "large"]
-).astype(str)
+X["size_category"] = pd.cut(X["mean radius"], bins=3, labels=["small", "medium", "large"]).astype(str)
 
 y = data.target
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -262,11 +250,13 @@ y_pred = clf.predict(X_test[["mean radius", "mean texture"]])
 
 # Generate error analysis report for numerical and categorical features
 report = generate_error_analysis_report(
-    X_test, y_test, y_pred,
+    X_test,
+    y_test,
+    y_pred,
     feature_columns=["mean radius", "mean texture", "size_category"],
     bins=3,
     sort_metric="error_rate",
-    ascending=False
+    ascending=False,
 )
 print(report)
 ```
@@ -432,11 +422,7 @@ you want to:
 ```python
 from ds_utils.preprocess.statistics import extract_statistics_dataframe_per_label
 
-extract_statistics_dataframe_per_label(
-    df=df,
-    feature_name='amount',
-    label_name='category'
-)
+extract_statistics_dataframe_per_label(df=df, feature_name="amount", label_name="category")
 ```
 
 | category | count | null_count | mean  | min | 1_percentile | 5_percentile | 25_percentile | median | 75_percentile | 95_percentile | 99_percentile | max   |
@@ -460,10 +446,7 @@ from ds_utils.preprocess.statistics import compute_mutual_information
 
 # Compute mutual information scores for all features
 mi_scores = compute_mutual_information(
-    df=df,
-    features=['feature1', 'feature2', 'feature3'],
-    label_col='target',
-    random_state=42
+    df=df, features=["feature1", "feature2", "feature3"], label_col="target", random_state=42
 )
 ```
 The result will be a DataFrame sorted by MI score (descending):
@@ -501,8 +484,9 @@ Using this code:
 import pandas as pd
 from ds_utils.strings import append_tags_to_frame
 
-x_train = pd.DataFrame([{"article_name": "1", "article_tags": "ds,ml,dl"},
-                        {"article_name": "2", "article_tags": "ds,ml"}])
+x_train = pd.DataFrame(
+    [{"article_name": "1", "article_tags": "ds,ml,dl"}, {"article_name": "2", "article_tags": "ds,ml"}]
+)
 x_test = pd.DataFrame([{"article_name": "3", "article_tags": "ds,ml,py"}])
 
 x_train_with_tags, x_test_with_tags = append_tags_to_frame(x_train, x_test, "article_tags", "tag_")
@@ -532,13 +516,16 @@ This method returns interesting or unusual occurrences of terms in a subset. It 
 import pandas as pd
 from ds_utils.strings import extract_significant_terms_from_subset
 
-corpus = ['This is the first document.', 'This document is the second document.',
-          'And this is the third one.', 'Is this the first document?']
+corpus = [
+    "This is the first document.",
+    "This document is the second document.",
+    "And this is the third one.",
+    "Is this the first document?",
+]
 data_frame = pd.DataFrame(corpus, columns=["content"])
 # Let's differentiate between the last two documents from the full corpus
 subset_data_frame = data_frame[data_frame.index > 1]
-terms = extract_significant_terms_from_subset(data_frame, subset_data_frame,
-                                              "content")
+terms = extract_significant_terms_from_subset(data_frame, subset_data_frame, "content")
 ```
 
 The output for ``terms`` will be the following table:
@@ -611,10 +598,12 @@ from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransforme
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 
-pipeline = Pipeline([
-    ('embeddings', SentenceEmbeddingTransformer(normalize_embeddings=True)),
-    ('classifier', RandomForestClassifier()),
-])
+pipeline = Pipeline(
+    [
+        ("embeddings", SentenceEmbeddingTransformer(normalize_embeddings=True)),
+        ("classifier", RandomForestClassifier()),
+    ]
+)
 pipeline.fit(X_train, y_train)
 predictions = pipeline.predict(X_test)
 ```
