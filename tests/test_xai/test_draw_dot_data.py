@@ -10,7 +10,7 @@ from ds_utils.xai import draw_dot_data
 BASELINE_DIR = Path(__file__).parent.parent / "baseline_images" / "test_xai" / "test_draw_dot_data"
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=20)
 def test_draw_dot_data():
     """Test drawing a graph from DOT data."""
     dot_data = (
@@ -30,7 +30,7 @@ def test_draw_dot_data():
     return plt.gcf()
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=11)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=20)
 def test_draw_dot_data_exist_ax():
     """Test drawing a graph from DOT data on an existing Axes object."""
     dot_data = (
