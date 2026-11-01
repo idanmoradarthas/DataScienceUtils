@@ -335,6 +335,55 @@ $script:InstalledSkills = [System.Collections.Generic.List[PSObject]]::new()
 $script:SkippedSkills   = [System.Collections.Generic.List[PSObject]]::new()
 $script:FailedSkills    = [System.Collections.Generic.List[PSObject]]::new()
 
+function Install-SingleSkill {
+    param(
+        [string]$TargetLabel,
+        [string]$Skill,
+        [string]$Dest
+    )
+
+    if ((Test-Path $Dest) -and -not $Force) {
+        Write-Ok "$Skill already present for $TargetLabel (use -Force to overwrite)"
+        $script:SkippedSkills.Add([PSCustomObject]@{ Target = $TargetLabel; Skill = $Skill; Dest = $Dest })
+        return
+    }
+
+    $url    = "$RAW_URL/skills/ds-utils-$Skill/SKILL.md"
+    $refUrl = "$RAW_URL/skills/ds-utils-$Skill/references/api_reference.md"
+
+    # Download to temporary staging directory first so existing installs are not destroyed on failure
+    $stagingDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+    $stagingRefDir = Join-Path $stagingDir "references"
+    New-Item -ItemType Directory -Force -Path $stagingRefDir | Out-Null
+
+    $stageSkill = Join-Path $stagingDir "SKILL.md"
+    $stageRef   = Join-Path $stagingRefDir "api_reference.md"
+
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $stageSkill -UseBasicParsing -ErrorAction Stop
+        Invoke-WebRequest -Uri $refUrl -OutFile $stageRef -UseBasicParsing -ErrorAction Stop
+
+        # Both downloads succeeded - move into place
+        if (Test-Path $Dest) {
+            Remove-Item $Dest -Recurse -Force -ErrorAction Stop
+        }
+        $destParent = Split-Path -Parent $Dest
+        New-Item -ItemType Directory -Force -Path $destParent | Out-Null
+        Move-Item -Path $stagingDir -Destination $Dest -Force -ErrorAction Stop
+
+        $relPath = $Dest.Replace($HOME, "~")
+        Write-Ok "$Skill → $relPath"
+        $script:InstalledSkills.Add([PSCustomObject]@{ Target = $TargetLabel; Skill = $Skill; Dest = $Dest })
+    } catch {
+        Remove-Item $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Warn "Could not fetch complete $Skill skill for $TargetLabel (URLs: $url, $refUrl)"
+        if ($Silent) {
+            [Console]::Error.WriteLine("Error: Could not fetch complete $Skill skill for $TargetLabel (URLs: $url, $refUrl)")
+        }
+        $script:FailedSkills.Add([PSCustomObject]@{ Target = $TargetLabel; Skill = $Skill; Dest = $Dest })
+    }
+}
+
 function Install-Skills {
     param([array]$SelectedTools, [string]$InstallScope)
 
@@ -363,31 +412,7 @@ function Install-Skills {
 
         foreach ($skill in $SKILLS) {
             $dest = Join-Path $skillsDir "ds-utils-$skill"
-
-            if ((Test-Path $dest) -and -not $Force) {
-                Write-Ok "$skill skill already present for $tool (use -Force to overwrite)"
-                $script:SkippedSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
-                continue
-            }
-
-            $refDir  = Join-Path $dest "references"
-            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
-            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
-            $outFile = Join-Path $dest "SKILL.md"
-            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
-            $refFile = Join-Path $refDir "api_reference.md"
-
-            try {
-                Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
-                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
-                $relPath = $dest.Replace($HOME, "~")
-                Write-Ok "$skill → $relPath"
-                $script:InstalledSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
-            } catch {
-                Write-Warn "Could not fetch complete $skill skill"
-                Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
-                $script:FailedSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
-            }
+            Install-SingleSkill -TargetLabel $tool -Skill $skill -Dest $dest
         }
     }
 
@@ -403,29 +428,7 @@ function Install-Skills {
 
         foreach ($skill in $SKILLS) {
             $dest = Join-Path $agentsDir "ds-utils-$skill"
-            if ((Test-Path $dest) -and -not $Force) {
-                Write-Ok "$skill already present in .agents\skills (use -Force to overwrite)"
-                $script:SkippedSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
-                continue
-            }
-            $refDir  = Join-Path $dest "references"
-            New-Item -ItemType Directory -Force -Path $refDir | Out-Null
-            $url     = "$RAW_URL/skills/ds-utils-$skill/SKILL.md"
-            $outFile = Join-Path $dest "SKILL.md"
-            $refUrl  = "$RAW_URL/skills/ds-utils-$skill/references/api_reference.md"
-            $refFile = Join-Path $refDir "api_reference.md"
-
-            try {
-                Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing -ErrorAction Stop
-                Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
-                $relPath = $dest.Replace($HOME, "~")
-                Write-Ok "$skill → $relPath"
-                $script:InstalledSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
-            } catch {
-                Write-Warn "Could not fetch complete $skill skill"
-                Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
-                $script:FailedSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
-            }
+            Install-SingleSkill -TargetLabel "cross-client" -Skill $skill -Dest $dest
         }
     }
 }
@@ -462,8 +465,8 @@ if (-not $Silent) {
     Write-Host "  ──────────────────────────────────────"
     Write-Host ("  Tools:    " + ($selectedTools -join ", ")) -ForegroundColor Green
     Write-Host "  Scope:    $SCOPE ($baseDir)" -ForegroundColor Green
-    Write-Host ("  Package:  " + (if ($SkillsOnly) { "skip" } else { $pkgManager })) -ForegroundColor Green
-    Write-Host ("  Extras:   " + (if ($selectedExtras) { $selectedExtras } else { "none" })) -ForegroundColor Green
+    Write-Host ("  Package:  " + $(if ($SkillsOnly) { "skip" } else { $pkgManager })) -ForegroundColor Green
+    Write-Host ("  Extras:   " + $(if ($selectedExtras) { $selectedExtras } else { "none" })) -ForegroundColor Green
     Write-Host "  Skills:   $($SKILLS -join ', ')" -ForegroundColor Green
     Write-Host ""
     $confirm = Read-Host "  Proceed with installation? (y/n) [y]"
@@ -486,7 +489,8 @@ if ($Silent) {
         Stop-Installer 0
         return
     } else {
-        Stop-Installer 1 "Installation completed with errors"
+        [Console]::Error.WriteLine("Error: $numFailed skill download(s) failed")
+        Stop-Installer 1 "$numFailed skill download(s) failed"
         return
     }
 }
@@ -552,7 +556,7 @@ if ($numFailed -eq 0) {
 } else {
     Write-Host ""
     Write-Host "  Resolution:" -ForegroundColor White
-    Write-Host "  Check your network connection and retry with: -Force"
+    Write-Host "  Re-run the installer once the network problem is resolved."
     Write-Host ""
     Stop-Installer 1 "Installation completed with errors"
 }

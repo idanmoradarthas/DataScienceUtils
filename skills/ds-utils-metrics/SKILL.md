@@ -247,7 +247,7 @@ cohort_report = generate_error_analysis_report(X_test, y_test, y_pred, bins=3)
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
-| `TypeError: 'Figure' object is not callable` or plot not showing | Calling `.show()` as a matplotlib method or treating Plotly figure as matplotlib Axes | Use `fig.show()` for Plotly figures (`plot_roc...`, `plot_rec...`) and `plt.show()` for matplotlib |
+| Plot does not appear when running as a script | Plotly figures (`plot_roc_curve_with_thresholds_annotations`, `plot_precision_recall_curve_with_thresholds_annotations`, `plot_rec_curve_with_annotations`) require `fig.show()`, while Matplotlib functions return Axes and require `plt.show()` or `plt.savefig(...)` | Call `fig.show()` for Plotly return values and `plt.show()` or `plt.savefig(...)` for Matplotlib Axes |
 | `ValueError: Per-column arrays must each be 1-dimensional` in `visualize_accuracy_grouped_by_probability` | Passed full 2D probability matrix instead of 1D column | Select the 1D column matching `labeled_class`: `proba[:, np.where(clf.classes_ == labeled_class)[0][0]]` |
 | `AttributeError: 'LogisticRegression' object has no attribute 'shape'` | Passed fitted estimator instance instead of predicted probabilities to ROC/PR functions | Pass dictionary of predicted probability arrays: `{"model": proba[:, pos_idx]}` |
 | `ValueError: Shape mismatch: y_true (n,) and y_scores (n, 2) for classifier <name>` | Passed full 2D probability matrix instead of 1D positive-class scores to ROC/PR curves | Extract 1D array of positive-class scores: `proba[:, pos_idx]` |

@@ -138,7 +138,33 @@ jobs:
               }
               Write-Host "Success path verified: all files present and exit code 0."
 
-              # 2. Test failure path (unreachable URL)
+              # 2. Test non-silent interactive flow piped with confirmation
+              $nonSilentProfile = Join-Path $env:TEMP "test_install_ps1_nonsilent"
+              New-Item -ItemType Directory -Force -Path $nonSilentProfile | Out-Null
+              $oldProfile = $env:USERPROFILE
+              $env:USERPROFILE = $nonSilentProfile
+              $env:RAW_URL = "http://127.0.0.1:18895"
+
+              $nonSilentOutput = "y" | powershell -File (Join-Path $env:GITHUB_WORKSPACE "install.ps1") -Global -SkillsOnly -Tools claude
+              $nonSilentExit = $LASTEXITCODE
+              $env:USERPROFILE = $oldProfile
+
+              if ($nonSilentExit -ne 0) {
+                  throw "Non-silent install.ps1 failed with exit code $nonSilentExit"
+              }
+              $outputJoined = $nonSilentOutput -join "`n"
+              if (-not $outputJoined.Contains("Installation Outcome")) {
+                  throw "Non-silent install.ps1 output missing 'Installation Outcome'"
+              }
+              foreach ($s in $skills) {
+                  $skillPath = Join-Path $nonSilentProfile ".claude\skills\ds-utils-$s\SKILL.md"
+                  $refPath   = Join-Path $nonSilentProfile ".claude\skills\ds-utils-$s\references\api_reference.md"
+                  if (-not (Test-Path $skillPath)) { throw "Missing $skillPath in non-silent profile" }
+                  if (-not (Test-Path $refPath))   { throw "Missing $refPath in non-silent profile" }
+              }
+              Write-Host "Non-silent interactive flow verified: exit code 0, summary printed, files present."
+
+              # 3. Test failure path (unreachable URL)
               $failDir = Join-Path $env:TEMP "test_install_ps1_fail"
               New-Item -ItemType Directory -Force -Path $failDir | Out-Null
               $env:RAW_URL = "http://127.0.0.1:1"

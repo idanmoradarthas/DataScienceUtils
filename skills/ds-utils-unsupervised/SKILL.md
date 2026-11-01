@@ -200,5 +200,5 @@ plt.close()
 |---|---|---|
 | `ValueError: No valid results were obtained. Check your input data and parameters.` (preceded by `Error occurred for k=...: 'str' object is not callable`) | Passed string metric (e.g. `"euclidean"`) instead of callable | Pass callable metric function, e.g., `scipy.spatial.distance.euclidean` |
 | `TypeError: missing 2 required positional arguments: 'k_min' and 'k_max'` | Omitted `k_min` or `k_max` | Specify both integers explicitly, e.g. `k_min=2, k_max=10` |
-| `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` | Using DBSCAN or model without centroids | Compute centroids manually or use with `sklearn.cluster.KMeans` |
+| `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` when preparing arguments for `plot_cluster_magnitude` / `plot_magnitude_vs_cardinality` | These functions need centroid coordinates, which DBSCAN does not provide | Compute centroids per label yourself (for example the mean of `X` per label) and pass them as `cluster_centers`, or use KMeans. `plot_cluster_cardinality` only needs labels and works with DBSCAN. |
 | Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig("cluster.png")` |

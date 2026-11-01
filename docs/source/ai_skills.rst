@@ -586,29 +586,48 @@ All skills in DataScienceUtils are validated using `NVIDIA SkillEvaluator <https
 
 **Prerequisites and Installation**
 
-Install SkillEvaluator in Python 3.13 via ``uv`` or ``pip``:
+Install the pinned versions of SkillEvaluator and SkillSpector matching ``requirements-skills.txt`` in Python 3.13 via ``uv``:
 
 .. code-block:: bash
 
-    uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git"
+    uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+    uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
 
-Optional security scanners can be installed for full static check coverage:
+External security scanners (Semgrep and Gitleaks) provide full static security coverage:
 
 .. code-block:: bash
 
     pip install semgrep
-    # gitleaks and skillspector may also be installed if available on your system
+    # For Gitleaks: brew install gitleaks (macOS) or go install github.com/gitleaks/gitleaks/v8@latest
+
+Without ``skillspector`` and ``gitleaks``, ``skillevaluator tier1 --no-llm`` reports ``INCOMPLETE`` and exits 1, whereas ``skillevaluator quality-check`` does not require external security scanners and passes.
 
 **Running Static Validation and Quality Checks**
 
-To evaluate a skill locally:
+To evaluate an individual skill locally:
 
 .. code-block:: bash
 
-    skillevaluator tier1 --no-llm skills/ds-utils-metrics
     skillevaluator quality-check skills/ds-utils-metrics
+    skillevaluator tier1 --no-llm skills/ds-utils-metrics
 
-Tier 1 validates frontmatter schema, file structure, naming conventions, and security requirements. The ``quality-check`` command grades the skill on correctness, discoverability, reliability, and efficiency.
+Both commands support writing validation reports to a custom output directory via ``-o`` or ``--output-dir`` (e.g., ``skillevaluator quality-check -o ./reports skills/ds-utils-metrics``).
+
+**Automated Evaluation Runner Scripts**
+
+The repository provides runner scripts at the root that execute ``quality-check`` and ``tier1 --no-llm`` across all six skills, write reports to a temporary directory cleaned up on exit, and exit non-zero if any check fails or reports incomplete evidence:
+
+On Linux / macOS:
+
+.. code-block:: bash
+
+    ./eval-skills.sh
+
+On Windows (Command Prompt / PowerShell):
+
+.. code-block:: bat
+
+    eval-skills.bat
 
 Troubleshooting
 ---------------
