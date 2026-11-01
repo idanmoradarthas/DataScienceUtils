@@ -139,10 +139,12 @@ from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransforme
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 
-pipeline = Pipeline([
-    ('embeddings', SentenceEmbeddingTransformer(normalize_embeddings=True)),
-    ('classifier', RandomForestClassifier()),
-])
+pipeline = Pipeline(
+    [
+        ("embeddings", SentenceEmbeddingTransformer(normalize_embeddings=True)),
+        ("classifier", RandomForestClassifier()),
+    ]
+)
 pipeline.fit(X_train, y_train)
 predictions = pipeline.predict(X_test)
 ```
@@ -155,14 +157,18 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
-df = pd.DataFrame({
-    "description": ["a product", "another item"],
-    "price": [9.99, 19.99],
-})
-pre = ColumnTransformer([
-    ("text", SentenceEmbeddingTransformer(), ["description"]),
-    ("num", StandardScaler(), ["price"]),
-])
+df = pd.DataFrame(
+    {
+        "description": ["a product", "another item"],
+        "price": [9.99, 19.99],
+    }
+)
+pre = ColumnTransformer(
+    [
+        ("text", SentenceEmbeddingTransformer(), ["description"]),
+        ("num", StandardScaler(), ["price"]),
+    ]
+)
 X_out = pre.fit_transform(df)
 ```
 
