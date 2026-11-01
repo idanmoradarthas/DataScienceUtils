@@ -454,9 +454,11 @@ def test_plot_clusters_pca_with_centroids(iris_data):
 
 
 @pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=18)
-def test_plot_clusters_tsne(iris_data):
+def test_plot_clusters_tsne(mocker, iris_data):
     """Test plot_clusters with high-dimensional data using t-SNE."""
     iris_x, labels, _ = iris_data
+    fixed_2d = np.random.RandomState(42).normal(size=(len(iris_x), 2))
+    mocker.patch("ds_utils.unsupervised.TSNE.fit_transform", return_value=fixed_2d)
     plot_clusters(iris_x.values, labels, reduction_method="tsne", random_state=42)
     return plt.gcf()
 
