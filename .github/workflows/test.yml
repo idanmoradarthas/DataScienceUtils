@@ -83,7 +83,7 @@ jobs:
           fail_ci_if_error: true
 
       - name: Run Ruff Formatter Check
-        run: uvx ruff==0.17.3 format --check .
+        run: uvx ruff format --check .
 
       - name: Run Ruff Linter
-        run: uvx ruff==0.17.3 check .
+        run: uvx ruff check .
