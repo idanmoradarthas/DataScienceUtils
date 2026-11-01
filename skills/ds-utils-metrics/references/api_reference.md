@@ -197,9 +197,8 @@ plot_metric_growth_per_labeled_instances(
     classifiers_dict: Dict[str, sklearn.base.ClassifierMixin],
     n_samples: Optional[List[int]] = None,
     quantiles: Optional[List[float]] = [
-        0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.39999999999999997,
-        0.44999999999999996, 0.49999999999999994, 0.5499999999999999,
-        0.6, 0.65, 0.7, 0.75, 0.7999999999999999, 0.85, 0.9, 0.95, 1.0
+        0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4,
+        0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0
     ],
     metric: Callable[[numpy.ndarray, numpy.ndarray], float] = accuracy_score,
     random_state: Union[int, numpy.random.mtrand.RandomState, NoneType] = None,

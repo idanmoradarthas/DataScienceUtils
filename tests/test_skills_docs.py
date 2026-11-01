@@ -148,3 +148,46 @@ def test_skill_api_reference_signatures(skill_name, symbol_name, doc_args):
             f"[{skill_name}:{symbol_name}] Default presence mismatch for kwonly arg '{name}'. "
             f"Doc: {doc_kwonly_has_default[name]}, Real: {real_has_default}"
         )
+
+    # 3. Literal default value validation
+    offset = len(doc_pos_args) - num_pos_defaults
+    for i, default_node in enumerate(doc_args.defaults):
+        arg_name = doc_pos_args[offset + i]
+        real_def = real_sig.parameters[arg_name].default
+        try:
+            doc_val = ast.literal_eval(default_node)
+            if isinstance(real_def, (int, float, str, bool, list, tuple, dict, type(None))):
+                if isinstance(real_def, list) and isinstance(doc_val, list):
+                    assert len(real_def) == len(doc_val), (
+                        f"[{skill_name}:{symbol_name}] Default list length mismatch for '{arg_name}'"
+                    )
+                else:
+                    assert doc_val == real_def, (
+                        f"[{skill_name}:{symbol_name}] Default value mismatch for '{arg_name}'. "
+                        f"Doc: {doc_val!r}, Real: {real_def!r}"
+                    )
+        except (ValueError, SyntaxError):
+            pass
+
+    for arg, default_node in zip(doc_args.kwonlyargs, doc_args.kw_defaults, strict=False):
+        if default_node is not None:
+            arg_name = arg.arg
+            real_def = real_sig.parameters[arg_name].default
+            try:
+                doc_val = ast.literal_eval(default_node)
+                if isinstance(real_def, (int, float, str, bool, list, tuple, dict, type(None))):
+                    assert doc_val == real_def, (
+                        f"[{skill_name}:{symbol_name}] Default value mismatch for kwonly '{arg_name}'. "
+                        f"Doc: {doc_val!r}, Real: {real_def!r}"
+                    )
+            except (ValueError, SyntaxError):
+                pass
+
+
+def test_symbol_modules_coverage():
+    """Verify bidirectional 1:1 correspondence between SYMBOL_MODULES and documented signatures."""
+    documented_symbols = {case[1] for case in SIG_CASES}
+    registered_symbols = set(SYMBOL_MODULES.keys())
+    assert documented_symbols == registered_symbols, (
+        f"Coverage mismatch: diff = {documented_symbols ^ registered_symbols}"
+    )

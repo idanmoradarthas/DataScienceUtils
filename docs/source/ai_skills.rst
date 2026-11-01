@@ -496,29 +496,42 @@ and place them in the paths below. Installing to ``.agents/skills/`` is
 recommended as a baseline — it ensures skills are discoverable by any
 present or future `Agent Skills <https://agentskills.io>`_-compatible tool.
 For instructions on validating and testing skills with NVIDIA SkillEvaluator,
-see the `Agent Skills Evaluation Guide <https://github.com/idanmoradarthas/DataScienceUtils/blob/master/skills/README.md>`_.
+see the :ref:`Validating Skills with NVIDIA SkillEvaluator` section below.
 
 * **Cross-client (recommended)**:
-  - ``.agents/skills/ds-utils-<module>/SKILL.md``
-  - ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
+  * ``.agents/skills/ds-utils-<module>/SKILL.md``
+  * ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
 * **Claude Code**:
-  - ``.claude/skills/ds-utils-<module>/SKILL.md``
-  - ``.claude/skills/ds-utils-<module>/references/api_reference.md``
+
+  * ``.claude/skills/ds-utils-<module>/SKILL.md``
+  * ``.claude/skills/ds-utils-<module>/references/api_reference.md``
+
 * **Cursor**:
-  - ``.cursor/rules/ds-utils-<module>/SKILL.md``
-  - ``.cursor/rules/ds-utils-<module>/references/api_reference.md``
+
+  * ``.cursor/rules/ds-utils-<module>/SKILL.md``
+  * ``.cursor/rules/ds-utils-<module>/references/api_reference.md``
+
 * **GitHub Copilot**:
-  - ``.github/instructions/ds-utils-<module>/SKILL.md``
-  - ``.github/instructions/ds-utils-<module>/references/api_reference.md``
+
+  * ``.github/instructions/ds-utils-<module>/SKILL.md``
+  * ``.github/instructions/ds-utils-<module>/references/api_reference.md``
+
 * **Gemini CLI**:
-  - ``.gemini/skills/ds-utils-<module>/SKILL.md``
-  - ``.gemini/skills/ds-utils-<module>/references/api_reference.md``
+
+  * ``.gemini/skills/ds-utils-<module>/SKILL.md``
+  * ``.gemini/skills/ds-utils-<module>/references/api_reference.md``
+
 * **Antigravity (project)**:
-  - ``.agents/skills/ds-utils-<module>/SKILL.md``
-  - ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
+  * ``.agents/skills/ds-utils-<module>/SKILL.md``
+  * ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
 * **Antigravity (global)**:
-  - ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
-  - ``~/.gemini/antigravity/skills/ds-utils-<module>/references/api_reference.md``
+
+  * ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
+  * ``~/.gemini/antigravity/skills/ds-utils-<module>/references/api_reference.md``
 
 Available Skills
 ----------------
@@ -563,6 +576,39 @@ On **Windows (PowerShell)**:
 
     irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
     .\install.ps1 -Force
+
+.. _Validating Skills with NVIDIA SkillEvaluator:
+
+Validating Skills with NVIDIA SkillEvaluator
+--------------------------------------------
+
+All skills in DataScienceUtils are validated using `NVIDIA SkillEvaluator <https://github.com/NVIDIA/SkillEvaluator>`_ for Tier 1 static validation and quality grading.
+
+**Prerequisites and Installation**
+
+Install SkillEvaluator in Python 3.13 via ``uv`` or ``pip``:
+
+.. code-block:: bash
+
+    uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git"
+
+Optional security scanners can be installed for full static check coverage:
+
+.. code-block:: bash
+
+    pip install semgrep
+    # gitleaks and skillspector may also be installed if available on your system
+
+**Running Static Validation and Quality Checks**
+
+To evaluate a skill locally:
+
+.. code-block:: bash
+
+    skillevaluator tier1 --no-llm skills/ds-utils-metrics
+    skillevaluator quality-check skills/ds-utils-metrics
+
+Tier 1 validates frontmatter schema, file structure, naming conventions, and security requirements. The ``quality-check`` command grades the skill on correctness, discoverability, reliability, and efficiency.
 
 Troubleshooting
 ---------------

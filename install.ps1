@@ -30,24 +30,37 @@ $SKILLS  = @("metrics", "preprocess", "unsupervised", "strings", "transformers",
 $SCOPE   = if ($Global) { "global" } else { "project" }
 
 # ── Colors ───────────────────────────────────────────────────────
-function Write-Ok($msg)   { Write-Host "  " -NoNewline; Write-Host "✓ " -ForegroundColor Green -NoNewline; Write-Host $msg }
-function Write-Warn($msg) { Write-Host "  " -NoNewline; Write-Host "! " -ForegroundColor Yellow -NoNewline; Write-Host $msg }
-function Exit-Or-Return($code) {
-    if ($PSCommandPath) {
-        exit $code
-    } else {
+function Stop-Installer([int]$code, [string]$msg = "") {
+    if ($code -ne 0) {
         $global:LASTEXITCODE = $code
-        return
+        if ($PSCommandPath) {
+            exit $code
+        } else {
+            $err = if ($msg) { $msg } else { "Installation failed with exit code $code" }
+            throw $err
+        }
+    } else {
+        $global:LASTEXITCODE = 0
+        if ($PSCommandPath) {
+            exit 0
+        }
     }
 }
 
+function Write-Ok($msg)   { if (-not $Silent) { Write-Host "  " -NoNewline; Write-Host "✓ " -ForegroundColor Green -NoNewline; Write-Host $msg } }
+function Write-Warn($msg) { if (-not $Silent) { Write-Host "  " -NoNewline; Write-Host "! " -ForegroundColor Yellow -NoNewline; Write-Host $msg } }
+
 function Write-Err($msg)  {
-    Write-Host "  " -NoNewline
-    Write-Host "✗ " -ForegroundColor Red -NoNewline
-    Write-Host $msg
-    Exit-Or-Return 1
+    if ($Silent) {
+        [Console]::Error.WriteLine("  ✗ $msg")
+    } else {
+        Write-Host "  " -NoNewline
+        Write-Host "✗ " -ForegroundColor Red -NoNewline
+        Write-Host $msg
+    }
+    Stop-Installer 1 $msg
 }
-function Write-Step($msg) { Write-Host ""; Write-Host $msg -ForegroundColor White }
+function Write-Step($msg) { if (-not $Silent) { Write-Host ""; Write-Host $msg -ForegroundColor White } }
 function Write-Msg($msg)  { if (-not $Silent) { Write-Host "  $msg" } }
 function Write-Dim($msg)  { if (-not $Silent) { Write-Host "  $msg" -ForegroundColor DarkGray } }
 
@@ -318,6 +331,10 @@ function Install-Package {
 }
 
 # ── Skills installation ───────────────────────────────────────────
+$script:InstalledSkills = [System.Collections.Generic.List[PSObject]]::new()
+$script:SkippedSkills   = [System.Collections.Generic.List[PSObject]]::new()
+$script:FailedSkills    = [System.Collections.Generic.List[PSObject]]::new()
+
 function Install-Skills {
     param([array]$SelectedTools, [string]$InstallScope)
 
@@ -349,6 +366,7 @@ function Install-Skills {
 
             if ((Test-Path $dest) -and -not $Force) {
                 Write-Ok "$skill skill already present for $tool (use -Force to overwrite)"
+                $script:SkippedSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
                 continue
             }
 
@@ -364,9 +382,11 @@ function Install-Skills {
                 Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
                 $relPath = $dest.Replace($HOME, "~")
                 Write-Ok "$skill → $relPath"
+                $script:InstalledSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
             } catch {
                 Write-Warn "Could not fetch complete $skill skill"
                 Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
+                $script:FailedSkills.Add([PSCustomObject]@{ Target = $tool; Skill = $skill; Dest = $dest })
             }
         }
     }
@@ -385,6 +405,7 @@ function Install-Skills {
             $dest = Join-Path $agentsDir "ds-utils-$skill"
             if ((Test-Path $dest) -and -not $Force) {
                 Write-Ok "$skill already present in .agents\skills (use -Force to overwrite)"
+                $script:SkippedSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
                 continue
             }
             $refDir  = Join-Path $dest "references"
@@ -399,18 +420,22 @@ function Install-Skills {
                 Invoke-WebRequest -Uri $refUrl -OutFile $refFile -UseBasicParsing -ErrorAction Stop
                 $relPath = $dest.Replace($HOME, "~")
                 Write-Ok "$skill → $relPath"
+                $script:InstalledSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
             } catch {
                 Write-Warn "Could not fetch complete $skill skill"
                 Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue
+                $script:FailedSkills.Add([PSCustomObject]@{ Target = ".agents"; Skill = $skill; Dest = $dest })
             }
         }
     }
 }
 
 # ── Main ─────────────────────────────────────────────────────────
-Write-Host ""
-Write-Host "DataScienceUtils AI Skills Installer" -ForegroundColor White
-Write-Host "────────────────────────────────────────"
+if (-not $Silent) {
+    Write-Host ""
+    Write-Host "DataScienceUtils AI Skills Installer" -ForegroundColor White
+    Write-Host "────────────────────────────────────────"
+}
 
 Write-Step "Detecting AI coding tools"
 $selectedTools = Get-Tools
@@ -444,31 +469,90 @@ if (-not $Silent) {
     $confirm = Read-Host "  Proceed with installation? (y/n) [y]"
     if ($confirm -ne "" -and $confirm -notin @("y","Y","yes")) {
         Write-Msg "Installation cancelled."
-            Exit-Or-Return 0
-            return
+        return
     }
 }
 
 Install-Package -pkgManager $pkgManager -selectedExtras $selectedExtras
 Install-Skills -SelectedTools $selectedTools -InstallScope $SCOPE
 
+$numInstalled  = $script:InstalledSkills.Count
+$numSkipped    = $script:SkippedSkills.Count
+$numFailed     = $script:FailedSkills.Count
+$totalAttempts = $numInstalled + $numSkipped + $numFailed
+
+if ($Silent) {
+    if ($numFailed -eq 0) {
+        Stop-Installer 0
+        return
+    } else {
+        Stop-Installer 1 "Installation completed with errors"
+        return
+    }
+}
+
 Write-Host ""
-Write-Host "Installation complete!" -ForegroundColor Green
+if ($numFailed -eq 0) {
+    Write-Host "Installation complete!" -ForegroundColor Green
+} elseif ($numInstalled -gt 0 -or $numSkipped -gt 0) {
+    Write-Host "Installation completed with errors (partial installation)" -ForegroundColor Yellow
+} else {
+    Write-Host "Installation failed (no skills installed)" -ForegroundColor Red
+}
 Write-Host "────────────────────────────────────────"
 Write-Msg "Package:  $(if ($SkillsOnly) { 'skipped' } else { 'installed' })"
 Write-Msg "Extras:   $(if ($selectedExtras) { $selectedExtras } else { 'none' })"
 Write-Msg "Scope:    $SCOPE"
 Write-Msg "Tools:    $($selectedTools -join ', ')"
 Write-Host ""
-Write-Msg "Skills installed:"
-foreach ($s in $SKILLS) { Write-Host "    ds-utils-$s" -ForegroundColor Cyan }
+Write-Host "  Installation Outcome ($totalAttempts total checks):" -ForegroundColor White
+Write-Host "    Newly installed:          $numInstalled" -ForegroundColor Green
+Write-Host "    Already present (skipped): $numSkipped" -ForegroundColor Yellow
+Write-Host "    Failed downloads:         $numFailed" -ForegroundColor Red
+
+if ($numInstalled -gt 0) {
+    Write-Host ""
+    Write-Host "  Newly installed skills:" -ForegroundColor White
+    foreach ($item in $script:InstalledSkills) {
+        $rel = $item.Dest.Replace($HOME, "~")
+        Write-Host "    ✓ $($item.Target): ds-utils-$($item.Skill) → $rel" -ForegroundColor Green
+    }
+}
+
+if ($numSkipped -gt 0) {
+    Write-Host ""
+    Write-Host "  Pre-existing skills (preserved, not re-downloaded):" -ForegroundColor White
+    foreach ($item in $script:SkippedSkills) {
+        $rel = $item.Dest.Replace($HOME, "~")
+        Write-Host "    - $($item.Target): ds-utils-$($item.Skill) → $rel" -ForegroundColor Yellow
+    }
+}
+
+if ($numFailed -gt 0) {
+    Write-Host ""
+    Write-Host "  Failed skill downloads:" -ForegroundColor White
+    foreach ($item in $script:FailedSkills) {
+        Write-Host "    ✗ $($item.Target): ds-utils-$($item.Skill) (failed download, cleaned up partial files)" -ForegroundColor Red
+    }
+}
+
 Write-Host ""
-Write-Msg "Cross-client path:"
+Write-Host "  Cross-client path:" -ForegroundColor White
 $agentsBase = if ($SCOPE -eq "global") { "~\.agents\skills" } else { ".agents\skills" }
 Write-Host "    $agentsBase  (readable by all Agent Skills-compatible tools)" -ForegroundColor DarkGray
-Write-Host ""
-Write-Msg "Next steps:"
-Write-Msg "1. Open your project in your AI coding tool"
-Write-Msg "2. Skills are auto-loaded — no config needed"
-Write-Msg "3. Try: `"Use ds_utils to plot a confusion matrix for my classifier`""
-Write-Host ""
+
+if ($numFailed -eq 0) {
+    Write-Host ""
+    Write-Host "  Next steps:" -ForegroundColor White
+    Write-Host "  1. Open your project in your AI coding tool"
+    Write-Host "  2. The skills will be auto-loaded — no configuration needed"
+    Write-Host "  3. Try: `"Use ds_utils to plot a confusion matrix for my classifier`""
+    Write-Host ""
+    Stop-Installer 0
+} else {
+    Write-Host ""
+    Write-Host "  Resolution:" -ForegroundColor White
+    Write-Host "  Check your network connection and retry with: -Force"
+    Write-Host ""
+    Stop-Installer 1 "Installation completed with errors"
+}

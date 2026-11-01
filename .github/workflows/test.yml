@@ -152,6 +152,7 @@ jobs:
                   throw "install.ps1 unexpectedly succeeded with exit code 0 on unreachable server"
               }
               Write-Host "Failure path verified: exited non-zero ($failExit) on download failure."
+              $global:LASTEXITCODE = 0
           } finally {
               Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
           }
