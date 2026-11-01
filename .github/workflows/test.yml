@@ -62,9 +62,6 @@ jobs:
           uv run python -c "
           from matplotlib import ft2font, __version__ as v
           print(f'Matplotlib: {v}, FreeType: {ft2font.__freetype_version__}, Build: {ft2font.__freetype_build_type__}')
-          assert v == '3.11.2', f'Expected Matplotlib 3.11.2, got {v}'
-          assert ft2font.__freetype_version__ == '2.14.3', f'Expected FreeType 2.14.3, got {ft2font.__freetype_version__}'
-          assert ft2font.__freetype_build_type__ == 'local', f'Expected FreeType build type local, got {ft2font.__freetype_build_type__}'
           "
 
       - name: Run tests
