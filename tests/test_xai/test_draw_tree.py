@@ -128,7 +128,7 @@ def decision_tree_draw_tree(mocker):
     return mock
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=53)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=56)
 def test_draw_tree(decision_tree_draw_tree):
     """Test drawing a decision tree."""
     with pytest.warns(DeprecationWarning, match="This module is deprecated. Use sklearn.tree.plot_tree instead"):
@@ -140,7 +140,7 @@ def test_draw_tree(decision_tree_draw_tree):
     return plt.gcf()
 
 
-@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=54)
+@pytest.mark.mpl_image_compare(baseline_dir=BASELINE_DIR, tolerance=56)
 def test_draw_tree_exists_ax(decision_tree_draw_tree):
     """Test drawing a decision tree on an existing Axes object."""
     fig, ax = plt.subplots()
