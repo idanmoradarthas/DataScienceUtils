@@ -551,7 +551,7 @@ Available Skills
      - Feature visualization, correlation, statistics, mutual information
    * - ds-utils-unsupervised
      - ds_utils.unsupervised
-     - Cluster cardinality, magnitude, optimal k
+     - Cluster cardinality, magnitude, optimal k, 2D cluster scatter plots (PCA/t-SNE/UMAP)
    * - ds-utils-strings
      - ds_utils.strings
      - Tag encoding, significant term extraction
@@ -627,7 +627,12 @@ On Windows (Command Prompt / PowerShell):
 
 .. code-block:: bat
 
-    eval-skills.bat
+    .\eval-skills.bat
+
+.. note::
+
+   PowerShell requires the explicit ``.\`` prefix to run scripts in the current directory;
+   ``cmd.exe`` accepts either ``eval-skills.bat`` or ``.\eval-skills.bat``.
 
 Troubleshooting
 ---------------

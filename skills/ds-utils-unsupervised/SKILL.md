@@ -1,7 +1,7 @@
 ---
 name: ds-utils-unsupervised
 description: >
-  Unsupervised clustering analysis, optimal cluster count selection, and cluster health diagnostics. Use for elbow loss curves, cluster cardinality, centroid magnitude, and anomaly detection in clusters. Do NOT use for supervised classification metrics, text binarization, or dimensionality reduction.
+  Unsupervised clustering analysis, optimal cluster count selection, cluster health diagnostics, and 2D scatter visualization of clustering results (PCA, t-SNE, UMAP; matplotlib or Plotly). Use for elbow loss curves, cluster cardinality, centroid magnitude, anomaly detection in clusters, and visualizing cluster assignments. Do NOT use for supervised classification metrics, text binarization, or standalone dimensionality reduction.
 version: "1.0.0"
 license: MIT
 metadata:
@@ -12,6 +12,10 @@ metadata:
     - kmeans
     - cluster-cardinality
     - elbow-method
+    - cluster-visualization
+    - pca
+    - tsne
+    - umap
   documentation: "https://datascienceutils.readthedocs.io/en/stable/"
   package: "data-science-utils"
   repository: "https://github.com/idanmoradarthas/DataScienceUtils"
@@ -19,20 +23,21 @@ metadata:
 
 # ds-utils-unsupervised
 
-Tools for choosing cluster count and diagnosing clustering quality using cardinality and magnitude analysis.
+Tools for choosing cluster count, diagnosing clustering quality using cardinality and magnitude analysis, and visualizing cluster assignments in 2D scatter plots.
 
 ## Purpose
 
-`ds_utils.unsupervised` provides diagnostics for centroid-based clustering (specifically `sklearn.cluster.KMeans`). It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, then evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid).
+`ds_utils.unsupervised` provides diagnostics for centroid-based clustering (specifically `sklearn.cluster.KMeans`) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
 
-- **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, and spotting anomalous or diffuse clusters.
-- **When NOT to use**: For supervised classification/regression metrics (use `ds-utils-metrics`), PCA explained variance (use `ds-utils-preprocess`), or density-based clustering like DBSCAN without centroids.
+- **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, spotting anomalous or diffuse clusters, and creating 2D scatter plots of clustering results.
+- **When NOT to use**: For supervised classification/regression metrics (use `ds-utils-metrics`), PCA explained variance (use `ds-utils-preprocess`), or using the 2D reduction coordinates as clustering input (they are for display only).
 
 ## Prerequisites
 
 - Python 3.11 or higher.
 - `data-science-utils` package installed (`pip install data-science-utils`).
-- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `scipy`, `matplotlib`.
+- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `scipy`, `matplotlib`, `plotly`.
+- Optional: `umap-learn` for UMAP reduction (`pip install data-science-utils[umap]`).
 
 ## Instructions
 
@@ -44,6 +49,8 @@ Tools for choosing cluster count and diagnosing clustering quality using cardina
 | Check balance / points per cluster | `plot_cluster_cardinality` | `labels_` | Matplotlib Axes |
 | Measure compactness per cluster | `plot_cluster_magnitude` | `X`, `labels_`, `cluster_centers_`, `distance_func` | Matplotlib Axes |
 | Identify anomalous or diffuse clusters | `plot_magnitude_vs_cardinality` | `X`, `labels_`, `cluster_centers_`, `distance_func` | Matplotlib Axes |
+| Visualize clusters in 2D (matplotlib) | `plot_clusters` | `X`, `cluster_labels`, optional `cluster_centers` | Matplotlib Axes |
+| Visualize clusters in 2D (Plotly) | `plot_clusters_plotly` | `X`, `cluster_labels`, optional `cluster_centers` | Plotly Figure |
 
 Full signatures, parameter options, and common mistakes are documented in [references/api_reference.md](references/api_reference.md).
 
@@ -74,6 +81,10 @@ Follow this sequence to go from unscaled features to a validated clustering mode
                          ▼
            Diagnose Cluster Consistency
           (plot_magnitude_vs_cardinality)
+                         |
+                         v
+           Visualize Cluster Assignments
+      (plot_clusters / plot_clusters_plotly)
 ```
 
 #### Step 1: Sweep $k$ and Select Elbow Point (`plot_loss_vs_cluster_number`)
@@ -146,6 +157,38 @@ plt.close()
 - **Interpretation**: Points far above the trendline represent clusters with low cardinality but high magnitude (i.e. dispersed outliers). Points far below are unusually dense cores.
 - **Action**: Inspect high-magnitude/low-cardinality clusters for data quality issues or anomalous instances.
 
+#### Step 5: Visualize Cluster Assignments (`plot_clusters` / `plot_clusters_plotly`)
+Create a 2D scatter plot of the clustering results. For data with more than 2 features, PCA (default), t-SNE, or UMAP reduces to 2D automatically.
+
+**Matplotlib variant:**
+
+```python
+from ds_utils.unsupervised import plot_clusters
+
+ax_viz = plot_clusters(
+    X_scaled, labels, kmeans.cluster_centers_,
+    reduction_method="pca", random_state=42,
+)
+plt.show()
+```
+
+**Plotly variant (interactive):**
+
+```python
+from ds_utils.unsupervised import plot_clusters_plotly
+
+fig = plot_clusters_plotly(
+    X_scaled, labels, kmeans.cluster_centers_,
+    reduction_method="pca", random_state=42,
+)
+fig.show()
+```
+
+- **Axis labels**: With >2 features, axes are labeled PC1/PC2, t-SNE 1/2, or UMAP 1/2 depending on the method. With exactly 2 features, labels are "Feature 1"/"Feature 2" and no reduction is performed.
+- **Legend**: Entries are "Cluster <label>" plus "Centroids" when centers are drawn.
+- **t-SNE caveat**: t-SNE cannot transform new data, so centroids are **not** plotted (a `UserWarning` is emitted).
+- **Return types**: `plot_clusters` returns `matplotlib.axes.Axes` (call `plt.show()`); `plot_clusters_plotly` returns `plotly.graph_objects.Figure` (call `fig.show()`).
+
 ---
 
 ## Examples
@@ -164,6 +207,8 @@ from ds_utils.unsupervised import (
     plot_cluster_cardinality,
     plot_cluster_magnitude,
     plot_magnitude_vs_cardinality,
+    plot_clusters,
+    plot_clusters_plotly,
 )
 
 # 1. Generate synthetic data
@@ -187,12 +232,22 @@ plt.close()
 
 plot_magnitude_vs_cardinality(X_norm, model.labels_, model.cluster_centers_, euclidean)
 plt.close()
+
+# 5. Visualize clusters (matplotlib)
+plot_clusters(X_norm, model.labels_, model.cluster_centers_, reduction_method="pca", random_state=42)
+plt.close()
+
+# 6. Visualize clusters (Plotly)
+fig = plot_clusters_plotly(X_norm, model.labels_, model.cluster_centers_, reduction_method="pca", random_state=42)
 ```
 
 ## Limitations
 
-- **Centroid-based algorithms only**: All functions expect centroid coordinates (`cluster_centers_`) and discrete partition labels. They do not support soft clustering, DBSCAN, or agglomerative clustering without centroids.
+- **Centroid-based algorithms only**: Diagnostic functions (`plot_cluster_magnitude`, `plot_magnitude_vs_cardinality`) expect centroid coordinates (`cluster_centers_`) and discrete partition labels. They do not support soft clustering or agglomerative clustering without centroids.
 - **Distance function callable**: Distance parameters must be callable functions, not strings.
+- **t-SNE draws no centroids**: t-SNE cannot transform new data points, so `cluster_centers` are silently skipped (with a warning) when `reduction_method='tsne'`.
+- **DBSCAN noise label counts as a cluster**: The DBSCAN noise label `-1` counts as a unique label in the centers check. Passing KMeans centers (computed for real clusters only) will raise `ValueError` because the number of centers does not match the number of unique labels including `-1`. Omit `cluster_centers` when using DBSCAN.
+- **2D reduction is for display only**: The reduced coordinates from PCA/t-SNE/UMAP are used solely for visualization. Never feed them back as clustering input.
 
 ## Troubleshooting
 
@@ -202,3 +257,11 @@ plt.close()
 | `TypeError: missing 2 required positional arguments: 'k_min' and 'k_max'` | Omitted `k_min` or `k_max` | Specify both integers explicitly, e.g. `k_min=2, k_max=10` |
 | `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` when preparing arguments for `plot_cluster_magnitude` / `plot_magnitude_vs_cardinality` | These functions need centroid coordinates, which DBSCAN does not provide | Compute centroids per label yourself (for example the mean of `X` per label) and pass them as `cluster_centers`, or use KMeans. `plot_cluster_cardinality` only needs labels and works with DBSCAN. |
 | Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig("cluster.png")` |
+| `ValueError: X must have at least 2 features for 2D scatter visualization.` | `X` has only 1 column/feature | Ensure `X` has at least 2 features before calling `plot_clusters` / `plot_clusters_plotly` |
+| `ValueError: X and cluster_labels must have the same length.` | Array length mismatch between data and labels | Verify `len(X) == len(cluster_labels)` |
+| `ValueError: Number of cluster centers must match the number of unique labels.` | Centers count does not equal unique labels count (common with DBSCAN noise label `-1`) | Omit `cluster_centers` for DBSCAN, or compute one center per unique label including noise |
+| `ValueError: Unknown reduction_method: '<name>'. Choose from 'pca', 'tsne', 'umap'.` | Unsupported reduction method string | Use `'pca'`, `'tsne'`, or `'umap'` |
+| `ImportError: UMAP is not installed...` | `umap-learn` package not installed | `pip install data-science-utils[umap]` or `pip install umap-learn` |
+| `UserWarning: t-SNE cannot transform new data; centroids will not be plotted.` | `reduction_method='tsne'` with `cluster_centers` provided | Use `'pca'` or `'umap'` to display centroids, or accept the warning |
+| `ValueError: Invalid property specified for object of type plotly.graph_objs.Scatter: 'ax'` | Passed matplotlib `ax=` argument to `plot_clusters_plotly` | Use `fig=` for Plotly; `ax=` is for `plot_clusters` only |
+| `AttributeError: PathCollection.set() got an unexpected keyword argument 'fig'` | Passed Plotly `fig=` argument to `plot_clusters` | Use `ax=` for matplotlib; `fig=` is for `plot_clusters_plotly` only |
