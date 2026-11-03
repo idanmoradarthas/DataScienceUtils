@@ -4,7 +4,10 @@ import ast
 import importlib
 import inspect
 from pathlib import Path
+import pkgutil
 import re
+
+import ds_utils
 import pytest
 
 # Map of function/class names to import module in ds_utils
@@ -36,6 +39,8 @@ SYMBOL_MODULES = {
     "plot_cluster_cardinality": "ds_utils.unsupervised",
     "plot_cluster_magnitude": "ds_utils.unsupervised",
     "plot_magnitude_vs_cardinality": "ds_utils.unsupervised",
+    "plot_clusters": "ds_utils.unsupervised",
+    "plot_clusters_plotly": "ds_utils.unsupervised",
     "plot_features_importance": "ds_utils.xai",
     "draw_dot_data": "ds_utils.xai",
     "draw_tree": "ds_utils.xai",
@@ -191,3 +196,23 @@ def test_symbol_modules_coverage():
     assert documented_symbols == registered_symbols, (
         f"Coverage mismatch: diff = {documented_symbols ^ registered_symbols}"
     )
+
+
+# Internal math helper not exposed as part of the public analytical API
+INTENTIONALLY_UNDOCUMENTED = {"safe_percentile"}
+
+
+def test_all_public_api_is_documented():
+    """Verify all public ds_utils functions and classes are documented in skill API references."""
+    public_symbols = set()
+    for module_info in pkgutil.walk_packages(ds_utils.__path__, ds_utils.__name__ + "."):
+        mod = importlib.import_module(module_info.name)
+        for name, obj in inspect.getmembers(mod):
+            if not name.startswith("_") and (inspect.isfunction(obj) or inspect.isclass(obj)):
+                if getattr(obj, "__module__", None) == module_info.name:
+                    public_symbols.add(name)
+
+    expected_symbols = public_symbols - INTENTIONALLY_UNDOCUMENTED
+    documented_symbols = {case[1] for case in SIG_CASES}
+    missing = sorted(expected_symbols - documented_symbols)
+    assert not missing, f"Public API symbols missing from skill documentation: {missing}"
