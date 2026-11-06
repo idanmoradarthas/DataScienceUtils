@@ -216,3 +216,98 @@ def test_all_public_api_is_documented():
     documented_symbols = {case[1] for case in SIG_CASES}
     missing = sorted(expected_symbols - documented_symbols)
     assert not missing, f"Public API symbols missing from skill documentation: {missing}"
+
+
+# Regex patterns copied from skillspector 2.12.0 references.py:
+# _QUOTED_OR_CODE_PATH and _PLAIN_RELATIVE_PATH
+QUOTED_OR_CODE_PATH = re.compile(
+    r"(?:`|'|\")((?:\./)?(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,12})(?:`|'|\")"
+)
+PLAIN_RELATIVE_PATH = re.compile(
+    r"(?<![\w:/.-])((?:\./(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+|"
+    r"(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,12}))(?![\w/.-])"
+)
+
+SKILL_NAMES = [
+    "ds-utils-metrics",
+    "ds-utils-preprocess",
+    "ds-utils-strings",
+    "ds-utils-transformers",
+    "ds-utils-unsupervised",
+    "ds-utils-xai",
+]
+
+
+@pytest.mark.parametrize("skill_name", SKILL_NAMES)
+def test_skill_md_has_no_unresolved_path_like_tokens(skill_name):
+    """Ensure SKILL.md prose and frontmatter contain no path-like tokens that fail resolution.
+
+    Skillspector treats any token matching QUOTED_OR_CODE_PATH or PLAIN_RELATIVE_PATH in
+    SKILL.md (outside fenced code blocks) as a bundled file reference. If it does not resolve
+    to an existing file relative to the skill directory, Tier 1 static evaluation reports
+    INCOMPLETE.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    skill_dir = repo_root / "skills" / skill_name
+    skill_md = skill_dir / "SKILL.md"
+    assert skill_md.is_file(), f"Missing SKILL.md at {skill_md}"
+
+    lines = skill_md.read_text(encoding="utf-8").splitlines()
+    in_code_block = False
+    fence_char = None
+    fence_len = 0
+    failures = []
+
+    for line_idx, line in enumerate(lines, 1):
+        # Check fenced code block start/end (3 or more backticks or tildes)
+        fence_match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})", line)
+        if fence_match:
+            marker = fence_match.group(1)
+            char = marker[0]
+            length = len(marker)
+            if not in_code_block:
+                in_code_block = True
+                fence_char = char
+                fence_len = length
+                continue
+            elif char == fence_char and length >= fence_len:
+                in_code_block = False
+                fence_char = None
+                fence_len = 0
+                continue
+
+        if in_code_block:
+            continue
+
+        # Check quoted/code and plain relative matches
+        candidates = []
+        for m in QUOTED_OR_CODE_PATH.finditer(line):
+            candidates.append(m.group(1))
+        for m in PLAIN_RELATIVE_PATH.finditer(line):
+            candidates.append(m.group(1))
+
+        for token in candidates:
+            # Strip leading ./ if present
+            clean_token = token[2:] if token.startswith("./") else token
+            target_path = (skill_dir / clean_token).resolve()
+            # If target does not exist relative to skill_dir, flag failure
+            try:
+                target_path.relative_to(skill_dir.resolve())
+            except ValueError:
+                # Outside skill dir
+                failures.append(
+                    f"{skill_md.name}:{line_idx}:{token} -> escapes skill directory. "
+                    "Rephrase to avoid backticked/quoted dotted tokens or use plain text."
+                )
+                continue
+
+            if not target_path.exists():
+                failures.append(
+                    f"{skill_md.name}:{line_idx}:{token} -> unresolved file reference. "
+                    "Rephrase token in prose/frontmatter (e.g. unquote version, remove backticks, "
+                    "or include spaces/parentheses) so skillspector does not treat it as a bundled file."
+                )
+
+    assert not failures, f"Found {len(failures)} unresolved path-like token(s) in {skill_name}/SKILL.md:\n" + "\n".join(
+        failures
+    )

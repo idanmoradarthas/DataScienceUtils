@@ -139,7 +139,7 @@ plot_features_interaction(
 - `**kwargs`: Forwarded to underlying plotting functions (`seaborn.violinplot`, `Axes.scatter`, etc.).
 
 ### Dtype Interaction Matrix
-Rebuilt from docstring and `docs/source/preprocess/visualization.rst`:
+Rebuilt from the function docstring and the project documentation:
 
 | feature_1 ↓  feature_2 → | Numeric | Categorical / Bool | Datetime |
 |---|---|---|---|

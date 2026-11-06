@@ -1,8 +1,8 @@
 ---
 name: ds-utils-unsupervised
 description: >
-  Unsupervised clustering analysis, optimal cluster count selection, cluster health diagnostics, and 2D scatter visualization of clustering results (PCA, t-SNE, UMAP; matplotlib or Plotly). Use for elbow loss curves, cluster cardinality, centroid magnitude, anomaly detection in clusters, and visualizing cluster assignments. Do NOT use for supervised classification metrics, text binarization, or standalone dimensionality reduction.
-version: "1.0.0"
+  Unsupervised clustering analysis, optimal cluster count selection, and 2D scatter plots (PCA, t-SNE, UMAP). Use for elbow loss curves, cluster cardinality, centroid magnitude, and cluster assignments. Do NOT use for supervised classification metrics or text binarization.
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -27,7 +27,7 @@ Tools for choosing cluster count, diagnosing clustering quality using cardinalit
 
 ## Purpose
 
-`ds_utils.unsupervised` provides diagnostics for centroid-based clustering (specifically `sklearn.cluster.KMeans`) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
+ds_utils.unsupervised provides diagnostics for centroid-based clustering (specifically scikit-learn's `KMeans`) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
 
 - **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, spotting anomalous or diffuse clusters, and creating 2D scatter plots of clustering results.
 - **When NOT to use**: For supervised classification/regression metrics (use `ds-utils-metrics`), PCA explained variance (use `ds-utils-preprocess`), or using the 2D reduction coordinates as clustering input (they are for display only).
@@ -90,7 +90,7 @@ Follow this sequence to go from unscaled features to a validated clustering mode
 #### Step 1: Sweep $k$ and Select Elbow Point (`plot_loss_vs_cluster_number`)
 Test a range of cluster counts to observe the diminishing return in distance loss.
 - **Input requirement**: `k_min` and `k_max` are required integers without defaults.
-- **Distance function**: Must be a **callable** (such as `scipy.spatial.distance.euclidean`), never a string. Pass algorithm parameters (e.g. `random_state`) via the `algorithm_parameters` dict.
+- **Distance function**: Must be a **callable** (such as `euclidean` from scipy.spatial.distance), never a string. Pass algorithm parameters (e.g. `random_state`) via the `algorithm_parameters` dict.
 
 ```python
 import numpy as np
@@ -99,9 +99,10 @@ from scipy.spatial.distance import euclidean
 from sklearn.preprocessing import StandardScaler
 from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
-# 1. Scale data
-np.random.seed(42)
-X_raw = np.random.randn(150, 4)
+# 1. Generate synthetic clusters and scale data
+from sklearn.datasets import make_blobs
+
+X_raw, _ = make_blobs(n_samples=150, n_features=4, centers=3, random_state=42)
 X_scaled = StandardScaler().fit_transform(X_raw)
 
 # 2. Sweep k from 2 to 8
@@ -114,8 +115,8 @@ ax_loss = plot_loss_vs_cluster_number(
 )
 plt.close()
 ```
-- **What to look for**: The "elbow" point where adding more clusters no longer yields sharp decreases in loss.
-- **Action**: Pick the elbow $k$ (e.g., $k=3$) and fit your final model.
+- **What to look for**: The "elbow" point where adding more clusters no longer yields sharp decreases in loss (loss flattens noticeably after $k=3$).
+- **Action**: Pick the elbow $k$ (e.g., $k=3$) and fit your final model. Because the elbow method can be subjective, consider calculating `sklearn.metrics.silhouette_score` as a complementary validation check.
 
 #### Step 2: Fit Final Model and Inspect Cardinality (`plot_cluster_cardinality`)
 Fit `KMeans` with the chosen $k$ and inspect cluster member counts.
@@ -166,8 +167,11 @@ Create a 2D scatter plot of the clustering results. For data with more than 2 fe
 from ds_utils.unsupervised import plot_clusters
 
 ax_viz = plot_clusters(
-    X_scaled, labels, kmeans.cluster_centers_,
-    reduction_method="pca", random_state=42,
+    X_scaled,
+    labels,
+    kmeans.cluster_centers_,
+    reduction_method="pca",
+    random_state=42,
 )
 plt.show()
 ```
@@ -178,8 +182,11 @@ plt.show()
 from ds_utils.unsupervised import plot_clusters_plotly
 
 fig = plot_clusters_plotly(
-    X_scaled, labels, kmeans.cluster_centers_,
-    reduction_method="pca", random_state=42,
+    X_scaled,
+    labels,
+    kmeans.cluster_centers_,
+    reduction_method="pca",
+    random_state=42,
 )
 fig.show()
 ```
@@ -187,7 +194,7 @@ fig.show()
 - **Axis labels**: With >2 features, axes are labeled PC1/PC2, t-SNE 1/2, or UMAP 1/2 depending on the method. With exactly 2 features, labels are "Feature 1"/"Feature 2" and no reduction is performed.
 - **Legend**: Entries are "Cluster <label>" plus "Centroids" when centers are drawn.
 - **t-SNE caveat**: t-SNE cannot transform new data, so centroids are **not** plotted (a `UserWarning` is emitted).
-- **Return types**: `plot_clusters` returns `matplotlib.axes.Axes` (call `plt.show()`); `plot_clusters_plotly` returns `plotly.graph_objects.Figure` (call `fig.show()`).
+- **Return types**: plot_clusters returns a matplotlib Axes (call plt.show()); plot_clusters_plotly returns a plotly Figure (call fig.show()).
 
 ---
 
@@ -253,10 +260,10 @@ fig = plot_clusters_plotly(X_norm, model.labels_, model.cluster_centers_, reduct
 
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
-| `ValueError: No valid results were obtained. Check your input data and parameters.` (preceded by `Error occurred for k=...: 'str' object is not callable`) | Passed string metric (e.g. `"euclidean"`) instead of callable | Pass callable metric function, e.g., `scipy.spatial.distance.euclidean` |
+| `ValueError: No valid results were obtained. Check your input data and parameters.` (preceded by `Error occurred for k=...: 'str' object is not callable`) | Passed string metric (e.g. `"euclidean"`) instead of callable | Pass callable metric function, e.g., `euclidean` from scipy.spatial.distance |
 | `TypeError: missing 2 required positional arguments: 'k_min' and 'k_max'` | Omitted `k_min` or `k_max` | Specify both integers explicitly, e.g. `k_min=2, k_max=10` |
 | `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` when preparing arguments for `plot_cluster_magnitude` / `plot_magnitude_vs_cardinality` | These functions need centroid coordinates, which DBSCAN does not provide | Compute centroids per label yourself (for example the mean of `X` per label) and pass them as `cluster_centers`, or use KMeans. `plot_cluster_cardinality` only needs labels and works with DBSCAN. |
-| Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig("cluster.png")` |
+| Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig(output_path)` |
 | `ValueError: X must have at least 2 features for 2D scatter visualization.` | `X` has only 1 column/feature | Ensure `X` has at least 2 features before calling `plot_clusters` / `plot_clusters_plotly` |
 | `ValueError: X and cluster_labels must have the same length.` | Array length mismatch between data and labels | Verify `len(X) == len(cluster_labels)` |
 | `ValueError: Number of cluster centers must match the number of unique labels.` | Centers count does not equal unique labels count (common with DBSCAN noise label `-1`) | Omit `cluster_centers` for DBSCAN, or compute one center per unique label including noise |

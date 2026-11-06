@@ -2,7 +2,7 @@
 name: ds-utils-preprocess
 description: >
   Exploratory data analysis (EDA), feature distribution visualization, and statistical correlation analysis. Use for univariate feature inspection, collinearity detection, dendrograms, PCA explained variance, and mutual information ranking. Do NOT use for model evaluation metrics, NLP embeddings, or tree visualization.
-version: "1.0.0"
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -22,7 +22,7 @@ Comprehensive exploratory data analysis (EDA), feature interaction visualization
 
 ## Purpose
 
-`ds_utils.preprocess` accelerates initial dataset exploration and feature selection. It automates type-driven chart selection (violins for continuous floats, heatmaps for temporal features, count bars for categorical variables), visualizes collinearity structures, and computes group statistics and non-linear associations.
+ds_utils.preprocess accelerates initial dataset exploration and feature selection. It automates type-driven chart selection (violins for continuous floats, heatmaps for temporal features, count bars for categorical variables), visualizes collinearity structures, and computes group statistics and non-linear associations.
 
 - **When to use**: During preliminary EDA, feature hygiene assessment, multicollinearity pruning, and feature relevance ranking before model training.
 - **When NOT to use**: For post-modeling error analysis, model metric evaluation (use `ds-utils-metrics`), clustering quality scoring (use `ds-utils-unsupervised`), or text tag encoding (use `ds-utils-strings`).
@@ -105,7 +105,7 @@ X_raw = pd.DataFrame(
     }
 )
 X_raw["proxy_income"] = X_raw["income"] * 1.05 + np.random.normal(0, 500, n)
-y = (X_raw["income"] > 70000).astype(int)
+y = ((X_raw["income"] + np.random.normal(0, 15000, n)) > 70000).astype(int)
 
 # 1. Split FIRST
 X_train, X_test, y_train, y_test = train_test_split(X_raw, y, test_size=0.25, random_state=42)
@@ -152,12 +152,19 @@ Multicollinearity destabilizes linear models and inflates feature importance var
 3. Use `get_correlated_features` to identify pairs exceeding a threshold (e.g., 0.85) and compare each feature's correlation to the target.
 
 ```python
+import matplotlib.pyplot as plt
 from ds_utils.preprocess.visualization import visualize_correlations, plot_correlation_dendrogram
 from ds_utils.preprocess.statistics import get_correlated_features
 
 num_cols = ["age", "income", "proxy_income"]
 train_num = train_df[num_cols + ["target"]]
 corr_matrix = train_num.corr()
+
+# Visualize correlation heatmap and hierarchical dendrogram
+ax_corr = visualize_correlations(corr_matrix)
+plt.close()
+ax_dendro = plot_correlation_dendrogram(corr_matrix)
+plt.close()
 
 # Check collinear pairs
 collinear_pairs = get_correlated_features(corr_matrix, num_cols, "target", threshold=0.85)
