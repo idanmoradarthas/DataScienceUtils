@@ -853,7 +853,7 @@ These checks are also part of our CI pipeline.
 
 ### Agent skills
 
-If you change anything under `skills/`, validate it with NVIDIA's [SkillEvaluator](https://github.com/NVIDIA/SkillEvaluator) by running `./eval-skills.sh` (`eval-skills.bat` on Windows). See [Validating Skills with NVIDIA SkillEvaluator](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html#validating-skills-with-nvidia-skillevaluator) for full prerequisites and instructions.
+If you change anything under `skills/`, validate it with NVIDIA's [SkillEvaluator](https://github.com/NVIDIA/SkillEvaluator) by running `./eval-skills.sh` (`eval-skills.bat` on Windows). See [Validating Skills with NVIDIA SkillEvaluator](https://datascienceutils.readthedocs.io/en/latest/ai_skills.html#validating-skills-with-nvidia-skillevaluator) for full prerequisites and instructions.
 
 ### Why Contribute?
 

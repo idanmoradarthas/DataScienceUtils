@@ -600,15 +600,19 @@ Install the pinned versions of SkillEvaluator and SkillSpector matching ``requir
     uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
     uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
 
-External security scanners provide static security coverage: Gitleaks is required for static secret detection, while Semgrep is optional (its absence triggers a non-blocking warning). Install the pinned Gitleaks release (v8.28.0) from GitHub releases (e.g. ``gitleaks_8.28.0_linux_x64.tar.gz``) rather than ``go install ...@latest``:
+External security scanners provide static security coverage: Gitleaks is required for secret detection (Tier 1 reports ``INCOMPLETE`` without it, together with ``skillspector``). Bandit and Semgrep are only invoked for skills that bundle code files. The current skills are Markdown-only, so they are not needed here. If you add code files to a skill, install both, otherwise Tier 1 reports ``INCOMPLETE`` and exits 1:
 
 .. code-block:: bash
 
-    # Pinned Gitleaks v8.28.0 binary installation
-    curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks
+    # macOS: Homebrew (its version may differ from the pinned CI release)
+    brew install gitleaks
 
-    # Optional: Semgrep (omitting triggers a non-blocking warning)
-    pip install semgrep
+    # Linux x86_64: pinned v8.28.0 release, installed without sudo
+    mkdir -p "$HOME/.local/bin"
+    curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C "$HOME/.local/bin" gitleaks
+
+    # Only needed if a skill bundles code files
+    pip install bandit semgrep
 
 Only ``quality-check`` and Tier 1 static validation (``tier1 --no-llm``) are run; Tier 2 and Tier 3 validation stages are not executed. With both ``skillspector`` and ``gitleaks`` installed, all six skills pass static checks completely without reporting ``INCOMPLETE``. To maintain complete Tier 1 static validation, ``SKILL.md`` prose and frontmatter must avoid backticked or quoted ``name.ext`` tokens that could be misinterpreted as missing bundled files (guarded by ``test_skill_md_has_no_unresolved_path_like_tokens`` in ``tests/test_skills_docs.py``).
 

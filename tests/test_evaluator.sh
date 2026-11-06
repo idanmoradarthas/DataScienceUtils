@@ -147,11 +147,13 @@ else
     if [ "$PASS_COUNT" -eq 6 ]; then
       echo "✓ Scenario 5 passed: Real evaluator succeeded with all 6 skills showing PASS (0) in Quality and Tier 1."
     else
-      echo "✗ Scenario 5 FAILED: Expected 6 PASS (0) rows but found $PASS_COUNT. Output:\n$OUT5" >&2
+      echo "✗ Scenario 5 FAILED: Expected 6 PASS (0) rows but found $PASS_COUNT. Output:" >&2
+      echo "$OUT5" >&2
       exit 1
     fi
   else
-    echo "✗ Scenario 5 FAILED! eval-skills.sh exited $RC5. Output:\n$OUT5" >&2
+    echo "✗ Scenario 5 FAILED! eval-skills.sh exited $RC5. Output:" >&2
+    echo "$OUT5" >&2
     exit 1
   fi
 fi
