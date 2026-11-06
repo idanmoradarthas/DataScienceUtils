@@ -25,13 +25,13 @@ Comprehensive exploratory data analysis (EDA), feature interaction visualization
 ds_utils.preprocess accelerates initial dataset exploration and feature selection. It automates type-driven chart selection (violins for continuous floats, heatmaps for temporal features, count bars for categorical variables), visualizes collinearity structures, and computes group statistics and non-linear associations.
 
 - **When to use**: During preliminary EDA, feature hygiene assessment, multicollinearity pruning, and feature relevance ranking before model training.
-- **When NOT to use**: For post-modeling error analysis, model metric evaluation (use `ds-utils-metrics`), clustering quality scoring (use `ds-utils-unsupervised`), or text tag encoding (use `ds-utils-strings`).
+- **When NOT to use**: For post-modeling error analysis, model metric evaluation (use ds-utils-metrics), clustering quality scoring (use ds-utils-unsupervised), or text tag encoding (use ds-utils-strings).
 
 ## Prerequisites
 
 - Python 3.11 or higher.
-- `data-science-utils` package installed (`pip install data-science-utils`).
-- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `scipy`.
+- data-science-utils package installed (pip install data-science-utils).
+- Core dependencies: numpy, pandas, scikit-learn, matplotlib, seaborn, scipy.
 - Input data formatted as a Pandas DataFrame or Series.
 
 ## Instructions
@@ -70,6 +70,10 @@ Data leakage happens when decisions about feature pruning, category grouping, or
        Univariate EDA      Target-Aware EDA
      (visualize_feature)  (extract_statistics_dataframe_per_label)
              │                   │
+             ▼                   │
+       Bivariate EDA             │
+ (plot_features_interaction)     │
+             │                   │
              └─────────┬─────────┘
                        ▼
              Correlation & Structure
@@ -85,108 +89,114 @@ Data leakage happens when decisions about feature pruning, category grouping, or
           (plot_pca_explained_variance)
 ```
 
-#### Step 1: Dataset Partitioning (Preventing Data Leakage)
-Target-aware metrics (`extract_statistics_dataframe_per_label`, `compute_mutual_information`, and `get_correlated_features`) must be computed strictly on the training partition. Feature pruning choices are frozen on train and applied downstream to test.
+#### Inputs you need
+
+The steps below assume:
+- A DataFrame `df` containing your features and an optional `target` column name string.
+- A workflow decision: supervised modeling (partition first to avoid leakage) or unsupervised exploration.
+
+```python
+import pandas as pd
+
+# Load your dataset (replace with your data)
+df = pd.read_csv("your_dataset")
+target = "target_column"  # replace with your target column name
+```
+
+#### Step 1: Profile and partition
+Question: what are the column types, missingness levels, target balances, and train/test boundaries?
 
 ```python
 from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
 
-# Synthetic example dataset
-np.random.seed(42)
-n = 200
-X_raw = pd.DataFrame(
-    {
-        "age": np.random.uniform(20, 70, n),
-        "income": np.random.uniform(30000, 120000, n),
-        "education": np.random.choice(["HighSchool", "BSc", "MSc", "PhD"], n),
-        "signup_date": pd.date_range("2023-01-01", periods=n, freq="D"),
-    }
-)
-X_raw["proxy_income"] = X_raw["income"] * 1.05 + np.random.normal(0, 500, n)
-y = ((X_raw["income"] + np.random.normal(0, 15000, n)) > 70000).astype(int)
+print(df.dtypes)
+print(df.isna().mean())
+print(df[target].value_counts(normalize=True))
 
-# 1. Split FIRST
-X_train, X_test, y_train, y_test = train_test_split(X_raw, y, test_size=0.25, random_state=42)
-train_df = X_train.copy()
-train_df["target"] = y_train
+# Partition first for supervised workflows
+train_df, test_df = train_test_split(df, test_size=0.25, stratify=df[target], random_state=42)
+num_cols = train_df.select_dtypes("number").columns.drop(target).tolist()
 ```
+- **What to look for**: High missingness rates, unexpected string types on numeric fields, and class imbalance.
+- **Action**: Impute or drop invalid columns; stratify classification splits.
+- **Caution**: Computing target-aware statistics before splitting leaks validation/test information into feature choices.
 
 #### Step 2: Univariate Inspection (`visualize_feature`)
-Inspect feature health (data types, missingness, extreme outliers).
-- **Plot types**: Floats render as violin plots; datetimes render as day/hour heatmaps; integers and categoricals render as bar charts.
-- **Cardinality rule**: If a categorical column has >10 unique values, only the top 10 appear; remaining values are grouped into `"Other values"`.
+Question: what is the distribution shape, scale, and outlier presence for an individual feature?
 
 ```python
-from ds_utils.preprocess.visualization import visualize_feature
 import matplotlib.pyplot as plt
+from ds_utils.preprocess.visualization import visualize_feature
 
-# Float feature with outlier boundaries
-ax = visualize_feature(train_df["income"], include_outliers=True, outlier_iqr_multiplier=1.5)
-plt.close()
-
-# Categorical feature with custom count ordering
-ax_cat = visualize_feature(train_df["education"], show_counts=True, order="count_desc")
+ax = visualize_feature(train_df[num_cols[0]], include_outliers=True, outlier_iqr_multiplier=1.5)
 plt.close()
 ```
-- **What to look for**: Heavy skew, extreme outliers outside IQR fences, or dominant categories.
-- **Action**: Winsorize or transform skewed features; check if `"Other values"` contains high aggregate frequency.
+- **What to look for**: Heavy skewness, extreme outliers outside IQR fences, or multi-modal distributions.
+- **Action**: Winsorize or log-transform heavily skewed features before downstream modeling.
+- **Caution**: visualize_feature plots unconditional distributions; it does not stratify by target classes.
 
-#### Step 3: Target-Aware Statistics (`extract_statistics_dataframe_per_label`)
-Evaluate how numeric feature percentiles shift across target classes.
+#### Step 3: Bivariate Feature Interaction (`plot_features_interaction`)
+Question: do two features interact or separate the classes?
+
+```python
+from ds_utils.preprocess.visualization import plot_features_interaction
+
+ax_inter = plot_features_interaction(train_df, num_cols[0], num_cols[1])
+plt.close()
+```
+- **What to look for**: Non-linear curves, clustering patterns, or conditional variance shifts between the two features.
+- **Action**: Check the interaction chart type determined by the data type matrix documented in the reference file (scatter for numeric pairs, box/violin for numeric-categorical, heatmap for categorical-categorical).
+- **Caution**: Interaction plots on high-cardinality categoricals become unreadable; filter to frequent categories first.
+
+#### Step 4: Target-Aware Statistics (`extract_statistics_dataframe_per_label`)
+Question: how do numeric feature percentiles and summary statistics shift across target classes?
 
 ```python
 from ds_utils.preprocess.statistics import extract_statistics_dataframe_per_label
 
-stats = extract_statistics_dataframe_per_label(train_df, "income", "target")
+stats = extract_statistics_dataframe_per_label(train_df, num_cols[0], target)
 print(stats[["count", "mean", "median", "null_count"]])
 ```
-- **Interpretation**: Compare medians and IQR (25th to 75th percentiles) across target groups. Significant separation indicates high predictive utility.
-- **Action**: Retain features with distinct class distributions; flag features where null counts correlate with a specific class.
+- **What to look for**: Significant shifts in medians and interquartile ranges across target classes.
+- **Action**: Retain features with distinct class separations; investigate any feature whose missingness correlates with a label.
+- **Caution**: Run this exclusively on the training split; running across test rows leaks label associations.
 
-#### Step 4: Redundancy & Multicollinearity Pruning (`get_correlated_features`)
-Multicollinearity destabilizes linear models and inflates feature importance variance in trees.
-1. Compute the correlation matrix on the training split only: `corr = train_df[numeric_cols].corr()`.
-2. Visualize with `visualize_correlations` or `plot_correlation_dendrogram`.
-3. Use `get_correlated_features` to identify pairs exceeding a threshold (e.g., 0.85) and compare each feature's correlation to the target.
+#### Step 5: Redundancy & Multicollinearity Pruning (`get_correlated_features`)
+Question: which features are redundant with each other, and which one of each pair is more predictive of the target?
 
 ```python
-import matplotlib.pyplot as plt
 from ds_utils.preprocess.visualization import visualize_correlations, plot_correlation_dendrogram
 from ds_utils.preprocess.statistics import get_correlated_features
 
-num_cols = ["age", "income", "proxy_income"]
-train_num = train_df[num_cols + ["target"]]
+train_num = train_df[num_cols + [target]]
 corr_matrix = train_num.corr()
 
-# Visualize correlation heatmap and hierarchical dendrogram
 ax_corr = visualize_correlations(corr_matrix)
 plt.close()
 ax_dendro = plot_correlation_dendrogram(corr_matrix)
 plt.close()
 
-# Check collinear pairs
-collinear_pairs = get_correlated_features(corr_matrix, num_cols, "target", threshold=0.85)
-print(collinear_pairs)
+collinear_pairs = get_correlated_features(corr_matrix, num_cols, target, threshold=0.85)
 ```
-- **Interpretation**: `level_0_level_1_corr` measures collinearity. `level_0_target_corr` and `level_1_target_corr` indicate relevance to the target.
-- **Action**: Between `level_0` and `level_1`, prune the feature with the lower absolute target correlation. Never compute this on the full dataset or test split.
+- **What to look for**: Pairs with high level_0_level_1_corr and differing target correlations.
+- **Action**: Between level_0 and level_1, drop the feature with smaller absolute correlation to the target.
+- **Caution**: Linear correlation only measures monotonic relationships and misses strong non-linear signals.
 
-#### Step 5: Non-linear Association Ranking (`compute_mutual_information`)
-Linear correlation misses non-monotonic dependencies. Mutual information quantifies total statistical dependency.
+#### Step 6: Non-linear Association Ranking (`compute_mutual_information`)
+Question: which features share the strongest non-linear mutual dependence with the target?
 
 ```python
 from ds_utils.preprocess.statistics import compute_mutual_information
 
-mi_df = compute_mutual_information(train_df, num_cols, "target", random_state=42)
-print(mi_df)
+mi_df = compute_mutual_information(train_df, num_cols, target, random_state=42)
+print(mi_df.head(10))
 ```
-- **Interpretation**: Features ranked with `mi_score` near 0 share minimal information with the target.
-- **Action**: Drop features with near-zero MI that also exhibited low correlation in Step 4.
+- **What to look for**: Features with high MI scores that might have shown weak linear correlation in Step 5.
+- **Action**: Retain non-linearly dependent features for tree ensembles or non-linear models.
+- **Caution**: Mutual information estimates can vary with continuous binning; use a fixed random_state.
 
-#### Step 6: Dimensionality Assessment (`plot_pca_explained_variance`)
-Determine how many principal components are required to capture 90%+ of the variance in numeric features.
+#### Step 7: Dimensionality Assessment (`plot_pca_explained_variance`)
+Question: how many principal components are required to capture 90%+ of the variance in numeric features?
 
 ```python
 from ds_utils.preprocess.visualization import plot_pca_explained_variance
@@ -194,70 +204,73 @@ from ds_utils.preprocess.visualization import plot_pca_explained_variance
 ax_pca = plot_pca_explained_variance(train_df[num_cols], use_scaling=True)
 plt.close()
 ```
-- **Interpretation**: If a small number of components captures almost all variance, dimensionality reduction is viable.
-- **Action**: Fit PCA on `X_train` and transform `X_test` if compression is needed.
+- **What to look for**: The cumulative variance curve crossing 90% or 95%.
+- **Action**: Fit PCA on train_df[num_cols] and transform test_df[num_cols] if dimensionality reduction is desired.
+- **Caution**: Always set use_scaling=True when features have different units or variances.
 
 ---
 
 ## Examples
 
-### Complete Leakage-Safe Script
+### Runnable demo on a bundled dataset (replace the loading lines with your own data)
 
 ```python
-import pandas as pd
-import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from ds_utils.preprocess.visualization import (
     visualize_feature,
+    plot_features_interaction,
     visualize_correlations,
+    plot_correlation_dendrogram,
     plot_pca_explained_variance,
 )
 from ds_utils.preprocess.statistics import (
-    get_correlated_features,
     extract_statistics_dataframe_per_label,
+    get_correlated_features,
     compute_mutual_information,
 )
 
-# 1. Synthetic dataset
-np.random.seed(42)
-df = pd.DataFrame(
-    {
-        "tenure": np.random.exponential(12, 100),
-        "monthly_charges": np.random.normal(70, 20, 100),
-        "total_charges_proxy": np.random.normal(70, 20, 100) * 1.1,
-        "churn": np.random.choice([0, 1], 100, p=[0.7, 0.3]),
-    }
-)
+# 1. Load bundled dataset and split
+data = load_breast_cancer(as_frame=True)
+df = data.frame
+target = "target"
+train_df, test_df = train_test_split(df, test_size=0.25, stratify=df[target], random_state=42)
+num_cols = train_df.select_dtypes("number").columns.drop(target).tolist()
 
-# 2. Split train and test
-train, test = train_test_split(df, test_size=0.2, random_state=42)
+# 2. Univariate & bivariate visualizations
+ax_u = visualize_feature(train_df["mean radius"])
+plt.close()
+ax_bi = plot_features_interaction(train_df, "mean radius", "mean texture")
+plt.close()
 
-# 3. Univariate check
-ax1 = visualize_feature(train["monthly_charges"])
+# 3. Target-aware statistics on train
+stats = extract_statistics_dataframe_per_label(train_df, "mean radius", target)
 
-# 4. Grouped statistics on train
-stats = extract_statistics_dataframe_per_label(train, "monthly_charges", "churn")
+# 4. Correlation matrix, dendrogram, and collinearity pruning (threshold=0.95 gives 15 pairs)
+corr = train_df[num_cols + [target]].corr()
+ax_c = visualize_correlations(corr)
+plt.close()
+ax_d = plot_correlation_dendrogram(corr)
+plt.close()
 
-# 5. Collinearity inspection and pruning on train
-num_features = ["tenure", "monthly_charges", "total_charges_proxy"]
-corr = train[num_features + ["churn"]].corr()
-corr_pairs = get_correlated_features(corr, num_features, "churn", threshold=0.80)
-
-# Drop redundant feature with lower target correlation
-to_drop = []
-for _, row in corr_pairs.iterrows():
+pairs = get_correlated_features(corr, num_cols, target, threshold=0.95)
+to_drop = set()
+for _, row in pairs.iterrows():
     if abs(row["level_0_target_corr"]) >= abs(row["level_1_target_corr"]):
-        to_drop.append(row["level_1"])
+        to_drop.add(row["level_1"])
     else:
-        to_drop.append(row["level_0"])
-selected_features = [f for f in num_features if f not in set(to_drop)]
+        to_drop.add(row["level_0"])
+selected_num = [c for c in num_cols if c not in to_drop]
 
-# 6. Mutual information ranking
-mi = compute_mutual_information(train, selected_features, "churn", random_state=42)
+# 5. Mutual information ranking & PCA explained variance
+mi_ranking = compute_mutual_information(train_df, selected_num, target, random_state=42)
+ax_pca = plot_pca_explained_variance(train_df[selected_num], use_scaling=True)
+plt.close()
 
-# 7. Apply selected features downstream to test
-X_train_final = train[selected_features]
-X_test_final = test[selected_features]
+# 6. Apply selected features downstream to test
+X_train_final = train_df[selected_num]
+X_test_final = test_df[selected_num]
 ```
 
 ## Limitations

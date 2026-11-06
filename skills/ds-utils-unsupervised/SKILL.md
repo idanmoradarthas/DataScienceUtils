@@ -27,17 +27,17 @@ Tools for choosing cluster count, diagnosing clustering quality using cardinalit
 
 ## Purpose
 
-ds_utils.unsupervised provides diagnostics for centroid-based clustering (specifically scikit-learn's `KMeans`) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
+ds_utils.unsupervised provides diagnostics for centroid-based clustering (specifically scikit-learn KMeans) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
 
 - **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, spotting anomalous or diffuse clusters, and creating 2D scatter plots of clustering results.
-- **When NOT to use**: For supervised classification/regression metrics (use `ds-utils-metrics`), PCA explained variance (use `ds-utils-preprocess`), or using the 2D reduction coordinates as clustering input (they are for display only).
+- **When NOT to use**: For supervised classification/regression metrics (use ds-utils-metrics), PCA explained variance (use ds-utils-preprocess), or using the 2D reduction coordinates as clustering input (they are for display only).
 
 ## Prerequisites
 
 - Python 3.11 or higher.
-- `data-science-utils` package installed (`pip install data-science-utils`).
-- Core dependencies: `numpy`, `pandas`, `scikit-learn`, `scipy`, `matplotlib`, `plotly`.
-- Optional: `umap-learn` for UMAP reduction (`pip install data-science-utils[umap]`).
+- data-science-utils package installed (pip install data-science-utils).
+- Core dependencies: numpy, pandas, scikit-learn, scipy, matplotlib, plotly.
+- Optional: umap-learn for UMAP reduction (pip install data-science-utils[umap]).
 
 ## Instructions
 
@@ -63,11 +63,12 @@ Follow this sequence to go from unscaled features to a validated clustering mode
 ```text
                Unlabeled Data Matrix
                          │
-           Scale Features (e.g. StandardScaler)
+                 Prepare Features
+           (missing values & StandardScaler)
                          │
                          ▼
-        Sweep k and Identify Elbow Point
-          (plot_loss_vs_cluster_number)
+        Sweep k and Evaluate Diagnostics
+          (plot_loss_vs_cluster_number & silhouette)
                          │
                          ▼
              Fit Final KMeans(n_clusters=k)
@@ -81,61 +82,99 @@ Follow this sequence to go from unscaled features to a validated clustering mode
                          ▼
            Diagnose Cluster Consistency
           (plot_magnitude_vs_cardinality)
-                         |
-                         v
+                         │
+                         ▼
            Visualize Cluster Assignments
       (plot_clusters / plot_clusters_plotly)
+                         │
+                         ▼
+             Interpret Cluster Profiles
+         (groupby mean on original features)
 ```
 
-#### Step 1: Sweep $k$ and Select Elbow Point (`plot_loss_vs_cluster_number`)
-Test a range of cluster counts to observe the diminishing return in distance loss.
-- **Input requirement**: `k_min` and `k_max` are required integers without defaults.
-- **Distance function**: Must be a **callable** (such as `euclidean` from scipy.spatial.distance), never a string. Pass algorithm parameters (e.g. `random_state`) via the `algorithm_parameters` dict.
+#### Inputs you need
+
+The steps below assume:
+- An input DataFrame `X` containing numeric feature columns without target labels.
+- A decision on feature selection: which columns belong in the clustering feature space.
 
 ```python
-import numpy as np
+import pandas as pd
+
+# Load your unlabeled feature matrix (replace with your data)
+df = pd.read_csv("your_dataset")
+X = df.select_dtypes("number")  # select numeric clustering features
+```
+
+#### Step 1: Prepare features
+Question: what is the scale spread across features, are there missing values, and how should features be standardized?
+
+```python
+from sklearn.preprocessing import StandardScaler
+
+# Check missingness and scale disparities
+print("Missingness ratio per feature:\n", X.isna().mean())
+print("Scale spread (mean and std):\n", X.describe().loc[["mean", "std"]])
+
+# Impute or drop missing values, then standardize
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+```
+- **What to look for**: Large standard deviation discrepancies across features (e.g. income in thousands vs age in tens).
+- **Action**: Standardize features with StandardScaler before distance-based clustering.
+- **Caution**: Distance-based algorithms (like KMeans and Euclidean distance) are dominated by features with large scales if unscaled.
+
+#### Step 2: Sweep $k$ and Select Cluster Count (`plot_loss_vs_cluster_number`)
+Question: which cluster count $k$ balances compactness against model complexity?
+
+```python
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import euclidean
-from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from ds_utils.unsupervised import plot_loss_vs_cluster_number
 
-# 1. Generate synthetic clusters and scale data
-from sklearn.datasets import make_blobs
-
-X_raw, _ = make_blobs(n_samples=150, n_features=4, centers=3, random_state=42)
-X_scaled = StandardScaler().fit_transform(X_raw)
-
-# 2. Sweep k from 2 to 8
+# 1. Sweep loss across k range
+k_range = range(2, 7)
 ax_loss = plot_loss_vs_cluster_number(
     X_scaled,
     k_min=2,
-    k_max=8,
+    k_max=6,
     distance_function=euclidean,
-    algorithm_parameters={"random_state": 42},
+    algorithm_parameters=dict(random_state=42, n_init=10),
 )
 plt.close()
-```
-- **What to look for**: The "elbow" point where adding more clusters no longer yields sharp decreases in loss (loss flattens noticeably after $k=3$).
-- **Action**: Pick the elbow $k$ (e.g., $k=3$) and fit your final model. Because the elbow method can be subjective, consider calculating `sklearn.metrics.silhouette_score` as a complementary validation check.
 
-#### Step 2: Fit Final Model and Inspect Cardinality (`plot_cluster_cardinality`)
-Fit `KMeans` with the chosen $k$ and inspect cluster member counts.
+# 2. Complementary silhouette score sweep
+sil_scores = {}
+for k in k_range:
+    km = KMeans(n_clusters=k, n_init=10, random_state=42).fit(X_scaled)
+    sil_scores[k] = silhouette_score(X_scaled, km.labels_)
+print("Silhouette scores by k:", sil_scores)
+```
+- **What to look for**: An elbow bend in the loss curve accompanied by a high silhouette score.
+- **Action**: Pick a $k$ that shows good separation and yields interpretable business segments.
+- **Caution**: The elbow is often ambiguous on real-world data without clear separation; combine loss curves with silhouette scores and domain interpretability.
+
+#### Step 3: Fit Final Model and Inspect Cardinality (`plot_cluster_cardinality`)
+Question: are cluster point counts balanced, or do massive or tiny outlier clusters exist?
 
 ```python
-from sklearn.cluster import KMeans
 from ds_utils.unsupervised import plot_cluster_cardinality
 
-kmeans = KMeans(n_clusters=3, random_state=42)
+k_optimal = 3
+kmeans = KMeans(n_clusters=k_optimal, n_init=10, random_state=42)
 labels = kmeans.fit_predict(X_scaled)
 
 ax_card = plot_cluster_cardinality(labels)
 plt.close()
 ```
-- **What to look for**: Tiny outlier clusters (cardinality near 1 or 2) or one massive cluster that swallowed the entire dataset.
-- **Action**: If one cluster dominates heavily, inspect whether feature scaling was missed or if $k$ should be increased.
+- **What to look for**: Tiny clusters containing only 1 or 2 points, or one dominant cluster containing almost all instances.
+- **Action**: If a cluster is disproportionately small, investigate whether those points are data entry errors or anomalous records.
+- **Caution**: Extreme cardinality imbalance can indicate unhandled extreme outliers pulling centroids away.
 
-#### Step 3: Measure Compactness (`plot_cluster_magnitude`)
-Magnitude measures the sum of point-to-centroid distances within each cluster.
+#### Step 4: Measure Compactness (`plot_cluster_magnitude`)
+Question: which clusters are tightly packed around their centroids, and which are loose or diffuse?
 
 ```python
 from ds_utils.unsupervised import plot_cluster_magnitude
@@ -143,11 +182,12 @@ from ds_utils.unsupervised import plot_cluster_magnitude
 ax_mag = plot_cluster_magnitude(X_scaled, labels, kmeans.cluster_centers_, distance_function=euclidean)
 plt.close()
 ```
-- **What to look for**: Disproportionately high magnitude in clusters indicates high internal dispersion / loose clusters.
-- **Action**: If a cluster has excessive magnitude relative to others, evaluate whether it contains multiple sub-populations.
+- **What to look for**: Disproportionately high magnitude in clusters indicating high internal dispersion.
+- **Action**: Check if high-magnitude clusters contain distinct sub-populations that warrant splitting.
+- **Caution**: Total magnitude naturally scales with the number of points; evaluate magnitude in tandem with cardinality.
 
-#### Step 4: Diagnose Anomalies (`plot_magnitude_vs_cardinality`)
-Under uniform density, cluster magnitude should scale roughly linearly with cardinality.
+#### Step 5: Diagnose Anomalies (`plot_magnitude_vs_cardinality`)
+Question: do all clusters exhibit consistent density, or do certain clusters have unusually high dispersion for their size?
 
 ```python
 from ds_utils.unsupervised import plot_magnitude_vs_cardinality
@@ -155,13 +195,12 @@ from ds_utils.unsupervised import plot_magnitude_vs_cardinality
 ax_joint = plot_magnitude_vs_cardinality(X_scaled, labels, kmeans.cluster_centers_, distance_function=euclidean)
 plt.close()
 ```
-- **Interpretation**: Points far above the trendline represent clusters with low cardinality but high magnitude (i.e. dispersed outliers). Points far below are unusually dense cores.
-- **Action**: Inspect high-magnitude/low-cardinality clusters for data quality issues or anomalous instances.
+- **What to look for**: Clusters lying far above the expected trend line (low cardinality but high magnitude).
+- **Action**: Flag points belonging to high-dispersion clusters for outlier inspection.
+- **Caution**: Clusters on opposite sides of the linear fit reflect different densities, not necessarily bad clustering.
 
-#### Step 5: Visualize Cluster Assignments (`plot_clusters` / `plot_clusters_plotly`)
-Create a 2D scatter plot of the clustering results. For data with more than 2 features, PCA (default), t-SNE, or UMAP reduces to 2D automatically.
-
-**Matplotlib variant:**
+#### Step 6: Visualize Cluster Assignments (`plot_clusters` / `plot_clusters_plotly`)
+Question: how do the clusters separate when projected into a 2D space?
 
 ```python
 from ds_utils.unsupervised import plot_clusters
@@ -173,40 +212,36 @@ ax_viz = plot_clusters(
     reduction_method="pca",
     random_state=42,
 )
-plt.show()
+plt.close()
 ```
+- **What to look for**: Visual separation, overlap, or boundary definition across clusters in 2D projection.
+- **Action**: Try t-SNE or UMAP if PCA does not resolve overlapping clusters (note: t-SNE cannot plot centroids).
+- **Caution**: 2D projection coordinates are for visual diagnosis only; never use reduced 2D coordinates as clustering features.
 
-**Plotly variant (interactive):**
+#### Step 7: Interpret the clusters
+Question: what are the concrete feature characteristics and profiles of each discovered cluster?
 
 ```python
-from ds_utils.unsupervised import plot_clusters_plotly
-
-fig = plot_clusters_plotly(
-    X_scaled,
-    labels,
-    kmeans.cluster_centers_,
-    reduction_method="pca",
-    random_state=42,
-)
-fig.show()
+# Profile clusters on original, unscaled feature values
+cluster_summary = X.assign(cluster=labels).groupby("cluster").mean()
+cluster_counts = pd.Series(labels, name="size").value_counts()
+print("Cluster sizes:\n", cluster_counts)
+print("Cluster mean profiles (unscaled):\n", cluster_summary)
 ```
-
-- **Axis labels**: With >2 features, axes are labeled PC1/PC2, t-SNE 1/2, or UMAP 1/2 depending on the method. With exactly 2 features, labels are "Feature 1"/"Feature 2" and no reduction is performed.
-- **Legend**: Entries are "Cluster <label>" plus "Centroids" when centers are drawn.
-- **t-SNE caveat**: t-SNE cannot transform new data, so centroids are **not** plotted (a `UserWarning` is emitted).
-- **Return types**: plot_clusters returns a matplotlib Axes (call plt.show()); plot_clusters_plotly returns a plotly Figure (call fig.show()).
+- **What to look for**: Distinct feature averages differentiating each cluster (e.g. high-spend vs low-frequency).
+- **Action**: Assign business labels to each cluster based on its feature profile.
+- **Caution**: Profiling on standardized data obscures real-world physical units; always compute profile means on the unscaled features.
 
 ---
 
 ## Examples
 
-### Complete Clustering Diagnostics Script
+### Runnable demo on a bundled dataset (replace the loading lines with your own data)
 
 ```python
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import euclidean
-from sklearn.datasets import make_blobs
+from sklearn.datasets import load_wine
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from ds_utils.unsupervised import (
@@ -218,34 +253,39 @@ from ds_utils.unsupervised import (
     plot_clusters_plotly,
 )
 
-# 1. Generate synthetic data
-X, _ = make_blobs(n_samples=200, centers=4, n_features=3, random_state=42)
-X_norm = StandardScaler().fit_transform(X)
+# 1. Load bundled dataset and standardize
+wine = load_wine(as_frame=True)
+X_raw = wine.data
+X_scaled = StandardScaler().fit_transform(X_raw)
 
-# 2. Find optimal k
-plot_loss_vs_cluster_number(X_norm, k_min=2, k_max=6, distance_function=euclidean)
+# 2. Diagnostic sweep for k
+ax_loss = plot_loss_vs_cluster_number(
+    X_scaled, k_min=2, k_max=6, distance_function=euclidean, algorithm_parameters=dict(random_state=42, n_init=10)
+)
 plt.close()
 
-# 3. Fit optimal KMeans
-model = KMeans(n_clusters=4, random_state=42)
-model.fit(X_norm)
+# 3. Fit KMeans with k=3
+km = KMeans(n_clusters=3, n_init=10, random_state=42)
+labels = km.fit_predict(X_scaled)
 
-# 4. Evaluate cardinality & magnitude
-plot_cluster_cardinality(model.labels_)
+# 4. Evaluate cardinality & magnitude diagnostics
+ax_card = plot_cluster_cardinality(labels)
 plt.close()
 
-plot_cluster_magnitude(X_norm, model.labels_, model.cluster_centers_, euclidean)
+ax_mag = plot_cluster_magnitude(X_scaled, labels, km.cluster_centers_, euclidean)
 plt.close()
 
-plot_magnitude_vs_cardinality(X_norm, model.labels_, model.cluster_centers_, euclidean)
+ax_joint = plot_magnitude_vs_cardinality(X_scaled, labels, km.cluster_centers_, euclidean)
 plt.close()
 
-# 5. Visualize clusters (matplotlib)
-plot_clusters(X_norm, model.labels_, model.cluster_centers_, reduction_method="pca", random_state=42)
+# 5. Visualize clusters in 2D (matplotlib and plotly variants)
+ax_clusters = plot_clusters(X_scaled, labels, km.cluster_centers_, reduction_method="pca", random_state=42)
 plt.close()
 
-# 6. Visualize clusters (Plotly)
-fig = plot_clusters_plotly(X_norm, model.labels_, model.cluster_centers_, reduction_method="pca", random_state=42)
+fig_clusters = plot_clusters_plotly(X_scaled, labels, km.cluster_centers_, reduction_method="pca", random_state=42)
+
+# 6. Profile cluster means on unscaled features
+profiles = X_raw.assign(cluster=labels).groupby("cluster").mean()
 ```
 
 ## Limitations
