@@ -26,13 +26,13 @@ Text analytics, split-safe tag feature binarization, and significant term extrac
 ds_utils.strings provides specialized string operations for feature engineering and text cohort analysis. It converts delimited tag fields into one-hot indicator columns while enforcing strict split-safety, and surfaces statistically overrepresented keywords in text subsets (such as churned customer complaints).
 
 - **When to use**: Encoding comma-separated metadata tags into binary features across train and test sets, or extracting distinctive vocabulary from specific document cohorts.
-- **When NOT to use**: For dense semantic sentence embeddings (use `ds-utils-transformers`), multi-label list pipelines with persistent estimators (use `MultiLabelBinarizerTransformer` in `ds-utils-transformers`), or tabular feature distributions (use `ds-utils-preprocess`).
+- **When NOT to use**: For dense semantic sentence embeddings (use ds-utils-transformers), multi-label list pipelines with persistent estimators (use MultiLabelBinarizerTransformer in ds-utils-transformers), or tabular feature distributions (use ds-utils-preprocess).
 
 ## Prerequisites
 
 - Python 3.11 or higher.
-- `data-science-utils` package installed (`pip install data-science-utils`).
-- Core dependencies: `numpy`, `pandas`, `scikit-learn`.
+- data-science-utils package installed (pip install data-science-utils).
+- Core dependencies: numpy, pandas, scikit-learn.
 
 ## Instructions
 
@@ -56,127 +56,159 @@ Full parameter specifications, return schemas, and common mistakes are documente
                ▼                               ▼
        Categorical Tags                 Freeform Text
                │                               │
-       Train / Test Split               Isolate Sub-Cohort
+       Profile Tag Column               Isolate Sub-Cohort
                │                         (e.g., churned users)
                ▼                               ▼
-   Split-Safe Tag Binarization     Significant Term Extraction
-    (append_tags_to_frame)         (extract_significant_terms)
-               │                               │
-               ▼                               ▼
-   Aligned Feature Matrices        Targeted Keyword Discovery
+       Train / Test Split          Significant Term Extraction
+               │                   (extract_significant_terms)
+               ▼                               │
+   Split-Safe Tag Binarization                 ▼
+    (append_tags_to_frame)         Targeted Keyword Discovery
+               │
+               ▼
+   Aligned Feature Matrices
 ```
 
-#### Step 1: Split-Safe Tag Feature Extraction (`append_tags_to_frame`)
-Raw data often contains comma-delimited multi-tags (e.g. `"python,sql,docker"`).
-- **Split-safe by design**: `append_tags_to_frame` accepts `x_train` and `x_test` simultaneously.
-- **Leakage prevention**: The tag vocabulary is derived **exclusively from `x_train`**. Unseen tags in `x_test` are dropped, and both resulting DataFrames share identical column sets and order.
-- **Mandatory usage rule**: Always pass `(x_train, x_test)` as separate frames. Never concatenate them prior to binarization.
+#### Inputs you need
+
+The steps below assume:
+- A DataFrame `df` with a comma-delimited tag column, an optional freeform text column, and an optional cohort indicator flag.
+- Your training and testing partitions (`train_df` and `test_df`).
 
 ```python
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from ds_utils.strings import append_tags_to_frame
 
-# 1. Sample data with tags
-raw_data = pd.DataFrame(
-    {
-        "user_id": range(6),
-        "skills": ["python,sql", "sql,aws", "python,docker", "sql,docker,aws", "kubernetes,aws", "python"],
-        "hired": [1, 0, 1, 1, 0, 1],
-    }
-)
-
-train_df, test_df = train_test_split(raw_data, test_size=0.33, random_state=42)
-
-# 2. Append tags split-safely
-train_encoded, test_encoded = append_tags_to_frame(train_df, test_df, field_name="skills", prefix="skill_")
-print("Engineered train columns:", [c for c in train_encoded.columns if c.startswith("skill_")])
-print("Engineered test columns: ", [c for c in test_encoded.columns if c.startswith("skill_")])
-assert list(train_encoded.columns) == list(test_encoded.columns)
+# Load your text / tag dataset (replace with your data)
+df = pd.read_csv("your_dataset")
+# train_df, test_df = train_test_split(df, test_size=0.25, random_state=42)
 ```
-- **What to look for**: Tag columns are binary 0/1 integers with prefix `skill_`.
-- **Action**: Pass `train_encoded` and `test_encoded` directly into standard estimators.
 
-#### Step 2: Significant Term Extraction in Subsets (`extract_significant_terms_from_subset`)
-Identify which terms occur unusually frequently in an anomalous or target subset compared to the wider background corpus. When discovered terms become model features and the cohort is defined by the target, compute them strictly on the training split to avoid target leakage into validation or test sets.
+#### Step 1: Profile the tag column before encoding
+Question: which tags exist in the data, how common are they, and how messy is the delimiter formatting?
 
 ```python
+tag_col = "skills"  # replace with your tag column name
+
+# 1. Tag prevalence across rows
+tag_counts = df[tag_col].dropna().str.split(",").explode().str.strip().str.lower().value_counts()
+print("Top 10 tags:\n", tag_counts.head(10))
+
+# 2. Tag cleanliness and missingness
+missing_ratio = df[tag_col].isna().mean()
+casing_variants = df[tag_col].dropna().str.split(",").explode().str.strip().nunique()
+tags_per_row = df[tag_col].dropna().str.split(",").apply(len).describe()
+print(f"Missing ratio: {missing_ratio:.2%}, Unique raw casings: {casing_variants}")
+print("Tags per row summary:\n", tags_per_row)
+```
+- **What to look for**: Discrepancies between lowercase and raw unique counts (casing variants), extreme long tails of one-off tags, and high missingness.
+- **Action**: Use the observed tag frequencies to configure `lowercase=True`, cap vocabulary with `max_features` (default 500), and choose a clear column `prefix`.
+- **Caution**: Missing values produce all-zero indicator rows without errors; confirm if missing tags should be imputed or handled explicitly.
+
+#### Step 2: Split-Safe Tag Feature Extraction (`append_tags_to_frame`)
+Question: how do we binarize multi-label tag strings into numeric columns without leaking test tags into training?
+
+```python
+from ds_utils.strings import append_tags_to_frame
+
+train_encoded, test_encoded = append_tags_to_frame(
+    train_df,
+    test_df,
+    field_name=tag_col,
+    prefix="tag_",
+    max_features=50,
+    lowercase=True,
+)
+print("Engineered train columns:", [c for c in train_encoded.columns if c.startswith("tag_")][:5])
+assert list(train_encoded.columns) == list(test_encoded.columns)
+```
+- **What to look for**: Identical column names and order across train and test sets.
+- **Action**: Pass `train_encoded` and `test_encoded` directly to estimators or downstream transformers.
+- **Caution**: Never concatenate train and test prior to encoding; `append_tags_to_frame` derives vocabulary strictly from `x_train`.
+
+#### Step 3: Significant Term Extraction in Subsets (`extract_significant_terms_from_subset`)
+Question: which words or phrases are statistically over-represented in a specific cohort compared to the full corpus?
+
+```python
+from sklearn.feature_extraction.text import CountVectorizer
 from ds_utils.strings import extract_significant_terms_from_subset
 
-corpus = pd.DataFrame(
-    {
-        "text": [
-            "login button is broken and crashing",
-            "smooth checkout experience very happy",
-            "app keeps crashing on android device",
-            "great product delivery fast",
-            "unable to login session expired",
-            "perfect service five stars",
-        ],
-        "is_complaint": [1, 0, 1, 0, 1, 0],
-    }
-)
+cohort_flag = "is_churn"  # replace with your cohort column
+text_col = "feedback"  # replace with your text column
 
-complaints_subset = corpus[corpus["is_complaint"] == 1]
+# Filter cohort and check size first
+cohort_df = train_df[train_df[cohort_flag] == 1]
+print(f"Cohort size: {len(cohort_df)} out of {len(train_df)} corpus records")
 
-from sklearn.feature_extraction.text import CountVectorizer
-
-# Extract terms that distinguish complaints from the full corpus (using stop_words='english')
 term_scores = extract_significant_terms_from_subset(
-    corpus,
-    complaints_subset,
-    field_name="text",
+    train_df,
+    cohort_df,
+    field_name=text_col,
     vectorizer=CountVectorizer(stop_words="english"),
 )
-top_distinctive = term_scores.sort_values(ascending=False).head(5)
-print("Top distinctive terms in complaints:\n", top_distinctive)
+print("Top distinctive terms in cohort:\n", term_scores.sort_values(ascending=False).head(10))
 ```
-- **Interpretation**: Higher scores indicate terms strongly over-represented in the subset compared to the general baseline (formula: `subset_freq / (superset_freq - subset_freq + 1)`, which is not bounded by 1.0).
-- **Action**: Use discovered significant terms as domain-informed keyword features or prioritize them in root-cause investigations.
+- **What to look for**: High scores indicating terms disproportionately present in the cohort relative to background occurrences.
+- **Action**: Investigate top terms for operational root-cause analysis or use them as domain-specific indicator features.
+- **Caution**: When cohort terms become model features, extract them strictly on the training partition to avoid target leakage. Read raw counts alongside term scores to ensure terms are not driven by single-document anomalies.
 
 ---
 
 ## Examples
 
-### Complete Feature Engineering Script
+### Runnable demo on a bundled dataset (replace the loading lines with your own data)
 
 ```python
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from ds_utils.strings import append_tags_to_frame
+from sklearn.feature_extraction.text import CountVectorizer
+from ds_utils.strings import append_tags_to_frame, extract_significant_terms_from_subset
 
-# 1. Dataset
-df = pd.DataFrame(
+# Format illustration only - replace with your column(s)
+raw_df = pd.DataFrame(
     {
-        "article_id": range(10),
-        "topics": [
-            "ai,ml",
-            "web,css",
-            "ml,dl",
-            "cloud,aws",
-            "web,javascript",
-            "ai,dl",
-            "cloud,docker",
-            "database,sql",
-            "database,nosql",
-            "ai,robotics",
+        "user_id": [101, 102, 103, 104, 105, 106, 107, 108],
+        "roles": [
+            "engineer,python",
+            "analyst,sql",
+            "engineer,cloud,aws",
+            "analyst,python,sql",
+            "manager,agile",
+            "engineer,python,docker",
+            "manager,finance",
+            "engineer,sql,docker",
         ],
-        "views": [500, 120, 800, 300, 150, 950, 400, 250, 200, 600],
-        "is_viral": [1, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+        "feedback": [
+            "fast pipeline deployment issue resolved",
+            "dashboard query is very slow and lagging",
+            "cloud storage bucket quota exceeded",
+            "report numbers are lagging and inaccurate",
+            "team meeting schedule aligned",
+            "container deployment failed with timeout",
+            "budget allocation approved",
+            "database connection pool issue",
+        ],
+        "flag": [1, 0, 1, 0, 0, 1, 0, 1],
     }
 )
 
-train_split, test_split = train_test_split(df, test_size=0.3, random_state=42)
+train_df, test_df = train_test_split(raw_df, test_size=0.25, random_state=42)
 
-# 2. Tag binarization
-train_feat, test_feat = append_tags_to_frame(train_split, test_split, field_name="topics", prefix="topic_")
+# 1. Profile tags on training split
+tag_prevalence = train_df["roles"].dropna().str.split(",").explode().str.strip().str.lower().value_counts()
 
-# 3. Model training on engineered tags
-tag_cols = [c for c in train_feat.columns if c.startswith("topic_")]
-clf = RandomForestClassifier(random_state=42)
-clf.fit(train_feat[tag_cols], train_feat["is_viral"])
-predictions = clf.predict(test_feat[tag_cols])
+# 2. Append tags split-safely
+train_enc, test_enc = append_tags_to_frame(train_df, test_df, field_name="roles", prefix="role_", lowercase=True)
+assert list(train_enc.columns) == list(test_enc.columns)
+
+# 3. Extract distinctive terms for cohort (flag == 1) on train split only
+cohort = train_df[train_df["flag"] == 1]
+scores = extract_significant_terms_from_subset(
+    train_df,
+    cohort,
+    field_name="feedback",
+    vectorizer=CountVectorizer(stop_words="english"),
+)
+top_terms = scores.sort_values(ascending=False).head(3)
 ```
 
 ## Limitations

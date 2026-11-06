@@ -28,14 +28,14 @@ ds_utils.transformers resolves standard scikit-learn API incompatibilities when 
 2. `SentenceEmbeddingTransformer`: Encodes text columns into dense semantic vectors using `sentence-transformers` within unified sklearn workflows.
 
 - **When to use**: Building composite feature processing pipelines combining tabular, categorical lists, and unstructured text into a single deployable scikit-learn Pipeline.
-- **When NOT to use**: For standalone functional tag appending without pipeline persistence (use `ds-utils-strings`), or exploratory correlation plots (use `ds-utils-preprocess`).
+- **When NOT to use**: For standalone functional tag appending without pipeline persistence (use ds-utils-strings), or exploratory correlation plots (use ds-utils-preprocess).
 
 ## Prerequisites
 
 - Python 3.11 or higher.
-- `data-science-utils` package installed (`pip install data-science-utils`).
-- Core dependencies: `numpy`, `pandas`, `scikit-learn`.
-- Optional dependency for `SentenceEmbeddingTransformer`: `pip install data-science-utils[nlp]` (provides `sentence-transformers` and `torch`).
+- data-science-utils package installed (pip install data-science-utils).
+- Core dependencies: numpy, pandas, scikit-learn.
+- Optional dependency for `SentenceEmbeddingTransformer`: pip install data-science-utils[nlp] (provides sentence-transformers and torch).
 
 ## Instructions
 
@@ -73,133 +73,146 @@ A typical production dataset contains mixed data types: numerical columns, a mul
         (e.g., RandomForestClassifier)
 ```
 
-#### Step 1: Multi-Label Tag Transformation
-Scikit-learn's native `MultiLabelBinarizer` lacks the standard estimator signature and fails inside `ColumnTransformer`. `MultiLabelBinarizerTransformer` adheres strictly to the transformer API.
-- **Input format**: Must be an iterable of iterables (e.g. `pd.Series([["action", "sci-fi"], ["romance"]])`).
-- **Feature naming**: Generates `{column}_{sanitized_label}` safely.
+#### Inputs you need
+
+The steps below assume:
+- A DataFrame `df` containing numeric column(s), a list-of-tags column (or delimited string), a text column, and a target column.
+- Your training and testing partitions (`X_train`, `y_train`, `X_test`, `y_test`).
 
 ```python
 import pandas as pd
-from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
-X_tags = [["python", "cloud"], ["sql"], ["cloud", "docker"]]
-mlb = MultiLabelBinarizerTransformer()
-mlb.set_output(transform="pandas")
-df_tags = mlb.fit_transform(X_tags)
-print(df_tags.columns.tolist())
-# Output: ['label_cloud', 'label_docker', 'label_python', 'label_sql']
+# Load your multimodal dataset (replace with your data)
+df = pd.read_csv("your_dataset")
+# Note: If your tag column is a delimited string (e.g. "python,sql"), convert to lists first:
+# df["tags"] = df["tags"].fillna("").str.split(",")
+# X_train, X_test, y_train, y_test = train_test_split(df.drop(columns=["target"]), df["target"], ...)
 ```
 
+#### Step 1: Multi-Label Tag Transformation
+Question: how do we encode multi-label tag lists into indicator columns inside a scikit-learn Pipeline?
+
+```python
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
+
+# Format illustration only - replace with your column(s)
+sample_tags = [["python", "cloud"], ["sql"], ["cloud", "docker"]]
+
+mlb = MultiLabelBinarizerTransformer()
+mlb.set_output(transform="pandas")
+df_tags = mlb.fit_transform(sample_tags)
+print(df_tags.columns.tolist())
+```
+- **What to look for**: Clean feature column names prefixed with `label_`.
+- **Action**: Use `MultiLabelBinarizerTransformer` as a stage inside `ColumnTransformer`. If your raw data contains delimited strings, split them into Python lists via `df[col].str.split(",")` before transforming.
+- **Caution**: The transformer expects an iterable of iterables; passing flat strings directly treats whole strings as single labels.
+
 #### Step 2: Dense Semantic Embeddings (`SentenceEmbeddingTransformer`)
-Converts raw text into semantic vectors without manual torch tokenization.
-- **Dependency**: Requires `pip install data-science-utils[nlp]`.
-- **Robustness**: Handles `None` and `NaN` values by converting them to empty strings.
+Question: how do we transform unstructured text descriptions into dense semantic vectors within a Pipeline?
 
 ```python
 from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer
 
-texts = ["Production database incident", "Quarterly financial report", "Bug report: UI login failure"]
+# Format illustration only - replace with your column(s)
+sample_texts = ["Production database incident", "Quarterly financial report", "Bug report: UI login failure"]
+
 embedder = SentenceEmbeddingTransformer(normalize_embeddings=True)
 embedder.set_output(transform="pandas")
-df_embed = embedder.fit_transform(texts)
-print(f"Embedding shape: {df_embed.shape}, Features: {df_embed.columns[:3].tolist()}...")
+df_embed = embedder.fit_transform(sample_texts)
+print(f"Embedding shape: {df_embed.shape}")
 ```
+- **What to look for**: A 2D array or DataFrame with 384 embedding dimensions (for the default model).
+- **Action**: Pass single text column names to `SentenceEmbeddingTransformer` inside `ColumnTransformer`.
+- **Caution**: SentenceEmbeddingTransformer downloads HuggingFace model `sentence-transformers/all-MiniLM-L6-v2` on first use, which requires internet access or a local model path.
 
-#### Step 3: Composite ColumnTransformer & Pipeline
-Combine numeric, categorical list, and text features into a single reproducible pipeline.
+#### Step 3: Composite ColumnTransformer & Model Evaluation
+Question: does our composite multimodal feature representation improve cross-validated model performance without data leakage?
 
 ```python
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
-# Synthetic dataset with mixed features
-df = pd.DataFrame(
-    {
-        "price": [19.99, 49.99, 99.99, 15.00, 29.99, 89.99, 12.50, 65.00],
-        "categories": [
-            ["electronics", "audio"],
-            ["home"],
-            ["electronics", "gaming"],
-            ["home"],
-            ["electronics"],
-            ["audio", "gaming"],
-            ["home", "kitchen"],
-            ["electronics", "home"],
-        ],
-        "title": [
-            "Wireless bluetooth headphones",
-            "Ceramic kitchen mug",
-            "Mechanical gaming keyboard",
-            "Cotton bath towel",
-            "USB-C fast charging cable",
-            "Surround sound gaming headset",
-            "Stainless steel cutlery set",
-            "Smart LED desk lamp",
-        ],
-        "high_seller": [1, 0, 1, 0, 1, 1, 0, 0],
-    }
-)
-
-train_df, test_df = train_test_split(df, test_size=0.25, random_state=42)
-
+# Configure ColumnTransformer targeting your specific feature columns
 preprocessor = ColumnTransformer(
     transformers=[
-        ("num", StandardScaler(), ["price"]),
-        ("tags", MultiLabelBinarizerTransformer(), "categories"),
-        ("text", SentenceEmbeddingTransformer(normalize_embeddings=True), "title"),
+        ("num", StandardScaler(), ["numeric_feature"]),
+        ("tags", MultiLabelBinarizerTransformer(), "tag_feature"),
     ]
 )
+pipeline = Pipeline([("features", preprocessor), ("model", RandomForestClassifier(random_state=42))])
 
-pipeline = Pipeline(
-    [
-        ("features", preprocessor),
-        ("model", RandomForestClassifier(random_state=42)),
-    ]
-)
+# 1. Fit transformer and verify vocabulary extracted strictly from training data
+preprocessor.fit(X_train)
+tag_features = [f for f in preprocessor.get_feature_names_out() if f.startswith("tags__")]
+print(f"Learned {len(tag_features)} tag features from train split")
 
-# Fit on train, predict on held-out test to preserve strict separation
-pipeline.fit(train_df, train_df["high_seller"])
-preds = pipeline.predict(test_df)
+# 2. Evaluate with cross-validation on train split
+scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring="accuracy")
+print(f"5-Fold CV Accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")
+
+# 3. Fit on full training set, and evaluate once on held-out test data
+pipeline.fit(X_train, y_train)
+test_accuracy = pipeline.score(X_test, y_test)
+print(f"Held-out Test Accuracy: {test_accuracy:.3f}")
 ```
-- **What to look for**: Pipeline executes without type errors or dimension mismatches; transforms seamlessly during `fit` and `predict`.
-- **Action**: Serialize the entire fitted pipeline using `joblib.dump(pipeline, model_path)`. Note that `SentenceEmbeddingTransformer` downloads the HuggingFace model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) on first use, so it requires internet access or a local `model_name` path.
+- **What to look for**: Cross-validation scores across folds, and confirming `get_feature_names_out()` reflects training vocabulary only.
+- **Action**: Compare feature subsets (e.g. drop numeric or tag branches) to measure incremental utility.
+- **Caution**: Touch the test set only once after feature selection and hyperparameters are finalized. Unseen tags appearing in test will be ignored with a warning.
 
 ---
 
 ## Examples
 
-### End-to-End Pipeline with Pandas Output
+### Runnable demo on a bundled dataset (replace the loading lines with your own data)
 
 ```python
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
 
-# 1. Dataset with numeric and multi-label columns
+# Format illustration only - replace with your column(s)
 data = pd.DataFrame(
     {
-        "age": [25, 34, 45],
-        "skills": [["python", "data"], ["sql"], ["python", "sql", "git"]],
+        "tenure": [12, 24, 6, 36, 18, 48, 8, 30],
+        "monthly_spend": [45.0, 70.5, 30.0, 95.0, 60.0, 110.0, 40.0, 85.0],
+        "services": [
+            ["phone", "internet"],
+            ["internet"],
+            ["phone"],
+            ["phone", "internet", "streaming"],
+            ["internet", "streaming"],
+            ["phone", "internet", "streaming"],
+            ["phone"],
+            ["internet", "streaming"],
+        ],
+        "churn": [0, 1, 0, 1, 0, 1, 0, 1],
     }
 )
 
-# 2. Build ColumnTransformer with pandas output
+X = data[["tenure", "monthly_spend", "services"]]
+y = data["churn"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+# Build ColumnTransformer with pandas output (runs offline without NLP model downloads)
 preprocessor = ColumnTransformer(
     [
-        ("num", StandardScaler(), ["age"]),
-        ("tags", MultiLabelBinarizerTransformer(), "skills"),
+        ("num", StandardScaler(), ["tenure", "monthly_spend"]),
+        ("tags", MultiLabelBinarizerTransformer(), "services"),
     ]
 )
 preprocessor.set_output(transform="pandas")
 
-# 3. Transform and verify columns
-processed = preprocessor.fit_transform(data)
-print(processed.head())
-assert any("python" in c for c in processed.columns)
+processed_train = preprocessor.fit_transform(X_train)
+processed_test = preprocessor.transform(X_test)
+
+feature_names = preprocessor.get_feature_names_out().tolist()
+assert any("services" in f for f in feature_names)
 ```
 
 ## Limitations
