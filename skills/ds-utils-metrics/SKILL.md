@@ -2,7 +2,7 @@
 name: ds-utils-metrics
 description: >
   Machine learning model evaluation, classification diagnostics, threshold tuning, and error slicing. Use for confusion matrices, interactive ROC/PR curves with threshold annotations, probability calibration analysis, error reports, and time-series directional metrics. Do NOT use for data preprocessing or clustering.
-version: "1.0.0"
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -23,7 +23,7 @@ Comprehensive model evaluation, interactive threshold tuning, probability calibr
 
 ## Purpose
 
-`ds_utils.metrics` provides diagnostic visualizations and error analysis tools for evaluating predictive models. It bridges standard metric calculation with practical decision-making: finding optimal operational thresholds, detecting probability miscalibration, identifying underperforming data slices, and quantifying regression error profiles.
+ds_utils.metrics provides diagnostic visualizations and error analysis tools for evaluating predictive models. It bridges standard metric calculation with practical decision-making: finding optimal operational thresholds, detecting probability miscalibration, identifying underperforming data slices, and quantifying regression error profiles.
 
 - **When to use**: Model validation, comparing competing candidate classifiers, selecting probability decision thresholds, diagnosing error concentrations across feature sub-populations, or forecasting trend directional accuracy.
 - **When NOT to use**: For data exploration prior to training (use `ds-utils-preprocess`), tree interpretability diagrams (use `ds-utils-xai`), or clustering evaluation (use `ds-utils-unsupervised`).
@@ -101,7 +101,7 @@ plt.close()
 ##### Step 2: Interactive Threshold Selection (`plot_roc_curve_with_thresholds_annotations`)
 Determine the optimal classification cutoff using annotated Plotly curves.
 - **Input requirement**: Pass a dictionary where values are **1D arrays of the positive class probabilities**. Use `clf.classes_` to extract the correct column safely: `pos_idx = int(np.where(clf.classes_ == positive_label)[0][0]); proba = clf.predict_proba(X)[:, pos_idx]`.
-- **Return type**: Returns a `plotly.graph_objects.Figure`. Display with `fig.show()` or write using `fig.write_html()`.
+- **Return type**: Returns a plotly `Figure`. Display with `fig.show()` or write using `fig.write_html()`.
 
 ```python
 from ds_utils.metrics.curves import (
@@ -116,7 +116,7 @@ fig_roc = plot_roc_curve_with_thresholds_annotations(y_true, models_dict, positi
 fig_pr = plot_precision_recall_curve_with_thresholds_annotations(y_true, models_dict, positive_label=1)
 ```
 - **Interpretation**: Hover over curve points to inspect the concrete threshold that achieves the required precision or recall.
-- **Action**: Adopt the annotated threshold for decision cutoffs instead of defaulting to 0.5.
+- **Action**: Adopt the annotated threshold for decision cutoffs instead of defaulting to 0.5. Choose the threshold on validation data or out-of-fold predictions, then report final metrics on a held-out test set (selecting the threshold directly on the test set produces overly optimistic results).
 
 ##### Step 3: Coarse Probability Overconfidence Check (`visualize_accuracy_grouped_by_probability`)
 Inspect stacked TP/TN/FP/FN counts per probability bin to detect overconfidence or decision skew.
@@ -154,7 +154,7 @@ plt.close()
 report = generate_error_analysis_report(X_demo, y_true, y_pred, feature_columns=["age", "channel"], bins=3, min_count=1)
 print(report.head())
 ```
-- **Interpretation**: Examine slices where `error_rate` is elevated despite adequate sample `count`.
+- **Interpretation**: `plot_error_analysis_chart` shows predicted probability distributions for false positives and false negatives (not cohort slices), whereas `generate_error_analysis_report` is the cohort slicer that breaks down error rates across feature bins. Examine slices where `error_rate` is elevated despite adequate sample `count`.
 - **Action**: Collect additional training instances for high-error cohorts or engineer targeted features.
 
 ---
@@ -239,6 +239,7 @@ cohort_report = generate_error_analysis_report(X_test, y_test, y_pred, bins=3)
 
 ## Limitations
 
+- **Threshold selection data**: The classification decision threshold must be tuned on validation data or out-of-fold cross-validation predictions and then evaluated on a held-out test set; picking it on the final test set yields overly optimistic numbers.
 - **Engine differences**: Matplotlib functions (`plot_confusion_matrix`, `visualize_accuracy_grouped_by_probability`, `plot_error_analysis_chart`) return `Axes`. Plotly functions (`plot_roc...`, `plot_precision_recall...`, `plot_rec...`) return `Figure` objects requiring `fig.show()` or `fig.write_html()`.
 - **Probabilities formatting**: `visualize_accuracy_grouped_by_probability` requires a 1D probability array for the specific `labeled_class`, aligned with `clf.classes_`.
 - **Directional minimum samples**: `directional_accuracy_score` with `baseline=None` requires at least 2 samples since the first sample establishes the prior baseline.

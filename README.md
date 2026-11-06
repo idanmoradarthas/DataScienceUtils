@@ -851,6 +851,10 @@ ruff format .
 
 These checks are also part of our CI pipeline.
 
+### Agent skills
+
+If you change anything under `skills/`, validate it with NVIDIA's [SkillEvaluator](https://github.com/NVIDIA/SkillEvaluator) by running `./eval-skills.sh` (`eval-skills.bat` on Windows). See [Validating Skills with NVIDIA SkillEvaluator](https://datascienceutils.readthedocs.io/en/stable/ai_skills.html#validating-skills-with-nvidia-skillevaluator) for full prerequisites and instructions.
+
 ### Why Contribute?
 
 - **Improve your skills**: Gain experience working on a real-world project.
@@ -870,9 +874,7 @@ script, because it installs the package and AI skills in one guided flow.
 
 ### 1. Preferred: Install using the skills installer script
 
-DataScienceUtils ships AI skills that teach Claude Code, Cursor, GitHub Copilot,
-and Gemini CLI how to use this library correctly — including function signatures,
-import paths, and common pitfalls.
+DataScienceUtils ships AI skills that teach Claude Code, Cursor, GitHub Copilot, Gemini CLI, and Antigravity how to use this library as step-by-step workflows: which function to pick, the correct import paths, runnable examples, and common pitfalls. There is one skill per module: metrics, preprocess, strings, transformers, unsupervised, and xai.
 
 **Mac / Linux:**
 ```bash
@@ -885,7 +887,7 @@ irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/in
 ```
 
 The installer will:
-- Detect which AI tools you have installed (Claude Code, Cursor, GitHub Copilot, Gemini CLI)
+- Detect which AI tools you have installed (Claude Code, Cursor, GitHub Copilot, Gemini CLI, Antigravity)
 - Ask whether to install for the current project or globally
 - Auto-detect pip or conda and install `data-science-utils`
 - Copy skill files into the correct directory for each detected tool

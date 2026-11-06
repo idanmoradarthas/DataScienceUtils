@@ -3,10 +3,10 @@ AI Coding Skills
 ================
 
 DataScienceUtils ships a set of *AI skills* — structured knowledge files that
-teach AI coding assistants (Claude Code, Cursor, GitHub Copilot, Gemini CLI)
-how to use this library correctly. Skills eliminate the most common mistakes:
-wrong import paths, dtype-dependent behaviour, argument ordering pitfalls, and
-API differences between matplotlib and Plotly outputs.
+teach AI coding assistants (Claude Code, Cursor, GitHub Copilot, Gemini CLI,
+and Antigravity) how to use this library as end-to-end workflows: choosing the
+right function, using correct import paths, following runnable examples, and
+troubleshooting common pitfalls.
 
 What Are Skills?
 ----------------
@@ -230,7 +230,9 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
    .. code-block:: powershell
 
        irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-       .\install.ps1 -SkillsOnly
+       powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkillsOnly
+
+   Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
 
 On **Windows (PowerShell)**, the same selector appears with slightly different characters:
 
@@ -412,7 +414,7 @@ Expected output:
     ----  -------------    ------ ----
     -a--- 01/01/2026 ...     2048 SKILL.md
 
-    (repeated for each of the 5 skills × number of tools selected)
+    (repeated for each of the 6 skills × number of tools selected)
 
 On Mac / Linux, if ``find`` returns nothing, the skill files were not placed
 correctly. On Windows, if ``Get-ChildItem`` returns nothing, the same applies.
@@ -423,6 +425,7 @@ In either case, re-run the installer or follow the Manual Installation section b
 Open your project in your AI coding tool — no restart needed. Then give two concrete example prompts to try:
 
 - ``"Plot a confusion matrix for my classifier using ds_utils"``
+- ``"Use ds_utils to find highly correlated features in my DataFrame"``
 
 The AI will automatically load the relevant skill and follow the correct import paths, function signatures, and usage patterns for DataScienceUtils.
 
@@ -484,7 +487,9 @@ PowerShell equivalent — download first, then run with parameters:
 .. code-block:: powershell
 
     irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-    .\install.ps1 -SkillsOnly -Global -Tools "claude" -Force
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkillsOnly -Global -Tools "claude" -Force
+
+Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
 
 Manual Installation
 -------------------
@@ -545,10 +550,10 @@ Available Skills
      - What it covers
    * - ds-utils-metrics
      - ds_utils.metrics
-     - Confusion matrix, ROC, PR, learning curves, probability analysis
+     - Confusion matrix, ROC and precision-recall curves with threshold annotations, REC curves, directional metrics, probability and error analysis, learning curves
    * - ds-utils-preprocess
      - ds_utils.preprocess
-     - Feature visualization, correlation, statistics, mutual information
+     - Feature visualization, correlation and dendrogram, statistics, mutual information, PCA explained variance
    * - ds-utils-unsupervised
      - ds_utils.unsupervised
      - Cluster cardinality, magnitude, optimal k, 2D cluster scatter plots (PCA/t-SNE/UMAP)
@@ -557,10 +562,10 @@ Available Skills
      - Tag encoding, significant term extraction
    * - ds-utils-transformers
      - ds_utils.transformers
-     - Multi-label binarization for pipelines, feature names, pandas output
+     - Multi-label binarization and sentence embeddings as scikit-learn pipeline steps (feature names, pandas output)
    * - ds-utils-xai
      - ds_utils.xai
-     - Feature importance visualization
+     - Feature importance plots and decision-tree path visualization
 
 Updating Skills
 ---------------
@@ -575,7 +580,9 @@ On **Windows (PowerShell)**:
 .. code-block:: powershell
 
     irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-    .\install.ps1 -Force
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Force
+
+Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
 
 .. _Validating Skills with NVIDIA SkillEvaluator:
 
@@ -593,14 +600,17 @@ Install the pinned versions of SkillEvaluator and SkillSpector matching ``requir
     uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
     uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
 
-External security scanners (Semgrep and Gitleaks) provide full static security coverage:
+External security scanners provide static security coverage: Gitleaks is required for static secret detection, while Semgrep is optional (its absence triggers a non-blocking warning). Install the pinned Gitleaks release (v8.28.0) from GitHub releases (e.g. ``gitleaks_8.28.0_linux_x64.tar.gz``) rather than ``go install ...@latest``:
 
 .. code-block:: bash
 
-    pip install semgrep
-    # For Gitleaks: brew install gitleaks (macOS) or go install github.com/gitleaks/gitleaks/v8@latest
+    # Pinned Gitleaks v8.28.0 binary installation
+    curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks
 
-Without ``skillspector`` and ``gitleaks``, ``skillevaluator tier1 --no-llm`` reports ``INCOMPLETE`` and exits 1, whereas ``skillevaluator quality-check`` does not require external security scanners and passes.
+    # Optional: Semgrep (omitting triggers a non-blocking warning)
+    pip install semgrep
+
+Only ``quality-check`` and Tier 1 static validation (``tier1 --no-llm``) are run; Tier 2 and Tier 3 validation stages are not executed. With both ``skillspector`` and ``gitleaks`` installed, all six skills pass static checks completely without reporting ``INCOMPLETE``. To maintain complete Tier 1 static validation, ``SKILL.md`` prose and frontmatter must avoid backticked or quoted ``name.ext`` tokens that could be misinterpreted as missing bundled files (guarded by ``test_skill_md_has_no_unresolved_path_like_tokens`` in ``tests/test_skills_docs.py``).
 
 **Running Static Validation and Quality Checks**
 

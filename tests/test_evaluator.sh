@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Hermetic unit tests for eval-skills.sh using a mock/stub skillevaluator
+# Test suite for eval-skills.sh: Scenarios 1-4 are hermetic using a stub skillevaluator;
+# Scenario 5 is an integration check using real tools when available.
 set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,7 +11,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "=== Running Hermetic Evaluator Test Suite ==="
+echo "=== Running Evaluator Test Suite (Hermetic & Integration) ==="
 
 BIN_DIR="$TEST_TMP/bin"
 mkdir -p "$BIN_DIR"
@@ -116,5 +117,44 @@ else
   exit 1
 fi
 
+# Scenario 5: Real tools integration check
 echo ""
-echo "=== All 4 hermetic evaluator test scenarios passed successfully! ==="
+echo "--- Scenario 5: Real Tools Integration Check ---"
+MISSING_TOOL=""
+if ! command -v skillevaluator >/dev/null 2>&1; then
+  MISSING_TOOL="skillevaluator"
+elif ! command -v skillspector >/dev/null 2>&1; then
+  MISSING_TOOL="skillspector"
+elif ! command -v gitleaks >/dev/null 2>&1; then
+  MISSING_TOOL="gitleaks"
+fi
+
+if [ -n "$MISSING_TOOL" ]; then
+  if [ "${REQUIRE_REAL_EVALUATOR:-0}" = "1" ]; then
+    echo "✗ Scenario 5 FAILED: $MISSING_TOOL not found on PATH but REQUIRE_REAL_EVALUATOR=1 is set!" >&2
+    exit 1
+  else
+    echo "Scenario 5 SKIPPED: $MISSING_TOOL not found on PATH."
+  fi
+else
+  REAL_OUT_DIR="$TEST_TMP/real_reports"
+  OUT5=$("$REPO_ROOT/eval-skills.sh" -o "$REAL_OUT_DIR" 2>&1)
+  RC5=$?
+
+  if [ $RC5 -eq 0 ]; then
+    # Verify summary has exactly six ds-utils-* rows and all six have PASS (0) in both columns
+    PASS_COUNT=$(echo "$OUT5" | grep -E '^ds-utils-[a-z]+ +\| +PASS \(0\) +\| +PASS \(0\)' | wc -l)
+    if [ "$PASS_COUNT" -eq 6 ]; then
+      echo "✓ Scenario 5 passed: Real evaluator succeeded with all 6 skills showing PASS (0) in Quality and Tier 1."
+    else
+      echo "✗ Scenario 5 FAILED: Expected 6 PASS (0) rows but found $PASS_COUNT. Output:\n$OUT5" >&2
+      exit 1
+    fi
+  else
+    echo "✗ Scenario 5 FAILED! eval-skills.sh exited $RC5. Output:\n$OUT5" >&2
+    exit 1
+  fi
+fi
+
+echo ""
+echo "=== Evaluator test suite finished successfully! ==="

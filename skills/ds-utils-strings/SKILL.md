@@ -2,7 +2,7 @@
 name: ds-utils-strings
 description: >
   String preprocessing, split-safe tag encoding, and significant term extraction. Use for converting comma-separated tag columns into model-ready features across train/test splits, or discovering distinctive text terms in document cohorts. Do NOT use for sentence embeddings or general tabular preprocessing.
-version: "1.0.0"
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -23,7 +23,7 @@ Text analytics, split-safe tag feature binarization, and significant term extrac
 
 ## Purpose
 
-`ds_utils.strings` provides specialized string operations for feature engineering and text cohort analysis. It converts delimited tag fields into one-hot indicator columns while enforcing strict split-safety, and surfaces statistically overrepresented keywords in text subsets (such as churned customer complaints).
+ds_utils.strings provides specialized string operations for feature engineering and text cohort analysis. It converts delimited tag fields into one-hot indicator columns while enforcing strict split-safety, and surfaces statistically overrepresented keywords in text subsets (such as churned customer complaints).
 
 - **When to use**: Encoding comma-separated metadata tags into binary features across train and test sets, or extracting distinctive vocabulary from specific document cohorts.
 - **When NOT to use**: For dense semantic sentence embeddings (use `ds-utils-transformers`), multi-label list pipelines with persistent estimators (use `MultiLabelBinarizerTransformer` in `ds-utils-transformers`), or tabular feature distributions (use `ds-utils-preprocess`).
@@ -98,7 +98,7 @@ assert list(train_encoded.columns) == list(test_encoded.columns)
 - **Action**: Pass `train_encoded` and `test_encoded` directly into standard estimators.
 
 #### Step 2: Significant Term Extraction in Subsets (`extract_significant_terms_from_subset`)
-Identify which terms occur unusually frequently in an anomalous or target subset compared to the wider background corpus.
+Identify which terms occur unusually frequently in an anomalous or target subset compared to the wider background corpus. When discovered terms become model features and the cohort is defined by the target, compute them strictly on the training split to avoid target leakage into validation or test sets.
 
 ```python
 from ds_utils.strings import extract_significant_terms_from_subset
@@ -181,6 +181,7 @@ predictions = clf.predict(test_feat[tag_cols])
 
 ## Limitations
 
+- **Feature extraction on training split only**: When terms extracted via `extract_significant_terms_from_subset` are used as downstream model features and the subset is derived from the target variable, they must be computed on the training partition only to prevent data leakage.
 - **No persistent transformer instance**: `append_tags_to_frame` is a functional helper that transforms train and test together. It does not return a fitted object to persist for standalone inference on future rows. For an sklearn `Pipeline` / `ColumnTransformer` with `fit` and `transform`, use `MultiLabelBinarizerTransformer` from `ds-utils-transformers`.
 - **Delimited strings only**: Expects comma-delimited strings (e.g. `"tag1,tag2"`). For Python lists of strings, use `MultiLabelBinarizerTransformer`.
 - **Case sensitivity**: `lowercase=False` by default; distinct casings (e.g. `"Python"` and `"python"`) yield separate columns unless `lowercase=True` is explicitly passed.
@@ -192,6 +193,6 @@ predictions = clf.predict(test_feat[tag_cols])
 |---|---|---|
 | Mismatched columns in train and test | Called `append_tags_to_frame` separately on train and test | Call `append_tags_to_frame(train, test, ...)` together in one call |
 | Test vocabulary leaked into model | Concatenated train and test before calling `append_tags_to_frame` | Keep train and test strictly partitioned |
-| Silent all-zero indicator rows | Missing (`NaN`, `None`) or non-string values in the tag column | Missing or non-string entries are handled silently by producing all zeros across tag indicators |
+| Silent all-zero indicator rows | Missing (`NaN`, `None`) or non-string values in the tag column | Check `df[col].isna().sum()` and decide whether to fill or drop before encoding; all-zero rows are the expected output for missing tags |
 | Common stop words ranked as significant | Default CountVectorizer does not filter English stop words | Pass `vectorizer=CountVectorizer(stop_words='english')` to `extract_significant_terms_from_subset` |
 | Need to serialize transformer for production inference or pipeline integration | `append_tags_to_frame` is a functional helper that transforms train and test together without separate fit/transform methods or persistent vocabulary state | Use `MultiLabelBinarizerTransformer` from `ds-utils-transformers` inside an sklearn `Pipeline` / `ColumnTransformer` |

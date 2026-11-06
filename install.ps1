@@ -29,7 +29,15 @@ $RAW_URL = if ($env:RAW_URL) { $env:RAW_URL } else { "https://raw.githubusercont
 $SKILLS  = @("metrics", "preprocess", "unsupervised", "strings", "transformers", "xai")
 $SCOPE   = if ($Global) { "global" } else { "project" }
 
-# ── Colors ───────────────────────────────────────────────────────
+# This script must remain pure ASCII without a BOM so that Windows PowerShell 5.1
+# and cmd.exe parse it correctly under ANSI code pages without delimiter corruption.
+$GlyphOk    = [string][char]0x2713
+$GlyphErr   = [string][char]0x2717
+$GlyphArrow = [string][char]0x2192
+$GlyphDash  = [string][char]0x2014
+$GlyphRule  = [string][char]0x2500
+
+# -- Colors ----------------------------------------------------
 function Stop-Installer([int]$code, [string]$msg = "") {
     if ($code -ne 0) {
         $global:LASTEXITCODE = $code
@@ -47,15 +55,15 @@ function Stop-Installer([int]$code, [string]$msg = "") {
     }
 }
 
-function Write-Ok($msg)   { if (-not $Silent) { Write-Host "  " -NoNewline; Write-Host "✓ " -ForegroundColor Green -NoNewline; Write-Host $msg } }
+function Write-Ok($msg)   { if (-not $Silent) { Write-Host "  " -NoNewline; Write-Host "$GlyphOk " -ForegroundColor Green -NoNewline; Write-Host $msg } }
 function Write-Warn($msg) { if (-not $Silent) { Write-Host "  " -NoNewline; Write-Host "! " -ForegroundColor Yellow -NoNewline; Write-Host $msg } }
 
 function Write-Err($msg)  {
     if ($Silent) {
-        [Console]::Error.WriteLine("  ✗ $msg")
+        [Console]::Error.WriteLine("  $GlyphErr $msg")
     } else {
         Write-Host "  " -NoNewline
-        Write-Host "✗ " -ForegroundColor Red -NoNewline
+        Write-Host "$GlyphErr " -ForegroundColor Red -NoNewline
         Write-Host $msg
     }
     Stop-Installer 1 $msg
@@ -64,7 +72,7 @@ function Write-Step($msg) { if (-not $Silent) { Write-Host ""; Write-Host $msg -
 function Write-Msg($msg)  { if (-not $Silent) { Write-Host "  $msg" } }
 function Write-Dim($msg)  { if (-not $Silent) { Write-Host "  $msg" -ForegroundColor DarkGray } }
 
-# ── Interactive checkbox selector ────────────────────────────────
+# -- Interactive checkbox selector ----------------------------------------------------
 function Show-Checkbox {
     param([array]$Items)   # Each item: @{Label; Value; Selected; Hint}
 
@@ -132,7 +140,7 @@ function Show-Checkbox {
     return ($Items | Where-Object { $_.Selected } | ForEach-Object { $_.Value })
 }
 
-# ── Interactive radio selector ────────────────────────────────────
+# -- Interactive radio selector ----------------------------------------------------
 function Show-Radio {
     param([array]$Items)   # Each item: @{Label; Value; Selected; Hint}
 
@@ -191,7 +199,7 @@ function Show-Radio {
     return $Items[$selected].Value
 }
 
-# ── Tool detection ────────────────────────────────────────────────
+# -- Tool detection ----------------------------------------------------
 function Get-Tools {
     if ($Tools -ne "") {
         return ($Tools -split ",") | ForEach-Object { $_.Trim() }
@@ -228,7 +236,7 @@ function Get-Tools {
     return Show-Checkbox -Items $items
 }
 
-# ── Scope selection ───────────────────────────────────────────────
+# -- Scope selection ----------------------------------------------------
 function Get-Scope {
     if ($Global) { return "global" }
     if ($Silent) { return "project" }
@@ -243,7 +251,7 @@ function Get-Scope {
     return Show-Radio -Items $items
 }
 
-# ── Package manager selection ──────────────────────────────────────
+# -- Package manager selection ----------------------------------------------------
 function Get-Package {
     if ($SkillsOnly) { return "skip" }
     if ($FromSource) { return "source" }
@@ -276,7 +284,7 @@ function Get-Package {
     return Show-Radio -Items $items
 }
 
-# ── Optional extras selection ─────────────────────────────────────
+# -- Optional extras selection ----------------------------------------------------
 function Get-Extras {
     param([string]$pkgManager)
 
@@ -293,7 +301,7 @@ function Get-Extras {
     }
 }
 
-# ── Package manager install ────────────────────────────────────────
+# -- Package manager install ----------------------------------------------------
 function Install-Package {
     param([string]$pkgManager, [string]$selectedExtras)
 
@@ -330,7 +338,7 @@ function Install-Package {
     Write-Ok "data-science-utils installed"
 }
 
-# ── Skills installation ───────────────────────────────────────────
+# -- Skills installation ----------------------------------------------------
 $script:InstalledSkills = [System.Collections.Generic.List[PSObject]]::new()
 $script:SkippedSkills   = [System.Collections.Generic.List[PSObject]]::new()
 $script:FailedSkills    = [System.Collections.Generic.List[PSObject]]::new()
@@ -372,7 +380,7 @@ function Install-SingleSkill {
         Move-Item -Path $stagingDir -Destination $Dest -Force -ErrorAction Stop
 
         $relPath = $Dest.Replace($HOME, "~")
-        Write-Ok "$Skill → $relPath"
+        Write-Ok "$Skill $GlyphArrow $relPath"
         $script:InstalledSkills.Add([PSCustomObject]@{ Target = $TargetLabel; Skill = $Skill; Dest = $Dest })
     } catch {
         Remove-Item $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -433,11 +441,11 @@ function Install-Skills {
     }
 }
 
-# ── Main ─────────────────────────────────────────────────────────
+# -- Main ----------------------------------------------------
 if (-not $Silent) {
     Write-Host ""
     Write-Host "DataScienceUtils AI Skills Installer" -ForegroundColor White
-    Write-Host "────────────────────────────────────────"
+    Write-Host ($GlyphRule * 40)
 }
 
 Write-Step "Detecting AI coding tools"
@@ -462,7 +470,7 @@ if (-not $Silent) {
     $baseDir = if ($SCOPE -eq "global") { "~" } else { (Get-Location).Path }
     Write-Host ""
     Write-Host "  Summary" -ForegroundColor White
-    Write-Host "  ──────────────────────────────────────"
+    Write-Host ("  " + ($GlyphRule * 38))
     Write-Host ("  Tools:    " + ($selectedTools -join ", ")) -ForegroundColor Green
     Write-Host "  Scope:    $SCOPE ($baseDir)" -ForegroundColor Green
     Write-Host ("  Package:  " + $(if ($SkillsOnly) { "skip" } else { $pkgManager })) -ForegroundColor Green
@@ -503,7 +511,7 @@ if ($numFailed -eq 0) {
 } else {
     Write-Host "Installation failed (no skills installed)" -ForegroundColor Red
 }
-Write-Host "────────────────────────────────────────"
+Write-Host ($GlyphRule * 40)
 Write-Msg "Package:  $(if ($SkillsOnly) { 'skipped' } else { 'installed' })"
 Write-Msg "Extras:   $(if ($selectedExtras) { $selectedExtras } else { 'none' })"
 Write-Msg "Scope:    $SCOPE"
@@ -519,7 +527,7 @@ if ($numInstalled -gt 0) {
     Write-Host "  Newly installed skills:" -ForegroundColor White
     foreach ($item in $script:InstalledSkills) {
         $rel = $item.Dest.Replace($HOME, "~")
-        Write-Host "    ✓ $($item.Target): ds-utils-$($item.Skill) → $rel" -ForegroundColor Green
+        Write-Host "    $GlyphOk $($item.Target): ds-utils-$($item.Skill) $GlyphArrow $rel" -ForegroundColor Green
     }
 }
 
@@ -528,7 +536,7 @@ if ($numSkipped -gt 0) {
     Write-Host "  Pre-existing skills (preserved, not re-downloaded):" -ForegroundColor White
     foreach ($item in $script:SkippedSkills) {
         $rel = $item.Dest.Replace($HOME, "~")
-        Write-Host "    - $($item.Target): ds-utils-$($item.Skill) → $rel" -ForegroundColor Yellow
+        Write-Host "    - $($item.Target): ds-utils-$($item.Skill) $GlyphArrow $rel" -ForegroundColor Yellow
     }
 }
 
@@ -536,7 +544,7 @@ if ($numFailed -gt 0) {
     Write-Host ""
     Write-Host "  Failed skill downloads:" -ForegroundColor White
     foreach ($item in $script:FailedSkills) {
-        Write-Host "    ✗ $($item.Target): ds-utils-$($item.Skill) (failed download, cleaned up partial files)" -ForegroundColor Red
+        Write-Host "    $GlyphErr $($item.Target): ds-utils-$($item.Skill) (failed download, cleaned up partial files)" -ForegroundColor Red
     }
 }
 
@@ -549,7 +557,7 @@ if ($numFailed -eq 0) {
     Write-Host ""
     Write-Host "  Next steps:" -ForegroundColor White
     Write-Host "  1. Open your project in your AI coding tool"
-    Write-Host "  2. The skills will be auto-loaded — no configuration needed"
+    Write-Host "  2. The skills will be auto-loaded $GlyphDash no configuration needed"
     Write-Host "  3. Try: `"Use ds_utils to plot a confusion matrix for my classifier`""
     Write-Host ""
     Stop-Installer 0

@@ -2,7 +2,7 @@
 name: ds-utils-transformers
 description: >
   Scikit-learn pipeline transformers for multi-label binarization and sentence embeddings. Use for integrating MultiLabelBinarizer and sentence-transformers into sklearn Pipeline, ColumnTransformer, and set_output(transform="pandas"). Do NOT use for basic univariate feature plotting or correlation dendrograms.
-version: "1.0.0"
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -23,7 +23,7 @@ Production-ready, scikit-learn compatible transformers for multi-label lists and
 
 ## Purpose
 
-`ds_utils.transformers` resolves standard scikit-learn API incompatibilities when working with complex feature types like list-of-tags columns and freeform text. It provides:
+ds_utils.transformers resolves standard scikit-learn API incompatibilities when working with complex feature types like list-of-tags columns and freeform text. It provides:
 1. `MultiLabelBinarizerTransformer`: Enables multi-label tag binarization inside `Pipeline` and `ColumnTransformer` with full `get_feature_names_out()` and `set_output(transform="pandas")` compatibility.
 2. `SentenceEmbeddingTransformer`: Encodes text columns into dense semantic vectors using `sentence-transformers` within unified sklearn workflows.
 
@@ -113,21 +113,37 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 
-# Mixed feature DataFrame
+# Synthetic dataset with mixed features
 df = pd.DataFrame(
     {
-        "price": [19.99, 49.99, 99.99, 15.00],
-        "categories": [["electronics", "audio"], ["home"], ["electronics", "gaming"], ["home"]],
+        "price": [19.99, 49.99, 99.99, 15.00, 29.99, 89.99, 12.50, 65.00],
+        "categories": [
+            ["electronics", "audio"],
+            ["home"],
+            ["electronics", "gaming"],
+            ["home"],
+            ["electronics"],
+            ["audio", "gaming"],
+            ["home", "kitchen"],
+            ["electronics", "home"],
+        ],
         "title": [
             "Wireless bluetooth headphones",
             "Ceramic kitchen mug",
             "Mechanical gaming keyboard",
             "Cotton bath towel",
+            "USB-C fast charging cable",
+            "Surround sound gaming headset",
+            "Stainless steel cutlery set",
+            "Smart LED desk lamp",
         ],
-        "high_seller": [1, 0, 1, 0],
+        "high_seller": [1, 0, 1, 0, 1, 1, 0, 0],
     }
 )
+
+train_df, test_df = train_test_split(df, test_size=0.25, random_state=42)
 
 preprocessor = ColumnTransformer(
     transformers=[
@@ -144,11 +160,12 @@ pipeline = Pipeline(
     ]
 )
 
-pipeline.fit(df, df["high_seller"])
-preds = pipeline.predict(df)
+# Fit on train, predict on held-out test to preserve strict separation
+pipeline.fit(train_df, train_df["high_seller"])
+preds = pipeline.predict(test_df)
 ```
 - **What to look for**: Pipeline executes without type errors or dimension mismatches; transforms seamlessly during `fit` and `predict`.
-- **Action**: Serialize the entire fitted pipeline using `joblib.dump(pipeline, "model.joblib")`.
+- **Action**: Serialize the entire fitted pipeline using `joblib.dump(pipeline, model_path)`. Note that `SentenceEmbeddingTransformer` downloads the HuggingFace model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) on first use, so it requires internet access or a local `model_name` path.
 
 ---
 
@@ -188,7 +205,8 @@ assert any("python" in c for c in processed.columns)
 ## Limitations
 
 - **Input dimensionality**: Both transformers expect a single column. When used in `ColumnTransformer`, pass a single column string (e.g. `"skills"`) or a single-element list (e.g. `["title"]`).
-- **NLP Extras required**: `SentenceEmbeddingTransformer` requires `pip install data-science-utils[nlp]`. It raises an `ImportError` if `sentence-transformers` is missing.
+- **Unseen tags ignored**: `MultiLabelBinarizerTransformer` ignores tags not seen during fit with a warning (`unknown class(es) [...] will be ignored`); a sample containing only unseen tags becomes all zeros.
+- **NLP Extras and model download**: `SentenceEmbeddingTransformer` requires `pip install data-science-utils[nlp]`. It downloads `sentence-transformers/all-MiniLM-L6-v2` on first use, requiring network access or a local model path.
 - **String splitting**: `MultiLabelBinarizerTransformer` does not automatically split comma-separated strings (e.g. `"tagA,tagB"` is treated as a single label `label_tagA_tagB`). For delimited strings, split values into lists first or use `append_tags_to_frame` from `ds-utils-strings`.
 
 ## Troubleshooting
@@ -196,6 +214,7 @@ assert any("python" in c for c in processed.columns)
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
 | `ImportError: sentence-transformers is required for SentenceEmbeddingTransformer. Install it with:  pip install data-science-utils[nlp]` | Optional NLP extra is not installed | Run `pip install data-science-utils[nlp]` |
+| `UserWarning: unknown class(es) [...] will be ignored` / All-zero tag rows during inference | Test data contains tags not present in training data during `fit()` | Expected scikit-learn behavior; unknown tags are dropped and rows with only unseen tags produce zeros |
 | Comma-separated tags treated as one feature (e.g., `label_tag1_tag2`) | Passed comma-delimited string without splitting into list | Split string into list `['tag1', 'tag2']` or use `append_tags_to_frame` from `ds-utils-strings` |
 | `NotFittedError` when calling `.transform()` | Transformer was not fitted | Ensure `.fit()` or `.fit_transform()` is invoked before calling `.transform()` |
 | `ValueError: MultiLabelBinarizerTransformer expects a single column` | Passed multiple columns in `ColumnTransformer` | Target exactly one column: `("tags", MultiLabelBinarizerTransformer(), "col_name")` |

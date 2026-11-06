@@ -2,7 +2,7 @@
 name: ds-utils-xai
 description: >
   Explainable AI (XAI) and model interpretation for tree-based models. Use for plotting feature importance rankings, rendering Graphviz decision tree diagrams, and extracting executable decision paths. Do NOT use for linear models, neural network interpretability, or clustering.
-version: "1.0.0"
+version: 1.0.0
 license: MIT
 metadata:
   author: "Idan Morad <idanmorad.arthas@gmail.com>"
@@ -23,7 +23,7 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 
 ## Purpose
 
-`ds_utils.xai` provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts, Graphviz DOT rendering into matplotlib axes, and translation of tree split logic into executable Python functions.
+ds_utils.xai provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts, Graphviz DOT rendering into matplotlib axes, and translation of tree split logic into executable Python functions.
 
 - **When to use**: Explaining tree ensembles (Random Forest, Gradient Boosting, LightGBM, XGBoost) and visualizing single decision tree decision rules.
 - **When NOT to use**: For linear model coefficient analysis (`coef_`), SHAP/LIME game-theoretic values, neural networks, or unsupervised clustering.
@@ -89,7 +89,7 @@ ax_imp = plot_features_importance(features, rf.feature_importances_)
 plt.close()
 ```
 - **What to look for**: High concentration of importance on a single feature (potential data leakage or dominant proxy) vs balanced feature utilization.
-- **Action**: Verify that top features are valid business signals and not leaked target artifacts.
+- **Action**: Verify that top features are valid business signals and not leaked target artifacts. Impurity-based `feature_importances_` are computed on training data and favour high-cardinality or continuous features; cross-check rankings with `sklearn.inspection.permutation_importance` on held-out data.
 
 #### Step 2: Decision Tree Visual Inspection (`draw_dot_data` / `draw_tree`)
 Render decision trees directly onto matplotlib canvases.
