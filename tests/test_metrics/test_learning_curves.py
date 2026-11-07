@@ -140,6 +140,8 @@ def test_plot_metric_growth_per_labeled_instances_label_formats(iris_data, class
         random_state=42,
     )
 
+    assert len(ref_ax.lines) == len(var_ax.lines) == len(classifiers)
+
     for ref_line, var_line in zip(ref_ax.lines, var_ax.lines):
         np.testing.assert_allclose(ref_line.get_ydata(), var_line.get_ydata())
 
