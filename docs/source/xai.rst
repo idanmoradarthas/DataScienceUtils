@@ -23,54 +23,6 @@ Using conda::
 
 For more information, see the `Graphviz download page <https://graphviz.gitlab.io/download>`_.
 
-*********
-Draw Tree
-*********
-.. deprecated:: 1.6.4
-    Use `sklearn.tree.plot_tree <https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html>`_ instead
-
-The `draw_tree` function visualizes a decision tree classifier, making it easier to understand the tree's structure and decision-making process. This can be particularly useful for model interpretation and debugging.
-
-.. autofunction:: ds_utils.xai.draw_tree
-
-.. highlight:: python
-
-Code Example
-============
-In the following example, we'll use the iris dataset from scikit-learn:
-
-.. code-block:: python
-
-    from sklearn import datasets
-
-    iris = datasets.load_iris()
-    X = iris.data  # Use uppercase 'X' for feature matrix
-    y = iris.target
-
-Now, let's create a simple decision tree classifier and plot it:
-
-.. code-block:: python
-
-    import matplotlib.pyplot as plt
-    from sklearn.tree import DecisionTreeClassifier
-    from ds_utils.xai import draw_tree
-
-    # Create decision tree classifier object
-    clf = DecisionTreeClassifier(random_state=0)
-
-    # Train model
-    clf.fit(X, y)
-
-    # Draw the tree
-    draw_tree(clf, iris.feature_names, iris.target_names)
-    plt.show()
-
-The following image will be displayed:
-
-.. image:: ../../tests/baseline_images/test_xai/test_draw_tree/test_draw_tree.png
-    :align: center
-    :alt: Decision Tree Visualization
-
 *************
 Draw Dot Data
 *************
@@ -109,14 +61,6 @@ The following image will be displayed:
 .. image:: ../../tests/baseline_images/test_xai/test_draw_dot_data/test_draw_dot_data.png
     :align: center
     :alt: Diagram Visualization
-
-***********************
-Generate Decision Paths
-***********************
-.. deprecated:: 1.8.0
-    Use `sklearn.tree.export_text <https://scikit-learn.org/stable/modules/generated/sklearn.tree.export_text.html>`_ instead
-
-.. py:function:: ds_utils.xai.generate_decision_paths(classifier: BaseDecisionTree, feature_names: List[str] | None = None, class_names: List[str] | None = None, tree_name: str | None = None, indent_char: str = '\t') -> str
 
 *************************
 Plot Feature Importance
@@ -181,4 +125,3 @@ The following image will be displayed:
 .. image:: ../../tests/baseline_images/test_xai/test_plot_features_importance/test_plot_features_importance.png
     :align: center
     :alt: Plot Feature Importance
-
