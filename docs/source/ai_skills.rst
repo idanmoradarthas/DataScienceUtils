@@ -565,7 +565,7 @@ Available Skills
      - Multi-label binarization and sentence embeddings as scikit-learn pipeline steps (feature names, pandas output)
    * - ds-utils-xai
      - ds_utils.xai
-     - Feature importance plots and Graphviz decision-tree diagrams
+     - Feature importance plots, Graphviz decision-tree diagrams and text rule export
 
 Updating Skills
 ---------------
