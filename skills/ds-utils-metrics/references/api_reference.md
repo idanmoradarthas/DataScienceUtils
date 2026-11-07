@@ -213,9 +213,9 @@ plot_metric_growth_per_labeled_instances(
 
 ### Parameters
 - `X_train`: Training feature matrix (`numpy.ndarray`).
-- `y_train`: Training labels (`numpy.ndarray`). Note: column-vector labels `(n_samples, 1)` work on every release, and 1-D labels work only from the release that includes this fix (e.g., `y_train.to_numpy().reshape(-1, 1)`).
+- `y_train`: Training labels (`numpy.ndarray`, array-like of shape `(n_samples,)`, `(n_samples, 1)` or `(n_samples, n_outputs)`).
 - `X_test`: Test feature matrix (`numpy.ndarray`).
-- `y_test`: Test labels (`numpy.ndarray`). Note: column-vector labels `(n_samples, 1)` work on every release, and 1-D labels work only from the release that includes this fix (e.g., `y_test.to_numpy().reshape(-1, 1)`).
+- `y_test`: Test labels (`numpy.ndarray`, array-like of shape `(n_samples,)`, `(n_samples, 1)` or `(n_samples, n_outputs)`).
 - `classifiers_dict`: Dictionary of `{name: unfitted_estimator}`. Pass unfitted estimators; fitted instances raise errors.
 - `n_samples` (*optional*, default `None`): Specific number of training samples to evaluate.
 - `quantiles` (*optional*): 20 percentage steps from 0.05 to 1.0 used when `n_samples` is None.
