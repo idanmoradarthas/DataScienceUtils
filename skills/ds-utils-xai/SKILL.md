@@ -52,22 +52,22 @@ Exhaustive signatures, parameters, and return details are in [references/api_ref
 ### End-to-End Tree Model Interpretation Workflow
 
 ```text
-              Fitted Model Available
-                        │
-         ┌──────────────┴──────────────┐
-         ▼                             ▼
-   Tree Ensemble                 Single Decision Tree
-(Random Forest / GBDT)                 │
-         │                             │
-         ├──────────────────┐          │
-         ▼                  ▼          │
- Global Importance    Surrogate Tree   │
- (features_importance) (explain forest)│
-                            │          │
-         ┌──────────────────┴──────────┴─────────────┐
-         ▼                                           ▼
- Visual Tree Graph                           Rule Code Export
-(draw_dot_data / draw_tree)              (generate_decision_paths)
+                 Fitted Model Available
+                            │
+         ┌──────────────────┴──────────────────┐
+         ▼                                     ▼
+   Tree Ensemble                         Single Decision Tree
+(Random Forest / GBDT)                         │
+         │                                     │
+         ├──────────────────────────┐          │
+         ▼                          ▼          │
+ Global Importance              Surrogate Tree │
+(plot_features_importance)     (explain forest)│
+                                    │          │
+         ┌──────────────────────────┴──────────┴─────────────┐
+         ▼                                                   ▼
+ Visual Tree Graph                                   Rule Code Export
+(draw_dot_data / draw_tree)                      (generate_decision_paths)
 ```
 
 #### Inputs you need

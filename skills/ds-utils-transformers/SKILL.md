@@ -135,6 +135,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTransformer
+# from ds_utils.transformers.sentence_embedding import SentenceEmbeddingTransformer  # only for the optional text branch below
 
 # Configure ColumnTransformer targeting your specific feature columns
 preprocessor = ColumnTransformer(
