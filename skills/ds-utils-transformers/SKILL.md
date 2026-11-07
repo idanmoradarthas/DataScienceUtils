@@ -139,8 +139,9 @@ from ds_utils.transformers.multi_label_binarizer import MultiLabelBinarizerTrans
 # Configure ColumnTransformer targeting your specific feature columns
 preprocessor = ColumnTransformer(
     transformers=[
-        ("num", StandardScaler(), ["numeric_feature"]),
-        ("tags", MultiLabelBinarizerTransformer(), "tag_feature"),
+        ("num", StandardScaler(), ["numeric_feature"]),  # replace with your column names
+        ("tags", MultiLabelBinarizerTransformer(), "tag_feature"),  # replace with your column names
+        # ("text", SentenceEmbeddingTransformer(), "text_feature"),  # needs the nlp extra; downloads a model on first use
     ]
 )
 pipeline = Pipeline([("features", preprocessor), ("model", RandomForestClassifier(random_state=42))])
@@ -153,6 +154,19 @@ print(f"Learned {len(tag_features)} tag features from train split")
 # 2. Evaluate with cross-validation on train split
 scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring="accuracy")
 print(f"5-Fold CV Accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")
+
+# Compare feature subsets by dropping branches
+feature_subsets = {
+    "all": [("num", StandardScaler(), ["numeric_feature"]), ("tags", MultiLabelBinarizerTransformer(), "tag_feature")],
+    "numeric only": [("num", StandardScaler(), ["numeric_feature"])],
+    "tags only": [("tags", MultiLabelBinarizerTransformer(), "tag_feature")],
+}
+for name, trans in feature_subsets.items():
+    pipe_variant = Pipeline(
+        [("features", ColumnTransformer(trans)), ("model", RandomForestClassifier(random_state=42))]
+    )
+    cv_mean = cross_val_score(pipe_variant, X_train, y_train, cv=5, scoring="accuracy").mean()
+    print(f"Feature set '{name}' CV accuracy: {cv_mean:.3f}")
 
 # 3. Fit on full training set, and evaluate once on held-out test data
 pipeline.fit(X_train, y_train)
@@ -167,7 +181,7 @@ print(f"Held-out Test Accuracy: {test_accuracy:.3f}")
 
 ## Examples
 
-### Runnable demo on a bundled dataset (replace the loading lines with your own data)
+### Runnable demo (format illustration - replace with your data)
 
 ```python
 import pandas as pd

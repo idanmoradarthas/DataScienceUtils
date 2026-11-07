@@ -87,7 +87,7 @@ Choose the evaluation branch matching your model task:
 The steps below assume you have partitioned your data and fitted your models:
 - **Classification**: a fitted classifier `clf`, test feature matrix or DataFrame `X_test`, ground-truth labels `y_test`, plus training splits `X_train`, `y_train` for learning curves.
 - **Regression**: a fitted regressor `reg`, test features `X_test`, ground truth `y_test`.
-- **Forecasting**: continuous arrays `y_true` and `y_pred` ordered chronologically.
+- **Forecasting**: continuous arrays `y_true_series` and `y_pred_series` ordered chronologically.
 
 ```python
 import numpy as np
@@ -112,7 +112,9 @@ from ds_utils.metrics.confusion_matrix import plot_confusion_matrix
 y_true = y_test
 y_pred = clf.predict(X_test)
 
-ax = plot_confusion_matrix(y_true, y_pred, labels=[0, 1])
+ax = plot_confusion_matrix(
+    y_true, y_pred, labels=[0, 1]
+)  # 0/1 assumed - replace with your class labels / positive class
 plt.close()
 ```
 - **What to look for**: Disproportionate false negative vs false positive rates.
@@ -130,7 +132,7 @@ from ds_utils.metrics.curves import (
 )
 
 # Extract 1D positive class probabilities safely from your fitted model
-pos_idx = int(np.where(clf.classes_ == 1)[0][0])
+pos_idx = int(np.where(clf.classes_ == 1)[0][0])  # 0/1 assumed - replace with your class labels / positive class
 y_proba_pos = clf.predict_proba(X_test)[:, pos_idx]
 models_dict = {"Model": y_proba_pos}
 
