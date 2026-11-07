@@ -3,10 +3,10 @@ AI Coding Skills
 ================
 
 DataScienceUtils ships a set of *AI skills* — structured knowledge files that
-teach AI coding assistants (Claude Code, Cursor, GitHub Copilot, Gemini CLI)
-how to use this library correctly. Skills eliminate the most common mistakes:
-wrong import paths, dtype-dependent behaviour, argument ordering pitfalls, and
-API differences between matplotlib and Plotly outputs.
+teach AI coding assistants (Claude Code, Cursor, GitHub Copilot, Gemini CLI,
+and Antigravity) how to use this library as end-to-end workflows: choosing the
+right function, using correct import paths, following runnable examples, and
+troubleshooting common pitfalls.
 
 What Are Skills?
 ----------------
@@ -230,7 +230,9 @@ On **Windows (PowerShell)**, the same selector appears with slightly different c
    .. code-block:: powershell
 
        irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-       .\install.ps1 -SkillsOnly
+       powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkillsOnly
+
+   Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
 
 On **Windows (PowerShell)**, the same selector appears with slightly different characters:
 
@@ -317,22 +319,34 @@ If any line shows ``!`` (warning) instead, see Troubleshooting.
     ────────────────────────────────────────
     Package:  installed
     Extras:   none
-    Scope:    project
+    Scope:    project (/home/user/my-project)
     Tools:    Claude Code, Cursor
 
-    Skills installed:
-      ds-utils-metrics
-      ds-utils-preprocess
-      ds-utils-unsupervised
-      ds-utils-strings
-      ds-utils-transformers
-      ds-utils-xai
+    Installation Outcome (12 total checks):
+      Newly installed:          12
+      Already present (skipped): 0
+      Failed downloads:         0
 
-    Cross-client path: .agents/skills/  (all Agent Skills-compatible tools)
+    Newly installed skills:
+      ✓ claude: ds-utils-metrics → .claude/skills/ds-utils-metrics
+      ✓ claude: ds-utils-preprocess → .claude/skills/ds-utils-preprocess
+      ✓ claude: ds-utils-unsupervised → .claude/skills/ds-utils-unsupervised
+      ✓ claude: ds-utils-strings → .claude/skills/ds-utils-strings
+      ✓ claude: ds-utils-transformers → .claude/skills/ds-utils-transformers
+      ✓ claude: ds-utils-xai → .claude/skills/ds-utils-xai
+      ✓ cross-client: ds-utils-metrics → .agents/skills/ds-utils-metrics
+      ✓ cross-client: ds-utils-preprocess → .agents/skills/ds-utils-preprocess
+      ✓ cross-client: ds-utils-unsupervised → .agents/skills/ds-utils-unsupervised
+      ✓ cross-client: ds-utils-strings → .agents/skills/ds-utils-strings
+      ✓ cross-client: ds-utils-transformers → .agents/skills/ds-utils-transformers
+      ✓ cross-client: ds-utils-xai → .agents/skills/ds-utils-xai
+
+    Cross-client path:
+      .agents/skills/ (readable by all Agent Skills-compatible tools)
 
     Next steps:
     1. Open your project in your AI coding tool
-    2. Skills are auto-loaded — no config needed
+    2. The skills will be auto-loaded — no configuration needed
     3. Try: "Use ds_utils to plot a confusion matrix for my classifier"
 
 The skills are now active. No further configuration is needed — open your project in Claude Code or Cursor and the skills will load automatically whenever you ask something related to DataScienceUtils.
@@ -400,7 +414,7 @@ Expected output:
     ----  -------------    ------ ----
     -a--- 01/01/2026 ...     2048 SKILL.md
 
-    (repeated for each of the 5 skills × number of tools selected)
+    (repeated for each of the 6 skills × number of tools selected)
 
 On Mac / Linux, if ``find`` returns nothing, the skill files were not placed
 correctly. On Windows, if ``Get-ChildItem`` returns nothing, the same applies.
@@ -411,6 +425,7 @@ In either case, re-run the installer or follow the Manual Installation section b
 Open your project in your AI coding tool — no restart needed. Then give two concrete example prompts to try:
 
 - ``"Plot a confusion matrix for my classifier using ds_utils"``
+- ``"Use ds_utils to find highly correlated features in my DataFrame"``
 
 The AI will automatically load the relevant skill and follow the correct import paths, function signatures, and usage patterns for DataScienceUtils.
 
@@ -472,25 +487,56 @@ PowerShell equivalent — download first, then run with parameters:
 .. code-block:: powershell
 
     irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-    .\install.ps1 -SkillsOnly -Global -Tools "claude" -Force
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkillsOnly -Global -Tools "claude" -Force
+
+Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
 
 Manual Installation
 -------------------
 If you prefer not to use the automated installer, you can install skills
-manually. Download the ``SKILL.md`` files from the
-`skills directory on GitHub
+manually. Download both the ``SKILL.md`` and ``references/api_reference.md`` files
+for each skill from the `skills directory on GitHub
 <https://github.com/idanmoradarthas/DataScienceUtils/tree/master/skills>`_
 and place them in the paths below. Installing to ``.agents/skills/`` is
 recommended as a baseline — it ensures skills are discoverable by any
 present or future `Agent Skills <https://agentskills.io>`_-compatible tool.
+For instructions on validating and testing skills with NVIDIA SkillEvaluator,
+see the :ref:`Validating Skills with NVIDIA SkillEvaluator` section below.
 
-* **Cross-client (recommended)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
-* **Claude Code**: ``.claude/skills/ds-utils-<module>/SKILL.md``
-* **Cursor**: ``.cursor/rules/ds-utils-<module>/SKILL.md``
-* **GitHub Copilot**: ``.github/instructions/ds-utils-<module>/SKILL.md``
-* **Gemini CLI**: ``.gemini/skills/ds-utils-<module>/SKILL.md``
-* **Antigravity (project)**: ``.agents/skills/ds-utils-<module>/SKILL.md``
-* **Antigravity (global)**: ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
+* **Cross-client (recommended)**:
+
+  * ``.agents/skills/ds-utils-<module>/SKILL.md``
+  * ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
+* **Claude Code**:
+
+  * ``.claude/skills/ds-utils-<module>/SKILL.md``
+  * ``.claude/skills/ds-utils-<module>/references/api_reference.md``
+
+* **Cursor**:
+
+  * ``.cursor/rules/ds-utils-<module>/SKILL.md``
+  * ``.cursor/rules/ds-utils-<module>/references/api_reference.md``
+
+* **GitHub Copilot**:
+
+  * ``.github/instructions/ds-utils-<module>/SKILL.md``
+  * ``.github/instructions/ds-utils-<module>/references/api_reference.md``
+
+* **Gemini CLI**:
+
+  * ``.gemini/skills/ds-utils-<module>/SKILL.md``
+  * ``.gemini/skills/ds-utils-<module>/references/api_reference.md``
+
+* **Antigravity (project)**:
+
+  * ``.agents/skills/ds-utils-<module>/SKILL.md``
+  * ``.agents/skills/ds-utils-<module>/references/api_reference.md``
+
+* **Antigravity (global)**:
+
+  * ``~/.gemini/antigravity/skills/ds-utils-<module>/SKILL.md``
+  * ``~/.gemini/antigravity/skills/ds-utils-<module>/references/api_reference.md``
 
 Available Skills
 ----------------
@@ -504,22 +550,22 @@ Available Skills
      - What it covers
    * - ds-utils-metrics
      - ds_utils.metrics
-     - Confusion matrix, ROC, PR, learning curves, probability analysis
+     - Confusion matrix, ROC and precision-recall curves with threshold annotations, REC curves, directional metrics, probability and error analysis, learning curves
    * - ds-utils-preprocess
      - ds_utils.preprocess
-     - Feature visualization, correlation, statistics, mutual information
+     - Feature visualization, correlation and dendrogram, statistics, mutual information, PCA explained variance
    * - ds-utils-unsupervised
      - ds_utils.unsupervised
-     - Cluster cardinality, magnitude, optimal k
+     - Cluster cardinality, magnitude, optimal k, 2D cluster scatter plots (PCA/t-SNE/UMAP)
    * - ds-utils-strings
      - ds_utils.strings
      - Tag encoding, significant term extraction
    * - ds-utils-transformers
      - ds_utils.transformers
-     - Multi-label binarization for pipelines, feature names, pandas output
+     - Multi-label binarization and sentence embeddings as scikit-learn pipeline steps (feature names, pandas output)
    * - ds-utils-xai
      - ds_utils.xai
-     - Feature importance visualization
+     - Feature importance plots and decision-tree path visualization
 
 Updating Skills
 ---------------
@@ -534,7 +580,73 @@ On **Windows (PowerShell)**:
 .. code-block:: powershell
 
     irm https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/install.ps1 -OutFile install.ps1
-    .\install.ps1 -Force
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Force
+
+Windows PowerShell blocks downloaded scripts under the default execution policy; ``-ExecutionPolicy Bypass`` applies to that single run only without altering persistent system settings.
+
+.. _Validating Skills with NVIDIA SkillEvaluator:
+
+Validating Skills with NVIDIA SkillEvaluator
+--------------------------------------------
+
+All skills in DataScienceUtils are validated using `NVIDIA SkillEvaluator <https://github.com/NVIDIA/SkillEvaluator>`_ for Tier 1 static validation and quality grading.
+
+**Prerequisites and Installation**
+
+Install the pinned versions of SkillEvaluator and SkillSpector matching ``requirements-skills.txt`` in Python 3.13 via ``uv``:
+
+.. code-block:: bash
+
+    uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+    uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
+
+External security scanners provide static security coverage: Gitleaks is required for secret detection (Tier 1 reports ``INCOMPLETE`` without it, together with ``skillspector``). Bandit and Semgrep are only invoked for skills that bundle code files. The current skills are Markdown-only, so they are not needed here. If you add code files to a skill, install both, otherwise Tier 1 reports ``INCOMPLETE`` and exits 1:
+
+.. code-block:: bash
+
+    # macOS: Homebrew (its version may differ from the pinned CI release)
+    brew install gitleaks
+
+    # Linux x86_64: pinned v8.28.0 release, installed without sudo
+    mkdir -p "$HOME/.local/bin"
+    curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C "$HOME/.local/bin" gitleaks
+
+    # Only needed if a skill bundles code files
+    pip install bandit semgrep
+
+Only ``quality-check`` and Tier 1 static validation (``tier1 --no-llm``) are run; Tier 2 and Tier 3 validation stages are not executed. With both ``skillspector`` and ``gitleaks`` installed, all six skills pass static checks completely without reporting ``INCOMPLETE``. To maintain complete Tier 1 static validation, ``SKILL.md`` prose and frontmatter must avoid backticked or quoted ``name.ext`` tokens that could be misinterpreted as missing bundled files (guarded by ``test_skill_md_has_no_unresolved_path_like_tokens`` in ``tests/test_skills_docs.py``).
+
+**Running Static Validation and Quality Checks**
+
+To evaluate an individual skill locally:
+
+.. code-block:: bash
+
+    skillevaluator quality-check skills/ds-utils-metrics
+    skillevaluator tier1 --no-llm skills/ds-utils-metrics
+
+Both commands support writing validation reports to a custom output directory via ``-o`` or ``--output-dir`` (e.g., ``skillevaluator quality-check -o ./reports skills/ds-utils-metrics``).
+
+**Automated Evaluation Runner Scripts**
+
+The repository provides runner scripts at the root that execute ``quality-check`` and ``tier1 --no-llm`` across all six skills, write reports to a temporary directory cleaned up on exit, and exit non-zero if any check fails or reports incomplete evidence:
+
+On Linux / macOS:
+
+.. code-block:: bash
+
+    ./eval-skills.sh
+
+On Windows (Command Prompt / PowerShell):
+
+.. code-block:: bat
+
+    .\eval-skills.bat
+
+.. note::
+
+   PowerShell requires the explicit ``.\`` prefix to run scripts in the current directory;
+   ``cmd.exe`` accepts either ``eval-skills.bat`` or ``.\eval-skills.bat``.
 
 Troubleshooting
 ---------------

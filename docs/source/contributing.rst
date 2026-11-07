@@ -30,6 +30,10 @@ We follow the `Python Software Foundation Code of Conduct <http://www.python.org
 the `Matplotlib Coding Guidelines <https://matplotlib.org/stable/devel/coding_guide.html>`_. Please adhere to
 these guidelines in your contributions.
 
+Agent skills
+------------
+If you change anything under ``skills/``, validate it with NVIDIA's `SkillEvaluator <https://github.com/NVIDIA/SkillEvaluator>`_ by running ``./eval-skills.sh`` (``eval-skills.bat`` on Windows). See the :ref:`Validating Skills with NVIDIA SkillEvaluator` section for full prerequisites and instructions.
+
 Getting Help
 ============
 If you're new to open source or need any help, don't hesitate to ask questions in
