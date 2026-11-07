@@ -1,7 +1,7 @@
 ---
 name: ds-utils-xai
 description: >
-  Explainable AI (XAI) and model interpretation for tree-based models. Use for plotting feature importance rankings and rendering Graphviz decision tree diagrams. Do NOT use for linear models, neural network interpretability, or clustering.
+  Explainable AI (XAI) and model interpretation for tree-based models. Use for plotting feature importance rankings, rendering Graphviz decision tree diagrams, and exporting decision rules as text. Do NOT use for linear models, neural network interpretability, or clustering.
 version: 1.0.0
 license: MIT
 metadata:
@@ -23,7 +23,7 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 
 ## Purpose
 
-ds_utils.xai provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts and Graphviz DOT rendering into matplotlib axes.
+ds_utils.xai provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts and Graphviz DOT rendering into matplotlib axes. Alongside them, scikit-learn's plot_tree draws a tree with matplotlib only and export_text returns its rules as text.
 
 - **When to use**: Explaining tree ensembles (Random Forest, Gradient Boosting, LightGBM, XGBoost) and visualizing single decision tree decision rules.
 - **When NOT to use**: For linear model coefficient analysis (coef_), SHAP/LIME game-theoretic values, neural networks, or unsupervised clustering.
@@ -33,7 +33,7 @@ ds_utils.xai provides tools to inspect and communicate tree-based model decision
 - Python 3.11 or higher.
 - data-science-utils package installed (pip install data-science-utils).
 - Core dependencies: numpy, scikit-learn, matplotlib, pydotplus.
-- System Graphviz installation (apt-get install graphviz or brew install graphviz) for draw_dot_data.
+- System Graphviz installation (apt-get install graphviz or brew install graphviz) for draw_dot_data (plot_tree and export_text do not need it).
 
 ## Instructions
 
@@ -42,7 +42,8 @@ ds_utils.xai provides tools to inspect and communicate tree-based model decision
 | Interpretation Goal | Function | Target Model | Output Type |
 |---|---|---|---|
 | Rank features by global impact | `plot_features_importance` | Any tree model with `.feature_importances_` | Matplotlib Axes |
-| Visualize decision tree structure | `draw_dot_data` | DOT string exported from a single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Matplotlib Axes |
+| Visualize decision tree structure | `draw_dot_data` / `plot_tree` (scikit-learn) | Single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Matplotlib Axes |
+| Export tree rules as text | `export_text` (scikit-learn) | Single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Text string |
 
 Exhaustive signatures, parameters, and return details are in [references/api_reference.md](references/api_reference.md).
 
@@ -63,10 +64,10 @@ Exhaustive signatures, parameters, and return details are in [references/api_ref
  Global Importance              Surrogate Tree │
 (plot_features_importance)     (explain forest)│
                                     │          │
-                                    └────┬─────┘
-                                         ▼
-                                 Visual Tree Graph
-                                   (draw_dot_data)
+         ┌──────────────────────────┴──────────┴─────────────┐
+         ▼                                                   ▼
+ Visual Tree Graph                                   Text Rule Export
+(draw_dot_data / plot_tree)                            (export_text)
 ```
 
 #### Inputs you need
@@ -127,7 +128,7 @@ print(f"Surrogate tree fidelity to forest on test split: {fidelity:.2%}")
 - **Action**: If fidelity is low, increase tree depth or explain regional sub-domains rather than the entire feature space.
 - **Caution**: A shallow tree is an authentic explanation of a complex ensemble only when model agreement (fidelity) is high.
 
-#### Step 3: Decision Tree Visual Inspection (`draw_dot_data`)
+#### Step 3: Decision Tree Visual Inspection (`draw_dot_data` / `plot_tree`)
 Question: what specific decision logic, split thresholds, and leaf purities govern the tree?
 
 ```python
@@ -146,9 +147,32 @@ dot_data = export_graphviz(
 ax_tree = draw_dot_data(dot_data)
 plt.close()
 ```
+
+Without the Graphviz binary, scikit-learn's `plot_tree` draws the same tree with matplotlib only:
+
+```python
+from sklearn.tree import plot_tree
+
+fig, ax = plt.subplots(figsize=(14, 7))
+plot_tree(dt, feature_names=feature_names, class_names=class_names, filled=True, ax=ax)
+plt.close(fig)
+```
 - **What to look for**: Dominant splits near the root, sample sizes per leaf, and node purity.
 - **Action**: Share visual decision paths with stakeholders to validate business logic.
-- **Caution**: draw_dot_data requires system Graphviz; if unavailable, prefer native scikit-learn plot_tree.
+- **Caution**: draw_dot_data requires system Graphviz; plot_tree needs only matplotlib.
+
+#### Step 4: Decision Rules as Text (`export_text`)
+Question: how can the tree splits be extracted as readable, auditable if/else rules?
+
+```python
+from sklearn.tree import export_text
+
+rules_text = export_text(dt, feature_names=feature_names)
+print(rules_text[:300])
+```
+- **What to look for**: Nested threshold conditions that follow the tree branches, with the predicted class at each leaf.
+- **Action**: Audit decision thresholds against domain regulations or operational constraints.
+- **Caution**: export_text works on a single decision tree, not on an ensemble; fit a surrogate tree first (Step 2). Branches deeper than max_depth (default 10) are truncated.
 
 ---
 
@@ -161,7 +185,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.tree import DecisionTreeClassifier, export_graphviz, export_text, plot_tree
 from ds_utils.xai import plot_features_importance
 
 # 1. Load bundled dataset and partition
@@ -185,13 +209,20 @@ fidelity = (dt.predict(X_te) == rf.predict(X_te)).mean()
 # 4. Export the surrogate tree as DOT data (render it with draw_dot_data when Graphviz is installed)
 dot_data = export_graphviz(dt, feature_names=feature_names, class_names=class_names, out_file=None)
 assert dot_data.startswith("digraph")
+
+# 5. Plot the tree with matplotlib only and export its rules as text
+fig, ax = plt.subplots(figsize=(14, 7))
+plot_tree(dt, feature_names=feature_names, class_names=class_names, filled=True, ax=ax)
+plt.close(fig)
+rules_text = export_text(dt, feature_names=feature_names)
+assert "|---" in rules_text
 ```
 
 ## Limitations
 
 - **Tree models only**: `plot_features_importance` relies on `.feature_importances_`. It does not support linear models (`coef_`).
 - **Graphviz binary dependency**: `draw_dot_data` invokes `pydotplus`, which requires Graphviz (`dot` CLI) installed in the operating system environment.
-- **Single-tree rendering**: `export_graphviz` and `draw_dot_data` render one decision tree at a time (`DecisionTreeClassifier` or `DecisionTreeRegressor`), not an ensemble such as `RandomForestClassifier`; explain an ensemble through a surrogate tree (Step 2).
+- **Single-tree scope**: `export_graphviz`, `draw_dot_data`, `plot_tree` and `export_text` work on one decision tree at a time (`DecisionTreeClassifier` or `DecisionTreeRegressor`), not on an ensemble such as `RandomForestClassifier`; explain an ensemble through a surrogate tree (Step 2).
 
 ## Troubleshooting
 

@@ -67,3 +67,11 @@ draw_dot_data(
 
 ### Prerequisites
 - Requires system Graphviz binaries (`dot`) installed in `PATH` and Python package `pydotplus`.
+
+---
+
+## Related scikit-learn tools
+
+These scikit-learn functions complement `draw_dot_data` and work on a single decision tree:
+- `plot_tree(decision_tree, feature_names=..., class_names=..., filled=True, ax=...)`: draws the tree with matplotlib only, no Graphviz binary needed.
+- `export_text(decision_tree, feature_names=...)`: returns the tree rules as indented text; branches deeper than `max_depth` (default 10) are truncated.

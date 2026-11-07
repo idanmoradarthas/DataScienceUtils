@@ -286,9 +286,12 @@ def test_generate_decision_paths_escaped_class_names():
     tree_fn = local_env["predict_special_classes"]
 
     sig = inspect.signature(tree_fn)
-    # Call the generated function over a few samples from X
-    for row in X[:10]:
+    # Call the generated function over samples spanning all classes
+    predicted_classes = set()
+    for row in X[::5]:
         kwargs = {param_name: row[feature_names.index(param_name)] for param_name in sig.parameters}
         predicted_class, prob = tree_fn(**kwargs)
         assert predicted_class in class_names
         assert 0.0 <= prob <= 1.0
+        predicted_classes.add(predicted_class)
+    assert predicted_classes == set(class_names)
