@@ -309,7 +309,7 @@ db_val = directional_bias_score(actual_ts, pred_ts)
 - **Threshold selection data**: The classification decision threshold must be tuned on validation data or out-of-fold cross-validation predictions and then evaluated on a held-out test set; picking it on the final test set yields overly optimistic numbers.
 - **Engine differences**: Matplotlib functions (`plot_confusion_matrix`, `visualize_accuracy_grouped_by_probability`, `plot_error_analysis_chart`, `plot_metric_growth_per_labeled_instances`) return `Axes`. Plotly functions (`plot_roc...`, `plot_precision_recall...`, `plot_rec...`) return `Figure` objects requiring `fig.show()` or `fig.write_html()`.
 - **Probabilities formatting**: `visualize_accuracy_grouped_by_probability` requires a 1D probability array for the specific `labeled_class`, aligned with `clf.classes_`.
-- **Learning curve label shape**: Estimators in `classifiers_dict` must be unfitted instances.
+- **Learning curve estimators**: Estimators in `classifiers_dict` must be unfitted instances.
 - **Directional minimum samples**: `directional_accuracy_score` with `baseline=None` requires at least 2 samples since the first sample establishes the prior baseline.
 
 ## Troubleshooting
