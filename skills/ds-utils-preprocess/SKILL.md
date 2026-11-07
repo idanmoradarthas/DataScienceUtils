@@ -89,6 +89,8 @@ Data leakage happens when decisions about feature pruning, category grouping, or
           (plot_pca_explained_variance)
 ```
 
+For unlabeled data use Steps 1-3, the heatmap and dendrogram from Step 5, and Step 7; Steps 4 and 6 and get_correlated_features need a target.
+
 #### Inputs you need
 
 The steps below assume:
@@ -114,7 +116,9 @@ print(df.isna().mean())
 print(df[target].value_counts(normalize=True))
 
 # Partition first for supervised workflows
-train_df, test_df = train_test_split(df, test_size=0.25, stratify=df[target], random_state=42)
+train_df, test_df = train_test_split(
+    df, test_size=0.25, stratify=df[target], random_state=42
+)  # regression target: drop stratify
 num_cols = train_df.select_dtypes("number").columns.drop(target).tolist()
 ```
 - **What to look for**: High missingness rates, unexpected string types on numeric fields, and class imbalance.
@@ -136,16 +140,24 @@ plt.close()
 - **Caution**: visualize_feature plots unconditional distributions; it does not stratify by target classes.
 
 #### Step 3: Bivariate Feature Interaction (`plot_features_interaction`)
-Question: do two features interact or separate the classes?
+Question: how do two features relate to each other (shape of the relationship, redundancy, group differences)?
 
 ```python
+import matplotlib.pyplot as plt
 from ds_utils.preprocess.visualization import plot_features_interaction
 
+# Numeric-numeric pair: inspect bivariate scatter
 ax_inter = plot_features_interaction(train_df, num_cols[0], num_cols[1])
+plt.close()
+
+# Numeric-categorical / target separation: cast target to category to draw violins per class
+ax_class = plot_features_interaction(
+    train_df.assign(**{target: train_df[target].astype("category")}), num_cols[0], target
+)
 plt.close()
 ```
 - **What to look for**: Non-linear curves, clustering patterns, or conditional variance shifts between the two features.
-- **Action**: Check the interaction chart type determined by the data type matrix documented in the reference file (scatter for numeric pairs, box/violin for numeric-categorical, heatmap for categorical-categorical).
+- **Action**: A near-linear scatter confirms redundancy (go to Step 5); a structured non-linear pattern suggests an interaction or ratio feature.
 - **Caution**: Interaction plots on high-cardinality categoricals become unreadable; filter to frequent categories first.
 
 #### Step 4: Target-Aware Statistics (`extract_statistics_dataframe_per_label`)
@@ -235,7 +247,9 @@ from ds_utils.preprocess.statistics import (
 data = load_breast_cancer(as_frame=True)
 df = data.frame
 target = "target"
-train_df, test_df = train_test_split(df, test_size=0.25, stratify=df[target], random_state=42)
+train_df, test_df = train_test_split(
+    df, test_size=0.25, stratify=df[target], random_state=42
+)  # regression target: drop stratify
 num_cols = train_df.select_dtypes("number").columns.drop(target).tolist()
 
 # 2. Univariate & bivariate visualizations

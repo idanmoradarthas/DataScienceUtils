@@ -56,12 +56,18 @@ Exhaustive signatures, parameters, and return details are in [references/api_ref
                         │
          ┌──────────────┴──────────────┐
          ▼                             ▼
-  Tree Ensemble                  Single Decision Tree
+   Tree Ensemble                 Single Decision Tree
 (Random Forest / GBDT)                 │
-         │                             ├─────────────────────┐
-         ▼                             ▼                     ▼
- Global Feature Importance       Visual Tree Graph      Rule Code Export
- (plot_features_importance)    (draw_dot_data/draw_tree)  (decision_paths)
+         │                             │
+         ├──────────────────┐          │
+         ▼                  ▼          │
+ Global Importance    Surrogate Tree   │
+ (features_importance) (explain forest)│
+                            │          │
+         ┌──────────────────┴──────────┴─────────────┐
+         ▼                                           ▼
+ Visual Tree Graph                           Rule Code Export
+(draw_dot_data / draw_tree)              (generate_decision_paths)
 ```
 
 #### Inputs you need
@@ -110,15 +116,15 @@ Question: does a shallow decision tree accurately approximate the predictions of
 ```python
 from sklearn.tree import DecisionTreeClassifier
 
-# Fit a shallow surrogate tree on the same training data
+# Fit a shallow surrogate tree on the forest's predictions
 dt = DecisionTreeClassifier(max_depth=3, random_state=42)
-dt.fit(X_train, y_train)
+dt.fit(X_train, rf.predict(X_train))  # explain the forest, not the labels
 
 # Measure surrogate fidelity: agreement with the forest on held-out data
 fidelity = (dt.predict(X_test) == rf.predict(X_test)).mean()
 print(f"Surrogate tree fidelity to forest on test split: {fidelity:.2%}")
 ```
-- **What to look for**: High prediction agreement (fidelity >= 85%-90%) between the shallow tree and the forest.
+- **What to look for**: High prediction agreement between the shallow tree and the forest; fidelity of roughly 90% or more is a common rule of thumb, not a guarantee.
 - **Action**: If fidelity is low, increase tree depth or explain regional sub-domains rather than the entire feature space.
 - **Caution**: A shallow tree is an authentic explanation of a complex ensemble only when model agreement (fidelity) is high.
 
@@ -158,7 +164,7 @@ print(python_rules[:150] + "...")
 ```
 - **What to look for**: Nested if/else conditions corresponding to tree branches.
 - **Action**: Audit decision thresholds against domain regulations or operational constraints.
-- **Caution**: generate_decision_paths operates on single DecisionTreeClassifier instances; it cannot extract paths from tree ensembles.
+- **Caution**: generate_decision_paths operates on single DecisionTreeClassifier instances; it cannot extract paths from tree ensembles. Feature names must be valid Python identifiers; rename columns (spaces, dashes, dots) before fitting the tree, otherwise the exported code does not compile.
 
 ---
 
@@ -174,10 +180,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from ds_utils.xai import plot_features_importance, generate_decision_paths
 
-# 1. Load bundled dataset and partition
+# 1. Load bundled dataset, sanitize feature names to valid identifiers, and partition
 cancer = load_breast_cancer(as_frame=True)
-X_tr, X_te, y_tr, y_te = train_test_split(cancer.data, cancer.target, test_size=0.3, random_state=42)
-feature_names = list(cancer.data.columns)
+X = cancer.data.rename(columns=lambda c: c.replace(" ", "_"))
+X_tr, X_te, y_tr, y_te = train_test_split(X, cancer.target, test_size=0.3, random_state=42)
+feature_names = list(X.columns)
 class_names = [str(name) for name in cancer.target_names]
 
 # 2. Train forest and plot global feature importance
@@ -186,16 +193,16 @@ rf.fit(X_tr, y_tr)
 ax_imp = plot_features_importance(feature_names, rf.feature_importances_)
 plt.close()
 
-# 3. Train shallow surrogate tree and check fidelity
+# 3. Train shallow surrogate tree to explain forest and check fidelity
 dt = DecisionTreeClassifier(max_depth=3, random_state=42)
-dt.fit(X_tr, y_tr)
+dt.fit(X_tr, rf.predict(X_tr))
 fidelity = (dt.predict(X_te) == rf.predict(X_te)).mean()
 
 # 4. Generate auditable Python decision path rules
 python_rules = generate_decision_paths(
     dt, feature_names=feature_names, class_names=class_names, tree_name="predict_cancer"
 )
-assert "def predict_cancer(" in python_rules
+compile(python_rules, "<rules>", "exec")
 ```
 
 ## Limitations
@@ -212,3 +219,4 @@ assert "def predict_cancer(" in python_rules
 | `ValueError: Failed to create graph from dot data: GraphViz's executables not found` | System Graphviz binary is not installed in PATH | Install Graphviz via system package manager (`apt-get install graphviz` or `brew install graphviz`) or use `sklearn.tree.plot_tree` |
 | `AttributeError: 'LogisticRegression' object has no attribute 'feature_importances_'` | Passing non-tree model | Use tree models (e.g. Random Forest, Decision Tree, XGBoost) |
 | `ValueError: dot_data must not be empty` | `export_graphviz` produced empty output | Set `out_file=None` in `export_graphviz(...)` to return string |
+| SyntaxError when compiling the output of generate_decision_paths | Feature names contain spaces or punctuation | Rename columns to identifiers before fitting; verify with compile(...) |

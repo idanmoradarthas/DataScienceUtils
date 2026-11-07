@@ -117,11 +117,12 @@ print("Missingness ratio per feature:\n", X.isna().mean())
 print("Scale spread (mean and std):\n", X.describe().loc[["mean", "std"]])
 
 # Impute or drop missing values, then standardize
+X = X.dropna()  # labels then align with the remaining rows of X
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 ```
 - **What to look for**: Large standard deviation discrepancies across features (e.g. income in thousands vs age in tens).
-- **Action**: Standardize features with StandardScaler before distance-based clustering.
+- **Action**: Standardize features with StandardScaler before distance-based clustering; confirm missing rows are removed or imputed so labels align with X.
 - **Caution**: Distance-based algorithms (like KMeans and Euclidean distance) are dominated by features with large scales if unscaled.
 
 #### Step 2: Sweep $k$ and Select Cluster Count (`plot_loss_vs_cluster_number`)
@@ -162,7 +163,7 @@ Question: are cluster point counts balanced, or do massive or tiny outlier clust
 ```python
 from ds_utils.unsupervised import plot_cluster_cardinality
 
-k_optimal = 3
+k_optimal = 3  # replace with the k you chose in Step 2
 kmeans = KMeans(n_clusters=k_optimal, n_init=10, random_state=42)
 labels = kmeans.fit_predict(X_scaled)
 
@@ -203,8 +204,10 @@ plt.close()
 Question: how do the clusters separate when projected into a 2D space?
 
 ```python
-from ds_utils.unsupervised import plot_clusters
+import matplotlib.pyplot as plt
+from ds_utils.unsupervised import plot_clusters, plot_clusters_plotly
 
+# Matplotlib static 2D projection
 ax_viz = plot_clusters(
     X_scaled,
     labels,
@@ -213,6 +216,16 @@ ax_viz = plot_clusters(
     random_state=42,
 )
 plt.close()
+
+# Plotly interactive 2D projection
+fig_viz = plot_clusters_plotly(
+    X_scaled,
+    labels,
+    kmeans.cluster_centers_,
+    reduction_method="pca",
+    random_state=42,
+)
+# fig_viz.show()  # display interactive Plotly figure in browser or notebook
 ```
 - **What to look for**: Visual separation, overlap, or boundary definition across clusters in 2D projection.
 - **Action**: Try t-SNE or UMAP if PCA does not resolve overlapping clusters (note: t-SNE cannot plot centroids).

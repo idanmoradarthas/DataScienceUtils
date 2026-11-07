@@ -95,9 +95,11 @@ print("Top 10 tags:\n", tag_counts.head(10))
 
 # 2. Tag cleanliness and missingness
 missing_ratio = df[tag_col].isna().mean()
-casing_variants = df[tag_col].dropna().str.split(",").explode().str.strip().nunique()
+raw_unique = df[tag_col].dropna().str.split(",").explode().str.strip().nunique()
+lower_unique = len(tag_counts)
 tags_per_row = df[tag_col].dropna().str.split(",").apply(len).describe()
-print(f"Missing ratio: {missing_ratio:.2%}, Unique raw casings: {casing_variants}")
+print(f"Missing ratio: {missing_ratio:.2%}")
+print(f"Unique tags (raw casing): {raw_unique}, Unique tags (lowercased): {lower_unique}")
 print("Tags per row summary:\n", tags_per_row)
 ```
 - **What to look for**: Discrepancies between lowercase and raw unique counts (casing variants), extreme long tails of one-off tags, and high missingness.
@@ -155,7 +157,7 @@ print("Top distinctive terms in cohort:\n", term_scores.sort_values(ascending=Fa
 
 ## Examples
 
-### Runnable demo on a bundled dataset (replace the loading lines with your own data)
+### Runnable demo (format illustration - replace with your data)
 
 ```python
 import pandas as pd
