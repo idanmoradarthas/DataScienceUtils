@@ -184,7 +184,7 @@ from ds_utils.metrics.learning_curves import plot_metric_growth_per_labeled_inst
 
 # Pass UNFITTED estimator instances in the dictionary
 unfitted_models = {"Model": clone(clf)}
-# Pass labels as 2D column vectors: (n_samples, 1)
+# Column-vector labels (n_samples, 1) work on every release; 1-D labels work only from the release that includes this fix
 y_tr_2d = y_train.to_numpy().reshape(-1, 1) if hasattr(y_train, "to_numpy") else np.asarray(y_train).reshape(-1, 1)
 y_te_2d = y_test.to_numpy().reshape(-1, 1) if hasattr(y_test, "to_numpy") else np.asarray(y_test).reshape(-1, 1)
 
@@ -196,7 +196,7 @@ plt.close()
 ```
 - **What to look for**: Metric score flattening out as sample size increases toward 100%.
 - **Action**: If the curve has plateaued, focus on feature engineering or model architecture rather than acquiring more data.
-- **Caution**: Pass unfitted estimators (cloned or freshly instantiated) and reshape labels to 2D column vectors `(n_samples, 1)` to avoid shape indexing errors.
+- **Caution**: Pass unfitted estimators (cloned or freshly instantiated). Column-vector labels `(n_samples, 1)` work on every release, whereas 1-D labels work only from the release that includes this fix.
 
 ---
 
@@ -314,7 +314,7 @@ db_val = directional_bias_score(actual_ts, pred_ts)
 - **Threshold selection data**: The classification decision threshold must be tuned on validation data or out-of-fold cross-validation predictions and then evaluated on a held-out test set; picking it on the final test set yields overly optimistic numbers.
 - **Engine differences**: Matplotlib functions (`plot_confusion_matrix`, `visualize_accuracy_grouped_by_probability`, `plot_error_analysis_chart`, `plot_metric_growth_per_labeled_instances`) return `Axes`. Plotly functions (`plot_roc...`, `plot_precision_recall...`, `plot_rec...`) return `Figure` objects requiring `fig.show()` or `fig.write_html()`.
 - **Probabilities formatting**: `visualize_accuracy_grouped_by_probability` requires a 1D probability array for the specific `labeled_class`, aligned with `clf.classes_`.
-- **Learning curve label shape**: `plot_metric_growth_per_labeled_instances` expects labels `y_train` and `y_test` reshaped as 2D column vectors `(n_samples, 1)` to avoid indexing errors, and estimators in `classifiers_dict` must be unfitted instances.
+- **Learning curve label shape**: Column-vector labels `(n_samples, 1)` work on every release, while 1-D labels work only from the release that includes this fix. Estimators in `classifiers_dict` must be unfitted instances.
 - **Directional minimum samples**: `directional_accuracy_score` with `baseline=None` requires at least 2 samples since the first sample establishes the prior baseline.
 
 ## Troubleshooting
@@ -322,7 +322,7 @@ db_val = directional_bias_score(actual_ts, pred_ts)
 | Error / Symptom | Root Cause | Solution |
 |---|---|---|
 | Plot does not appear when running as a script | Plotly figures (`plot_roc...`, `plot_precision_recall...`, `plot_rec...`) require `fig.show()`, while Matplotlib functions return Axes and require `plt.show()` or `plt.savefig(...)` | Call `fig.show()` for Plotly return values and `plt.show()` or `plt.savefig(...)` for Matplotlib Axes |
-| `IndexError: tuple index out of range` in `plot_metric_growth_per_labeled_instances` | Passed 1D labels array `(n,)` instead of 2D column vector `(n, 1)` | Reshape labels: `y_train.to_numpy().reshape(-1, 1)` and `y_test.to_numpy().reshape(-1, 1)` |
+| `IndexError: tuple index out of range` in `plot_metric_growth_per_labeled_instances` | Older release that does not accept 1-D labels | Upgrade, or reshape labels to a column vector with `y.to_numpy().reshape(-1, 1)` |
 | `ValueError: Per-column arrays must each be 1-dimensional` in `visualize_accuracy_grouped_by_probability` | Passed full 2D probability matrix instead of 1D column | Select the 1D column matching `labeled_class`: `proba[:, np.where(clf.classes_ == labeled_class)[0][0]]` |
 | `AttributeError: 'LogisticRegression' object has no attribute 'shape'` | Passed fitted estimator instance instead of predicted probabilities to ROC/PR functions | Pass dictionary of predicted probability arrays: `{"model": proba[:, pos_idx]}` |
 | `ValueError: Shape mismatch: y_true (n,) and y_scores (n, 2) for classifier <name>` | Passed full 2D probability matrix instead of 1D positive-class scores to ROC/PR curves | Extract 1D array of positive-class scores: `proba[:, pos_idx]` |

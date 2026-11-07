@@ -40,9 +40,11 @@ def plot_metric_growth_per_labeled_instances(
     instances.
 
     :param X_train: array-like or sparse matrix of shape (n_samples, n_features). The training input samples.
-    :param y_train: array-like of shape (n_samples,). The target values (class labels) as integers or strings.
+    :param y_train: array-like of shape (n_samples,), (n_samples, 1) or (n_samples, n_outputs). The target values
+                    (class labels) as integers or strings.
     :param X_test: array-like or sparse matrix of shape (n_samples, n_features). The test or evaluation input samples.
-    :param y_test: array-like of shape (n_samples,). The true labels for X_test.
+    :param y_test: array-like of shape (n_samples,), (n_samples, 1) or (n_samples, n_outputs). The true labels for
+                   X_test.
     :param classifiers_dict: mapping from classifier name to a classifier object.
     :param n_samples: List of numbers of samples for training batches, optional (default=None).
     :param quantiles: List of sample percentages for training batches, optional (default=[0.05, 0.1, ..., 0.95, 1]).
@@ -106,9 +108,8 @@ def _perform_data_partition_and_evaluation(
     classifier: ClassifierMixin,
     metric: Callable[[np.ndarray, np.ndarray], float],
 ) -> float:
-    if y_train.shape[1] == 1:
-        classifier.fit(X_train, y_train.ravel())
-    else:
-        classifier.fit(X_train, y_train)
+    if getattr(y_train, "ndim", 1) == 2 and y_train.shape[1] == 1:
+        y_train = np.ravel(y_train)
+    classifier.fit(X_train, y_train)
     y_pred = classifier.predict(X_test)
     return metric(y_test, y_pred)
