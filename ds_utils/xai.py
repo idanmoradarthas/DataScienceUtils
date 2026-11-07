@@ -1,6 +1,8 @@
 """Explainable AI (XAI) utilities, focusing on model interpretation."""
 
 from io import BytesIO, StringIO
+import json
+import keyword
 import os
 from typing import List, Optional, Union
 import warnings
@@ -9,6 +11,10 @@ from matplotlib import axes, image, pyplot as plt
 import numpy as np
 import pydotplus
 from sklearn.tree import BaseDecisionTree, _tree as sklearn_tree, export_graphviz
+
+
+def _is_valid_identifier(name: object) -> bool:
+    return isinstance(name, str) and name.isidentifier() and not keyword.iskeyword(name)
 
 
 def _recurse(
@@ -36,7 +42,9 @@ def _recurse(
             prob_array = values / (np.sum(values) + 1)
         class_name = class_names[index] if class_names else f"class_{index}"
         output.write(f"{indent}# return class {class_name} with probability {prob_array[index]:.4f}{os.linesep}")
-        output.write(f'{indent}return ("{class_name}", {prob_array[index]:.4f}){os.linesep}')
+        output.write(
+            f"{indent}return ({json.dumps(str(class_name), ensure_ascii=False)}, {prob_array[index]:.4f}){os.linesep}"
+        )
 
 
 def generate_decision_paths(
@@ -57,6 +65,7 @@ def generate_decision_paths(
     :param tree_name: Name of the tree (function signature).
     :param indent_char: Character used for indentation.
     :return: Textual representation of the decision paths in the tree.
+    :raises ValueError: If a feature name used by the tree, or ``tree_name``, is not a valid Python identifier.
     """
     warnings.warn("This module is deprecated. Use sklearn.tree.export_text instead", DeprecationWarning, stacklevel=2)
 
@@ -67,6 +76,15 @@ def generate_decision_paths(
 
     output = StringIO()
     signature_vars = list(dict.fromkeys(f for f in required_features if f != "undefined!"))
+    invalid_features = [f for f in signature_vars if not _is_valid_identifier(f)]
+    if invalid_features:
+        raise ValueError(
+            "Feature names used by the tree must be valid Python identifiers; "
+            f"rename them before fitting: {invalid_features}"
+        )
+    if not _is_valid_identifier(tree_name):
+        raise ValueError(f"tree_name must be a valid Python identifier, got {tree_name!r}")
+
     output.write(f"def {tree_name}({', '.join(signature_vars)}):{os.linesep}")
 
     _recurse(0, 1, tree, required_features, class_names, output, indent_char)

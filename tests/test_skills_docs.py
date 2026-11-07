@@ -43,9 +43,10 @@ SYMBOL_MODULES = {
     "plot_clusters_plotly": "ds_utils.unsupervised",
     "plot_features_importance": "ds_utils.xai",
     "draw_dot_data": "ds_utils.xai",
-    "draw_tree": "ds_utils.xai",
-    "generate_decision_paths": "ds_utils.xai",
 }
+
+# Deprecated functions stay in the library for backwards compatibility but are not documented in skills or Sphinx
+DEPRECATED_API = {"draw_tree", "generate_decision_paths"}
 
 
 def find_signature_blocks():
@@ -212,10 +213,83 @@ def test_all_public_api_is_documented():
                 if getattr(obj, "__module__", None) == module_info.name:
                     public_symbols.add(name)
 
-    expected_symbols = public_symbols - INTENTIONALLY_UNDOCUMENTED
+    expected_symbols = public_symbols - INTENTIONALLY_UNDOCUMENTED - DEPRECATED_API
     documented_symbols = {case[1] for case in SIG_CASES}
     missing = sorted(expected_symbols - documented_symbols)
     assert not missing, f"Public API symbols missing from skill documentation: {missing}"
+
+
+def test_deprecated_api_is_registered():
+    """Verify that all functions emitting deprecation warnings in ds_utils match DEPRECATED_API."""
+    repo_root = Path(__file__).resolve().parent.parent
+    ds_utils_dir = repo_root / "ds_utils"
+    categories = {"DeprecationWarning", "PendingDeprecationWarning", "FutureWarning"}
+    detected_deprecated = set()
+
+    for py_file in ds_utils_dir.rglob("*.py"):
+        content = py_file.read_text(encoding="utf-8")
+        parsed = ast.parse(content, filename=str(py_file))
+        for node in ast.walk(parsed):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for child in ast.walk(node):
+                    if isinstance(child, ast.Call):
+                        func = child.func
+                        is_warn = (isinstance(func, ast.Attribute) and func.attr == "warn") or (
+                            isinstance(func, ast.Name) and func.id == "warn"
+                        )
+                        if is_warn:
+                            matched = False
+                            if len(child.args) >= 2:
+                                arg2 = child.args[1]
+                                if isinstance(arg2, ast.Name) and arg2.id in categories:
+                                    matched = True
+                            for kw in child.keywords:
+                                if (
+                                    kw.arg == "category"
+                                    and isinstance(kw.value, ast.Name)
+                                    and kw.value.id in categories
+                                ):
+                                    matched = True
+                            if matched:
+                                detected_deprecated.add(node.name)
+
+    assert detected_deprecated == DEPRECATED_API, (
+        f"Mismatch between detected deprecated API and DEPRECATED_API registry: {detected_deprecated ^ DEPRECATED_API}"
+    )
+
+
+def test_deprecated_api_not_in_skills():
+    """Verify none of the DEPRECATED_API names appears as a whole word in skill documentation."""
+    repo_root = Path(__file__).resolve().parent.parent
+    skill_files = list(repo_root.glob("skills/*/SKILL.md")) + list(repo_root.glob("skills/*/references/*.md"))
+    patterns = {name: re.compile(rf"\b{re.escape(name)}\b") for name in DEPRECATED_API}
+
+    violations = []
+    for doc_file in skill_files:
+        content = doc_file.read_text(encoding="utf-8")
+        for name, pattern in patterns.items():
+            if pattern.search(content):
+                violations.append(f"{doc_file.relative_to(repo_root)} mentions deprecated symbol '{name}'")
+
+    assert not violations, "Deprecated API found in skill documentation:\n" + "\n".join(violations)
+
+
+def test_deprecated_api_not_in_sphinx_docs():
+    """Verify none of DEPRECATED_API names or '.. deprecated::' appears in Sphinx documentation."""
+    repo_root = Path(__file__).resolve().parent.parent
+    docs_dir = repo_root / "docs" / "source"
+    patterns = {name: re.compile(rf"\b{re.escape(name)}\b") for name in DEPRECATED_API}
+
+    violations = []
+    for rst_file in docs_dir.rglob("*.rst"):
+        content = rst_file.read_text(encoding="utf-8")
+        for name, pattern in patterns.items():
+            if pattern.search(content):
+                violations.append(f"{rst_file.relative_to(repo_root)} mentions deprecated symbol '{name}'")
+        if ".. deprecated::" in content:
+            violations.append(f"{rst_file.relative_to(repo_root)} contains '.. deprecated::' directive")
+
+    assert not violations, "Deprecated API or directive found in Sphinx documentation:\n" + "\n".join(violations)
 
 
 # Regex patterns copied from skillspector 2.12.0 references.py:

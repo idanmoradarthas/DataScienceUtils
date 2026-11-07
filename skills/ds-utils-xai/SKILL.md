@@ -1,7 +1,7 @@
 ---
 name: ds-utils-xai
 description: >
-  Explainable AI (XAI) and model interpretation for tree-based models. Use for plotting feature importance rankings, rendering Graphviz decision tree diagrams, and extracting executable decision paths. Do NOT use for linear models, neural network interpretability, or clustering.
+  Explainable AI (XAI) and model interpretation for tree-based models. Use for plotting feature importance rankings and rendering Graphviz decision tree diagrams. Do NOT use for linear models, neural network interpretability, or clustering.
 version: 1.0.0
 license: MIT
 metadata:
@@ -23,7 +23,7 @@ Explainable AI visualizers and interpretation methods for tree-based scikit-lear
 
 ## Purpose
 
-ds_utils.xai provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts, Graphviz DOT rendering into matplotlib axes, and translation of tree split logic into executable Python functions.
+ds_utils.xai provides tools to inspect and communicate tree-based model decisions. It provides feature importance ranking bar charts and Graphviz DOT rendering into matplotlib axes.
 
 - **When to use**: Explaining tree ensembles (Random Forest, Gradient Boosting, LightGBM, XGBoost) and visualizing single decision tree decision rules.
 - **When NOT to use**: For linear model coefficient analysis (coef_), SHAP/LIME game-theoretic values, neural networks, or unsupervised clustering.
@@ -33,7 +33,7 @@ ds_utils.xai provides tools to inspect and communicate tree-based model decision
 - Python 3.11 or higher.
 - data-science-utils package installed (pip install data-science-utils).
 - Core dependencies: numpy, scikit-learn, matplotlib, pydotplus.
-- System Graphviz installation (apt-get install graphviz or brew install graphviz) for draw_dot_data and draw_tree.
+- System Graphviz installation (apt-get install graphviz or brew install graphviz) for draw_dot_data.
 
 ## Instructions
 
@@ -42,8 +42,7 @@ ds_utils.xai provides tools to inspect and communicate tree-based model decision
 | Interpretation Goal | Function | Target Model | Output Type |
 |---|---|---|---|
 | Rank features by global impact | `plot_features_importance` | Any tree model with `.feature_importances_` | Matplotlib Axes |
-| Visualize decision tree structure | `draw_dot_data` / `draw_tree` | Single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Matplotlib Axes |
-| Convert tree rules into Python code | `generate_decision_paths` | Single `DecisionTreeClassifier` | Python string |
+| Visualize decision tree structure | `draw_dot_data` | DOT string exported from a single `DecisionTreeClassifier` or `DecisionTreeRegressor` | Matplotlib Axes |
 
 Exhaustive signatures, parameters, and return details are in [references/api_reference.md](references/api_reference.md).
 
@@ -64,10 +63,10 @@ Exhaustive signatures, parameters, and return details are in [references/api_ref
  Global Importance              Surrogate Tree │
 (plot_features_importance)     (explain forest)│
                                     │          │
-         ┌──────────────────────────┴──────────┴─────────────┐
-         ▼                                                   ▼
- Visual Tree Graph                                   Rule Code Export
-(draw_dot_data / draw_tree)                      (generate_decision_paths)
+                                    └────┬─────┘
+                                         ▼
+                                 Visual Tree Graph
+                                   (draw_dot_data)
 ```
 
 #### Inputs you need
@@ -128,7 +127,7 @@ print(f"Surrogate tree fidelity to forest on test split: {fidelity:.2%}")
 - **Action**: If fidelity is low, increase tree depth or explain regional sub-domains rather than the entire feature space.
 - **Caution**: A shallow tree is an authentic explanation of a complex ensemble only when model agreement (fidelity) is high.
 
-#### Step 3: Decision Tree Visual Inspection (`draw_dot_data` / `draw_tree`)
+#### Step 3: Decision Tree Visual Inspection (`draw_dot_data`)
 Question: what specific decision logic, split thresholds, and leaf purities govern the tree?
 
 ```python
@@ -151,21 +150,6 @@ plt.close()
 - **Action**: Share visual decision paths with stakeholders to validate business logic.
 - **Caution**: draw_dot_data requires system Graphviz; if unavailable, prefer native scikit-learn plot_tree.
 
-#### Step 4: Rule Logic Export (`generate_decision_paths`)
-Question: how can the tree splits be extracted as an auditable, deterministic Python function?
-
-```python
-from ds_utils.xai import generate_decision_paths
-
-python_rules = generate_decision_paths(
-    dt, feature_names=feature_names, class_names=class_names, tree_name="predict_case"
-)
-print(python_rules[:150] + "...")
-```
-- **What to look for**: Nested if/else conditions corresponding to tree branches.
-- **Action**: Audit decision thresholds against domain regulations or operational constraints.
-- **Caution**: generate_decision_paths operates on single DecisionTreeClassifier instances; it cannot extract paths from tree ensembles. Feature names must be valid Python identifiers; rename columns (spaces, dashes, dots) before fitting the tree, otherwise the exported code does not compile.
-
 ---
 
 ## Examples
@@ -177,12 +161,12 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from ds_utils.xai import plot_features_importance, generate_decision_paths
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from ds_utils.xai import plot_features_importance
 
-# 1. Load bundled dataset, sanitize feature names to valid identifiers, and partition
+# 1. Load bundled dataset and partition
 cancer = load_breast_cancer(as_frame=True)
-X = cancer.data.rename(columns=lambda c: c.replace(" ", "_"))
+X = cancer.data
 X_tr, X_te, y_tr, y_te = train_test_split(X, cancer.target, test_size=0.3, random_state=42)
 feature_names = list(X.columns)
 class_names = [str(name) for name in cancer.target_names]
@@ -198,18 +182,16 @@ dt = DecisionTreeClassifier(max_depth=3, random_state=42)
 dt.fit(X_tr, rf.predict(X_tr))
 fidelity = (dt.predict(X_te) == rf.predict(X_te)).mean()
 
-# 4. Generate auditable Python decision path rules
-python_rules = generate_decision_paths(
-    dt, feature_names=feature_names, class_names=class_names, tree_name="predict_cancer"
-)
-compile(python_rules, "<rules>", "exec")
+# 4. Export the surrogate tree as DOT data (render it with draw_dot_data when Graphviz is installed)
+dot_data = export_graphviz(dt, feature_names=feature_names, class_names=class_names, out_file=None)
+assert dot_data.startswith("digraph")
 ```
 
 ## Limitations
 
 - **Tree models only**: `plot_features_importance` relies on `.feature_importances_`. It does not support linear models (`coef_`).
-- **Graphviz binary dependency**: `draw_dot_data` and `draw_tree` invoke `pydotplus`, which requires Graphviz (`dot` CLI) installed in the operating system environment.
-- **Single-tree model scope**: `draw_tree` operates on single decision tree estimators (`DecisionTreeClassifier` or `DecisionTreeRegressor`); `generate_decision_paths` specifically extracts classification rules from `DecisionTreeClassifier`. Neither works on ensemble models like `RandomForestClassifier`.
+- **Graphviz binary dependency**: `draw_dot_data` invokes `pydotplus`, which requires Graphviz (`dot` CLI) installed in the operating system environment.
+- **Single-tree rendering**: `export_graphviz` and `draw_dot_data` render one decision tree at a time (`DecisionTreeClassifier` or `DecisionTreeRegressor`), not an ensemble such as `RandomForestClassifier`; explain an ensemble through a surrogate tree (Step 2).
 
 ## Troubleshooting
 
@@ -219,4 +201,3 @@ compile(python_rules, "<rules>", "exec")
 | `ValueError: Failed to create graph from dot data: GraphViz's executables not found` | System Graphviz binary is not installed in PATH | Install Graphviz via system package manager (`apt-get install graphviz` or `brew install graphviz`) or use `sklearn.tree.plot_tree` |
 | `AttributeError: 'LogisticRegression' object has no attribute 'feature_importances_'` | Passing non-tree model | Use tree models (e.g. Random Forest, Decision Tree, XGBoost) |
 | `ValueError: dot_data must not be empty` | `export_graphviz` produced empty output | Set `out_file=None` in `export_graphviz(...)` to return string |
-| SyntaxError when compiling the output of generate_decision_paths | Feature names contain spaces or punctuation | Rename columns to identifiers before fitting; verify with compile(...) |
