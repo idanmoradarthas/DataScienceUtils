@@ -103,3 +103,46 @@ def test_plot_metric_growth_per_labeled_instances_verbose(iris_data, classifiers
         " for 20 times\n"
     )
     assert captured == expected
+
+
+@pytest.mark.parametrize(
+    "label_builder",
+    [
+        lambda y: y.ravel(),
+        lambda y: pd.Series(y.ravel()),
+        lambda y: pd.DataFrame(y),
+        lambda y: y.ravel().tolist(),
+    ],
+    ids=["1d_ndarray", "series", "column_dataframe", "list"],
+)
+def test_plot_metric_growth_per_labeled_instances_label_formats(iris_data, classifiers, label_builder):
+    """Test plot_metric_growth_per_labeled_instances across various label formats."""
+    ref_ax = plot_metric_growth_per_labeled_instances(
+        iris_data["x_train"],
+        iris_data["y_train"],
+        iris_data["x_test"],
+        iris_data["y_test"],
+        classifiers,
+        n_samples=list(range(10, 100, 10)),
+        random_state=42,
+    )
+
+    y_train_variant = label_builder(iris_data["y_train"])
+    y_test_variant = label_builder(iris_data["y_test"])
+
+    var_ax = plot_metric_growth_per_labeled_instances(
+        iris_data["x_train"],
+        y_train_variant,
+        iris_data["x_test"],
+        y_test_variant,
+        classifiers,
+        n_samples=list(range(10, 100, 10)),
+        random_state=42,
+    )
+
+    assert len(ref_ax.lines) == len(var_ax.lines) == len(classifiers)
+
+    for ref_line, var_line in zip(ref_ax.lines, var_ax.lines):
+        np.testing.assert_allclose(ref_line.get_ydata(), var_line.get_ydata())
+
+    plt.close("all")
