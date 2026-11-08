@@ -191,10 +191,30 @@ ollama pull "$LLM_MODEL_CHOICE"
 
 if [ "$LLM_MODEL_CHOICE" = "$OLLAMA_LLM_MODEL" ]; then
   echo "Verifying LLM manifest digest against pin ($OLLAMA_LLM_MANIFEST_DIGEST)..."
-  # Query the Ollama API for model information or verify via registry manifest
+  # Parse tag and model name
+  LLM_NAME="${LLM_MODEL_CHOICE%%:*}"
+  LLM_TAG="${LLM_MODEL_CHOICE##*:}"
+  [ "$LLM_TAG" = "$LLM_NAME" ] && LLM_TAG="latest"
+
+  OLLAMA_MODELS_DIR="${OLLAMA_MODELS:-$HOME/.ollama/models}"
+  MANIFEST_PATH="$OLLAMA_MODELS_DIR/manifests/registry.ollama.ai/library/$LLM_NAME/$LLM_TAG"
+
+  if [ ! -f "$MANIFEST_PATH" ]; then
+    echo "Error: Local Ollama manifest not found at $MANIFEST_PATH" >&2
+    exit 1
+  fi
+
+  ACTUAL_LLM_DIGEST=$(sha256sum "$MANIFEST_PATH" | awk '{print $1}')
+  if [ "$ACTUAL_LLM_DIGEST" != "$OLLAMA_LLM_MANIFEST_DIGEST" ]; then
+    echo "Error: LLM manifest digest mismatch for $LLM_MODEL_CHOICE!" >&2
+    echo "  Expected: $OLLAMA_LLM_MANIFEST_DIGEST" >&2
+    echo "  Actual:   $ACTUAL_LLM_DIGEST" >&2
+    exit 1
+  fi
+
   MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
   echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"
-  echo "✓ Pulled LLM: $LLM_MODEL_CHOICE (verified against pinned tag $OLLAMA_LLM_MODEL)"
+  echo "✓ Pulled LLM: $LLM_MODEL_CHOICE (verified against pinned digest $OLLAMA_LLM_MANIFEST_DIGEST)"
 fi
 
 echo ""

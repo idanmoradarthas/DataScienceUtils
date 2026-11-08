@@ -211,6 +211,9 @@ else
   else
     stop_mock
     printf "✗ Scenario 6.1 FAILED! rc=%s, output:\n%s\n" "$RC6_1" "$OUT6_1" >&2
+    if echo "$OUT6_1" | grep -q "package is required"; then
+      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+    fi
     exit 1
   fi
 
@@ -223,6 +226,9 @@ else
   else
     stop_mock
     printf "✗ Scenario 6.2 FAILED! rc=%s, output:\n%s\n" "$RC6_2" "$OUT6_2" >&2
+    if echo "$OUT6_2" | grep -q "package is required"; then
+      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+    fi
     exit 1
   fi
 
@@ -246,6 +252,9 @@ else
     echo "✓ Scenario 6.3 passed: Unreachable port exits 1 and reports INCOMPLETE row."
   else
     printf "✗ Scenario 6.3 FAILED! rc=%s, output:\n%s\n" "$RC6_3" "$OUT6_3" >&2
+    if echo "$OUT6_3" | grep -q "package is required"; then
+      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+    fi
     exit 1
   fi
 fi

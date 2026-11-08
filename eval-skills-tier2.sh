@@ -36,7 +36,7 @@ done
 if ! command -v skillevaluator >/dev/null 2>&1; then
   echo "Error: 'skillevaluator' executable not found in PATH." >&2
   echo "Please install dependencies listed in requirements-skills.txt:" >&2
-  echo '  uv tool install --python 3.13 --with openai "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"' >&2
+  echo '  uv tool install --python 3.13 --with "openai>=2.21.0" "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"' >&2
   exit 1
 fi
 
