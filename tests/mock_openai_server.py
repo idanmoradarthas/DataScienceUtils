@@ -44,6 +44,15 @@ class MockOpenAIHandler(BaseHTTPRequestHandler):
                 inputs = [inputs]
             model = data.get("model", "nemotron-3-embed-1b")
 
+            record_file = os.environ.get("MOCK_RECORD_FILE")
+            if record_file:
+                record = {
+                    "input": inputs,
+                    "keys": list(data.keys()),
+                }
+                with open(record_file, "a", encoding="utf-8") as rf:
+                    rf.write(json.dumps(record) + "\n")
+
             dim = 2048
             embeddings_data = []
             for idx, text in enumerate(inputs):

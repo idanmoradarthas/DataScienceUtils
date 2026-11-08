@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Test suite for eval-skills.sh: Scenarios 1-4 are hermetic using a stub skillevaluator;
 # Scenario 5 is an integration check using real tools when available.
+# Scenario 6 is a Tier 2 runner integration check with mock OpenAI-compatible server.
+# Scenario 7 tests the passage-prefix proxy and mock recording.
 set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -73,7 +75,7 @@ else
   exit 1
 fi
 
-# Scenario 2: STUB_FAIL_SKILL=ds-utils-metrics -> non-zero exit, all six skills evaluated, only metrics shows FAIL/INCOMPL
+# Scenario 2: STUB_FAIL_SKILL=ds-utils-metrics -> non-zero exit, all six skills evaluated, only metrics marked FAIL/INCOMPL
 echo ""
 echo "--- Scenario 2: One Skill Fails Tier 1 ---"
 OUT2=$(PATH="$BIN_DIR:$ORIG_PATH" STUB_FAIL_SKILL="ds-utils-metrics" "$REPO_ROOT/eval-skills.sh" 2>&1)
@@ -258,6 +260,170 @@ else
     exit 1
   fi
 fi
+
+# Scenario 7: Passage-Prefix Proxy and Mock Recording Check (Hermetic, no skillevaluator required)
+echo ""
+echo "--- Scenario 7: Passage-Prefix Proxy & Mock Recording Check ---"
+PROXY_RECORD_FILE="$TEST_TMP/proxy_records.jsonl"
+MOCK7_FIFO="$TEST_TMP/mock7_fifo"
+MOCK7_LOG="$TEST_TMP/mock7.log"
+PROXY_FIFO="$TEST_TMP/proxy_fifo"
+PROXY_LOG="$TEST_TMP/proxy.log"
+
+rm -f "$MOCK7_FIFO" "$PROXY_FIFO"
+mkfifo "$MOCK7_FIFO"
+mkfifo "$PROXY_FIFO"
+
+MOCK_RECORD_FILE="$PROXY_RECORD_FILE" python3 "$REPO_ROOT/tests/mock_openai_server.py" 0 > "$MOCK7_FIFO" 2> "$MOCK7_LOG" &
+MOCK7_PID=$!
+read -r MOCK7_PORT < "$MOCK7_FIFO"
+rm -f "$MOCK7_FIFO"
+
+TIER2_UPSTREAM="http://127.0.0.1:$MOCK7_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_FIFO" 2> "$PROXY_LOG" &
+PROXY_PID=$!
+read -r PROXY_LINE < "$PROXY_FIFO"
+rm -f "$PROXY_FIFO"
+PROXY_PORT=$(echo "$PROXY_LINE" | awk '{print $NF}')
+
+cleanup_proxy_test() {
+  if [ -n "${PROXY_PID:-}" ] && kill -0 "$PROXY_PID" 2>/dev/null; then
+    kill "$PROXY_PID" 2>/dev/null || true
+    wait "$PROXY_PID" 2>/dev/null || true
+  fi
+  if [ -n "${MOCK7_PID:-}" ] && kill -0 "$MOCK7_PID" 2>/dev/null; then
+    kill "$MOCK7_PID" 2>/dev/null || true
+    wait "$MOCK7_PID" 2>/dev/null || true
+  fi
+}
+
+echo "Proxy started on port $PROXY_PORT, forwarding to mock on port $MOCK7_PORT"
+
+# Test 7.1: ["a", "b"] with input_type=passage arrives as ["passage: a", "passage: b"] without input_type
+REQ1_STATUS=$(python3 -c "
+import urllib.request, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/embeddings',
+    data=json.dumps({'input': ['a', 'b'], 'input_type': 'passage', 'model': 'test-model'}).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+with urllib.request.urlopen(req) as resp:
+    print(resp.status)
+")
+
+if [ "$REQ1_STATUS" -ne 200 ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.1 FAILED: Expected HTTP 200, got $REQ1_STATUS" >&2
+  exit 1
+fi
+
+REC1_CHECK=$(python3 -c "
+import json
+with open('$PROXY_RECORD_FILE') as f:
+    line = f.readline()
+rec = json.loads(line)
+inp = rec.get('input', [])
+keys = rec.get('keys', [])
+assert inp == ['passage: a', 'passage: b'], f'Unexpected input: {inp}'
+assert 'input_type' not in keys, f'input_type found in keys: {keys}'
+print('OK')
+")
+
+if [ "$REC1_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.1 FAILED: Mock record mismatch: $REC1_CHECK" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.1 passed: ['a', 'b'] with input_type=passage rewritten to ['passage: a', 'passage: b'] without input_type."
+
+# Test 7.2: Plain string input
+REQ2_STATUS=$(python3 -c "
+import urllib.request, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/embeddings',
+    data=json.dumps({'input': 'hello world', 'model': 'test-model'}).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+with urllib.request.urlopen(req) as resp:
+    print(resp.status)
+")
+
+if [ "$REQ2_STATUS" -ne 200 ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.2 FAILED: Expected HTTP 200, got $REQ2_STATUS" >&2
+  exit 1
+fi
+
+REC2_CHECK=$(python3 -c "
+import json
+with open('$PROXY_RECORD_FILE') as f:
+    lines = f.readlines()
+rec = json.loads(lines[1])
+inp = rec.get('input', [])
+assert inp == ['passage: hello world'], f'Unexpected input: {inp}'
+print('OK')
+")
+
+if [ "$REC2_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.2 FAILED: Plain string input mismatch: $REC2_CHECK" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.2 passed: Plain string input rewritten with passage prefix."
+
+# Test 7.3: /v1/chat/completions passes through transparently
+CHAT_RESP=$(python3 -c "
+import urllib.request, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/chat/completions',
+    data=json.dumps({'model': 'mock-model', 'messages': [{'role': 'user', 'content': 'test'}]}).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+with urllib.request.urlopen(req) as resp:
+    data = json.loads(resp.read().decode('utf-8'))
+    print(data.get('choices', [{}])[0].get('message', {}).get('content', ''))
+")
+
+if ! echo "$CHAT_RESP" | grep -q "verdict"; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.3 FAILED: /v1/chat/completions did not return expected response: $CHAT_RESP" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.3 passed: /v1/chat/completions passed through transparently."
+
+# Test 7.4: Unreachable upstream gives HTTP 502
+# Stop the mock upstream server
+kill -9 "$MOCK7_PID" 2>/dev/null || true
+wait "$MOCK7_PID" 2>/dev/null || true
+
+HTTP_502_CHECK=$(python3 -c "
+import urllib.request, urllib.error, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/embeddings',
+    data=json.dumps({'input': 'fail', 'model': 'test-model'}).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+try:
+    urllib.request.urlopen(req)
+    print('FAILED_NOT_502')
+except urllib.error.HTTPError as e:
+    print(e.code)
+except Exception as e:
+    print(f'ERROR: {e}')
+")
+
+if [ "$HTTP_502_CHECK" = "502" ]; then
+  echo "✓ Scenario 7.4 passed: Unreachable upstream returned HTTP 502."
+else
+  cleanup_proxy_test
+  echo "✗ Scenario 7.4 FAILED: Expected HTTP 502, got $HTTP_502_CHECK" >&2
+  exit 1
+fi
+
+cleanup_proxy_test
 
 echo ""
 echo "=== Evaluator test suite finished successfully! ==="

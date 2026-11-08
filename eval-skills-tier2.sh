@@ -28,6 +28,7 @@ for arg in "$@"; do
     echo ""
     echo "Optional environment variables:"
     echo "  SKILLS_DIR                     Path to skills directory (default: skills)"
+    echo "  TIER2_REPORTS_DIR              Directory to copy JSON reports into at exit"
     exit 0
   fi
 done
@@ -83,11 +84,20 @@ skillevaluator --version
 
 # Isolate reports output to a fresh temp directory so repo root reports/ is never touched
 TIER2_TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TIER2_TEMP_DIR"' EXIT
+
+copy_reports_and_cleanup() {
+  if [ -n "${TIER2_REPORTS_DIR:-}" ]; then
+    mkdir -p "$TIER2_REPORTS_DIR"
+    cp -r "$TIER2_TEMP_DIR"/* "$TIER2_REPORTS_DIR/" 2>/dev/null || true
+  fi
+  rm -rf "$TIER2_TEMP_DIR"
+}
+trap copy_reports_and_cleanup EXIT
 
 # Parallel indexed arrays for bash 3.2 compatibility
 CHECK_NAMES=()
 CHECK_STATUSES=()
+CHECK_DURATIONS=()
 CHECK_FINDINGS=()
 OVERALL_FAILED=0
 
@@ -123,7 +133,7 @@ except Exception:
   }
 }
 
-# Helper to extract findings from JSON report
+# Helper to extract detailed findings from JSON report
 extract_findings() {
   local report_file="$1"
   python3 -c "
@@ -131,7 +141,7 @@ import json
 try:
     with open('$report_file') as f:
         data = json.load(f)
-    findings = []
+    output_lines = []
     for r in data.get('results', []):
         for f in r.get('findings', []):
             cat = f.get('category', 'FINDING')
@@ -140,9 +150,25 @@ try:
             srcs = meta.get('source_files', [])
             if srcs:
                 fp = ', '.join(srcs)
-            msg = f.get('message', '').splitlines()[0] if f.get('message') else ''
-            findings.append(f'[{cat}] {fp}: {msg}')
-    print('\n'.join(findings))
+            raw_msg = f.get('message', '')
+            msg_first_line = raw_msg.splitlines()[0] if raw_msg else ''
+            output_lines.append(f'[{cat}] {fp}: {msg_first_line}')
+
+            # Diagnostics for FAIL findings
+            conf = meta.get('confidence')
+            reasoning = meta.get('reasoning') or meta.get('rationale') or ''
+            suggestion = f.get('suggestion') or ''
+            cluster_size = raw_msg.count('\n  vs ') + 1
+
+            cluster_note = ''
+            if cluster_size > 8:
+                cluster_note = ' (large cluster - likely over-merged by embedding similarity)'
+
+            output_lines.append(f'    confidence: {conf}')
+            output_lines.append(f'    reasoning: {reasoning[:300]}')
+            output_lines.append(f'    suggestion: {suggestion[:200]}')
+            output_lines.append(f'    cluster size: {cluster_size}{cluster_note}')
+    print('\n'.join(output_lines))
 except Exception:
     pass
 " 2>/dev/null
@@ -156,8 +182,11 @@ echo "----------------------------------------------------------"
 SIM_OUT="$TIER2_TEMP_DIR/similarity"
 mkdir -p "$SIM_OUT"
 
+sim_start=$(date +%s)
 skillevaluator similarity-check "$SKILLS_DIR_TARGET" --type skill -r cli,json -o "$SIM_OUT"
 sim_rc=$?
+sim_end=$(date +%s)
+sim_duration=$((sim_end - sim_start))
 
 sim_status=$(parse_status "$SIM_OUT/skillevaluator-similarity.json" "$sim_rc")
 sim_findings=""
@@ -165,6 +194,7 @@ sim_findings=""
 
 CHECK_NAMES+=("similarity-check")
 CHECK_STATUSES+=("$sim_status")
+CHECK_DURATIONS+=("${sim_duration}s")
 CHECK_FINDINGS+=("$sim_findings")
 
 if [ "$sim_status" != "PASS" ]; then
@@ -183,8 +213,11 @@ for s_dir in "$SKILLS_DIR_TARGET"/*/; do
   dedup_out="$TIER2_TEMP_DIR/dedup-$s_name"
   mkdir -p "$dedup_out"
 
+  dedup_start=$(date +%s)
   skillevaluator dedup-scan "$s_dir" -r cli,json -o "$dedup_out"
   dedup_rc=$?
+  dedup_end=$(date +%s)
+  dedup_duration=$((dedup_end - dedup_start))
 
   dedup_status=$(parse_status "$dedup_out/skillevaluator-dedup.json" "$dedup_rc")
   dedup_findings=""
@@ -192,6 +225,7 @@ for s_dir in "$SKILLS_DIR_TARGET"/*/; do
 
   CHECK_NAMES+=("dedup:$s_name")
   CHECK_STATUSES+=("$dedup_status")
+  CHECK_DURATIONS+=("${dedup_duration}s")
   CHECK_FINDINGS+=("$dedup_findings")
 
   if [ "$dedup_status" != "PASS" ]; then
@@ -200,17 +234,18 @@ for s_dir in "$SKILLS_DIR_TARGET"/*/; do
 done
 
 echo ""
-echo "=========================================================="
+echo "==================================================================="
 echo "                  TIER 2 EVALUATION SUMMARY"
-echo "=========================================================="
-printf "%-35s | %-15s\n" "Check / Skill" "Status"
-echo "----------------------------------------------------------"
+echo "==================================================================="
+printf "%-35s | %-12s | %-10s\n" "Check / Skill" "Status" "Duration"
+echo "-------------------------------------------------------------------"
 for i in "${!CHECK_NAMES[@]}"; do
   c_name="${CHECK_NAMES[$i]}"
   c_stat="${CHECK_STATUSES[$i]}"
-  printf "%-35s | %-15s\n" "$c_name" "$c_stat"
+  c_dur="${CHECK_DURATIONS[$i]}"
+  printf "%-35s | %-12s | %-10s\n" "$c_name" "$c_stat" "$c_dur"
 done
-echo "=========================================================="
+echo "==================================================================="
 
 # If there were any failures, print finding details
 HAS_FINDINGS=0
