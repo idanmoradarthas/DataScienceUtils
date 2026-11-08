@@ -3,7 +3,7 @@
 
 Verifies:
 - POST /v1/embeddings returns 2048-dimensional vectors.
-- Vectors are unit-length (L2 norm approx 1.0 within 1e-3).
+- Vectors are unit-length (L2 norm approx 1.0 within 0.05).
 - Batch of 8 texts returns indices 0..7 in order.
 """
 

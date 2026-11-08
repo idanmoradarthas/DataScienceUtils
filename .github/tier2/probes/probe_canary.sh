@@ -37,18 +37,39 @@ python3 -c "
 import json, sys
 with open('$SIM_REPORT') as f:
     data = json.load(f)
+
+overall_status = data.get('overall_status')
+incomplete_scans = data.get('incomplete_scans', [])
+
+if overall_status != 'failed':
+    print(
+        f'Error: Expected similarity-check overall_status == \"failed\", got \"{overall_status}\". '
+        f'incomplete_scans: {incomplete_scans}',
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 found_ab = False
 for r in data.get('results', []):
     for finding in r.get('findings', []):
-        msg = str(finding.get('message', ''))
-        meta = finding.get('metadata', {})
-        srcs = meta.get('source_files', [])
-        if ('skill-a' in msg and 'skill-b' in msg) or any('skill-a' in s for s in srcs) or any('skill-b' in s for s in srcs):
-            found_ab = True
-            break
-if not found_ab and data.get('overall_status') == 'passed':
-    print('Error: similarity-check failed to flag near-identical skill-a and skill-b!', file=sys.stderr)
+        if finding.get('category') == 'SIMILARITY':
+            meta = finding.get('metadata', {})
+            entry_a = meta.get('entry_a') or meta.get('path_a')
+            entry_b = meta.get('entry_b') or meta.get('path_b')
+            if {entry_a, entry_b} == {'skill-a', 'skill-b'}:
+                found_ab = True
+                break
+    if found_ab:
+        break
+
+if not found_ab:
+    print(
+        f'Error: similarity-check did not report a SIMILARITY finding for skill-a and skill-b! '
+        f'overall_status: \"{overall_status}\", incomplete_scans: {incomplete_scans}',
+        file=sys.stderr,
+    )
     sys.exit(1)
+
 print('✓ Canary similarity check successfully identified content overlap between skill-a and skill-b.')
 "
 

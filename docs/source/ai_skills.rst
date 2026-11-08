@@ -664,6 +664,8 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
 .. code-block:: bash
 
+    uv tool install --python 3.13 --force --with "openai>=2.21.0" "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+
     export SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible
     export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
     export SKILL_EVAL_EMBEDDING_API_KEY=ollama
