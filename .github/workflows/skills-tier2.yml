@@ -1,0 +1,230 @@
+name: Skills Tier 2 Deduplication (Manual Spike)
+
+on:
+  workflow_dispatch:
+    inputs:
+      embedding_file:
+        description: "GGUF Quantization File for Nemotron-3-Embed-1B"
+        required: true
+        type: choice
+        options:
+          - q8_0
+          - f16
+          - q4_k_m
+        default: q8_0
+      llm_model:
+        description: "Ollama LLM Model for dedup-scan"
+        required: true
+        type: string
+        default: "gemma4:e2b"
+      recompute_reference:
+        description: "Force recomputing the reference cosine matrix from official BF16 weights"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skills-tier2-spike
+  cancel-in-progress: false
+
+jobs:
+  reference:
+    name: Compute Reference Cosine Matrix (Optional)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if reference matrix exists
+        id: check_ref
+        run: |
+          if [ -f "tests/resources/tier2_reference_cosines.json" ] && [ "${{ inputs.recompute_reference }}" != "true" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.check_ref.outputs.exists != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install PyTorch and Transformers
+        if: steps.check_ref.outputs.exists != 'true'
+        run: pip install --no-cache-dir torch transformers accelerate
+
+      - name: Compute Reference Cosines from BF16
+        if: steps.check_ref.outputs.exists != 'true'
+        run: |
+          export COMPUTE_ONLY=true
+          python3 .github/tier2/probes/probe_reference_cosines.py
+
+      - name: Upload Reference Artifact
+        if: steps.check_ref.outputs.exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tier2-reference-cosines
+          path: tests/resources/tier2_reference_cosines.json
+          retention-days: 14
+
+  tier2-dedup:
+    name: Tier 2 Deduplication Run
+    needs: [reference]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_KEEP_ALIVE: "30m"
+      SKILL_EVAL_EMBEDDING_PROVIDER: "openai-compatible"
+      SKILL_EVAL_EMBEDDING_BASE_URL: "http://127.0.0.1:11434/v1"
+      SKILL_EVAL_EMBEDDING_API_KEY: "ollama"
+      SKILL_EVAL_EMBEDDING_MODEL: "nemotron-3-embed-1b"
+      SKILL_EVAL_LLM_PROVIDER: "openai-compatible"
+      SKILL_EVAL_LLM_BASE_URL: "http://127.0.0.1:11434/v1"
+      SKILL_EVAL_LLM_API_KEY: "ollama"
+      SKILL_EVAL_LLM_MODEL: "${{ inputs.llm_model }}"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Download Reference Artifact (if computed)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: tier2-reference-cosines
+          path: tests/resources/
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install SkillEvaluator
+        run: |
+          uv tool install --python 3.13 --with openai \
+            "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+          pip install openai
+
+      - name: Cache Model Files
+        id: cache-models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tier2_models
+          key: tier2-models-${{ hashFiles('.github/tier2/pins.env') }}-${{ inputs.embedding_file }}
+
+      - name: Setup Ollama and Models
+        id: setup-ollama
+        run: |
+          start_time=$(date +%s)
+          .github/tier2/setup_ollama.sh "${{ inputs.embedding_file }}" "${{ inputs.llm_model }}"
+          end_time=$(date +%s)
+          echo "SETUP_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      # PROBES (Each runs as its own distinct step)
+      - name: "Probe A: Embeddings Endpoint"
+        id: probe-embeddings
+        run: |
+          start_time=$(date +%s)
+          python3 .github/tier2/probes/probe_embeddings.py | tee probe_a.log
+          end_time=$(date +%s)
+          echo "PROBE_A_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      - name: "Probe B: Embedding Correctness vs Reference"
+        id: probe-reference
+        run: |
+          start_time=$(date +%s)
+          python3 .github/tier2/probes/probe_reference_cosines.py | tee probe_b.log
+          end_time=$(date +%s)
+          echo "PROBE_B_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      - name: "Probe C: LLM Structured Output & Latency"
+        id: probe-llm
+        run: |
+          start_time=$(date +%s)
+          python3 .github/tier2/probes/probe_llm_json.py | tee probe_c.log
+          end_time=$(date +%s)
+          echo "PROBE_C_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      - name: "Probe D: Canary Positive Control"
+        id: probe-canary
+        run: |
+          start_time=$(date +%s)
+          .github/tier2/probes/probe_canary.sh | tee probe_d.log
+          end_time=$(date +%s)
+          echo "PROBE_D_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      # EVALUATION
+      - name: "Run Tier 2 Deduplication on Skills"
+        id: eval-tier2
+        run: |
+          start_time=$(date +%s)
+          mkdir -p reports_tier2
+          ./eval-skills-tier2.sh | tee eval_tier2.log
+          end_time=$(date +%s)
+          echo "EVAL_DURATION=$((end_time - start_time))" >> "$GITHUB_ENV"
+
+      - name: Generate GitHub Step Summary
+        if: always()
+        run: |
+          echo "## SkillEvaluator Tier 2 Deduplication Spike Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Runner Conclusion**: \`${{ job.status }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Embedding Quantization**: \`${{ inputs.embedding_file }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **LLM Model**: \`${{ inputs.llm_model }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### Stage Timings" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Stage | Duration (s) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Setup Ollama & Models | ${SETUP_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Probe A (Embeddings) | ${PROBE_A_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Probe B (Correctness) | ${PROBE_B_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Probe C (LLM Schema) | ${PROBE_C_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Probe D (Canary) | ${PROBE_D_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Skills Evaluation | ${EVAL_DURATION:-N/A}s |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### System Resources" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          free -h || true
+          df -h || true
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f eval_tier2.log ]; then
+            echo "### Evaluation Output" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`text" >> "$GITHUB_STEP_SUMMARY"
+            cat eval_tier2.log >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tier2-spike-logs-and-reports
+          path: |
+            *.log
+            ~/.cache/tier2_models/ollama_server.log
+          retention-days: 14

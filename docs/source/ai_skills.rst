@@ -648,6 +648,45 @@ On Windows (Command Prompt / PowerShell):
    PowerShell requires the explicit ``.\`` prefix to run scripts in the current directory;
    ``cmd.exe`` accepts either ``eval-skills.bat`` or ``.\eval-skills.bat``.
 
+Optional Tier 2 Deduplication Checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In addition to Tier 1 static validation and quality grading, NVIDIA SkillEvaluator provides Tier 2 validation to detect semantic duplication:
+
+* **Inter-skill similarity** (``similarity-check``): Compares skills against each other using vector embedding cosine similarity to detect overlapping responsibilities or descriptions.
+* **Intra-skill deduplication** (``dedup-scan``): Chunks files within each skill directory, clusters semantically similar passages using embeddings (threshold 0.80), and queries an LLM to identify verbatim or near-verbatim redundancies.
+
+Tier 2 checks require both an embedding provider and an LLM provider configured via environment variables.
+
+**Running Tier 2 Checks Locally**
+
+You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally against any OpenAI-compatible server (such as a local Ollama instance):
+
+.. code-block:: bash
+
+    export SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible
+    export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
+    export SKILL_EVAL_EMBEDDING_API_KEY=ollama
+    export SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b
+
+    export SKILL_EVAL_LLM_PROVIDER=openai-compatible
+    export SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+    export SKILL_EVAL_LLM_API_KEY=ollama
+    export SKILL_EVAL_LLM_MODEL=gemma4:e2b
+
+    ./eval-skills-tier2.sh
+
+The script runs ``similarity-check`` across all skills, followed by ``dedup-scan`` for each individual skill directory in an isolated temporary location. Each check is mapped to ``PASS``, ``FAIL``, or ``INCOMPLETE``. If any duplicate findings are reported, details are displayed and the script exits 1.
+
+**Manual CI Workflow**
+
+An optional, non-blocking CI workflow (``.github/workflows/skills-tier2.yml``) is available to execute Tier 2 validation in a GitHub Actions runner. Key characteristics:
+
+* **Manual trigger only**: The workflow never runs on ``push`` or ``pull_request``; it is invoked manually via ``workflow_dispatch``.
+* **Runtime downloads**: Model weights (such as GGUF embeddings and Ollama LLM tags) are downloaded and verified dynamically at runtime; they are not bundled or redistributed within the repository.
+* **Embedding verification**: The community GGUF embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) is verified by an automated probe comparing its pairwise cosine matrix against reference scores computed from the official upstream BF16 checkpoint (``nvidia/Nemotron-3-Embed-1B-BF16``).
+* **Positive control canary**: Synthetic canary fixtures with intentional duplicates are scanned to confirm that both inter-skill and intra-skill duplication detectors are fully operational before repository skills are evaluated.
+
 Troubleshooting
 ---------------
 * **Skills not triggering**: The description field guides the AI on when to trigger the skill. Try an explicit trigger by asking your AI assistant to "use the ds-utils-metrics skill".

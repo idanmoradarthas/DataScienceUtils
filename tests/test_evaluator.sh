@@ -158,5 +158,97 @@ else
   fi
 fi
 
+# Scenario 6: Tier 2 runner integration check with mock OpenAI-compatible server
+echo ""
+echo "--- Scenario 6: Tier 2 Runner Integration Check ---"
+if ! command -v skillevaluator >/dev/null 2>&1; then
+  if [ "${REQUIRE_REAL_EVALUATOR:-0}" = "1" ]; then
+    echo "✗ Scenario 6 FAILED: skillevaluator not found on PATH but REQUIRE_REAL_EVALUATOR=1 is set!" >&2
+    exit 1
+  else
+    echo "Scenario 6 SKIPPED: skillevaluator not found on PATH."
+  fi
+else
+  # 6a. Start mock server
+  SERVER_LOG="$TEST_TMP/mock_server.log"
+  MOCK_FIFO="$TEST_TMP/mock_fifo"
+  VERDICT_FILE="$TEST_TMP/mock_verdict.txt"
+  echo "RELATED_BUT_DISTINCT" > "$VERDICT_FILE"
+  rm -f "$MOCK_FIFO"
+  mkfifo "$MOCK_FIFO"
+
+  MOCK_VERDICT_FILE="$VERDICT_FILE" python3 "$REPO_ROOT/tests/mock_openai_server.py" 0 > "$MOCK_FIFO" 2> "$SERVER_LOG" &
+  MOCK_PID=$!
+  read -r MOCK_PORT < "$MOCK_FIFO"
+  rm -f "$MOCK_FIFO"
+
+  stop_mock() {
+    if [ -n "${MOCK_PID:-}" ] && kill -0 "$MOCK_PID" 2>/dev/null; then
+      kill "$MOCK_PID" 2>/dev/null || true
+      wait "$MOCK_PID" 2>/dev/null || true
+    fi
+  }
+
+  echo "Mock server started on port $MOCK_PORT (PID $MOCK_PID)"
+
+  ENV_COMMON=(
+    "SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible"
+    "SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:$MOCK_PORT/v1"
+    "SKILL_EVAL_EMBEDDING_API_KEY=ollama"
+    "SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b"
+    "SKILL_EVAL_LLM_PROVIDER=openai-compatible"
+    "SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:$MOCK_PORT/v1"
+    "SKILL_EVAL_LLM_API_KEY=ollama"
+    "SKILL_EVAL_LLM_MODEL=gemma4:e2b"
+  )
+
+  # Test 6.1: RELATED_BUT_DISTINCT -> exits 0 with all PASS
+  echo "RELATED_BUT_DISTINCT" > "$VERDICT_FILE"
+  OUT6_1=$(env "${ENV_COMMON[@]}" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_1=$?
+  if [ $RC6_1 -eq 0 ] && ! echo "$OUT6_1" | grep -q "FAIL" && ! echo "$OUT6_1" | grep -q "INCOMPLETE"; then
+    echo "✓ Scenario 6.1 passed: RELATED_BUT_DISTINCT exits 0 and all rows show PASS."
+  else
+    stop_mock
+    printf "✗ Scenario 6.1 FAILED! rc=%s, output:\n%s\n" "$RC6_1" "$OUT6_1" >&2
+    exit 1
+  fi
+
+  # Test 6.2: DUPLICATE -> exits 1 with a FAIL row
+  echo "DUPLICATE" > "$VERDICT_FILE"
+  OUT6_2=$(env "${ENV_COMMON[@]}" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_2=$?
+  if [ $RC6_2 -eq 1 ] && echo "$OUT6_2" | grep -q "FAIL"; then
+    echo "✓ Scenario 6.2 passed: DUPLICATE exits 1 and reports FAIL row."
+  else
+    stop_mock
+    printf "✗ Scenario 6.2 FAILED! rc=%s, output:\n%s\n" "$RC6_2" "$OUT6_2" >&2
+    exit 1
+  fi
+
+  # Stop mock server before unreachable port test
+  stop_mock
+
+  # Test 6.3: Unreachable port -> exits 1 with an INCOMPLETE row
+  ENV_UNREACHABLE=(
+    "SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible"
+    "SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:1/v1"
+    "SKILL_EVAL_EMBEDDING_API_KEY=ollama"
+    "SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b"
+    "SKILL_EVAL_LLM_PROVIDER=openai-compatible"
+    "SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:1/v1"
+    "SKILL_EVAL_LLM_API_KEY=ollama"
+    "SKILL_EVAL_LLM_MODEL=gemma4:e2b"
+  )
+  OUT6_3=$(env "${ENV_UNREACHABLE[@]}" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_3=$?
+  if [ $RC6_3 -eq 1 ] && echo "$OUT6_3" | grep -q "INCOMPLETE"; then
+    echo "✓ Scenario 6.3 passed: Unreachable port exits 1 and reports INCOMPLETE row."
+  else
+    printf "✗ Scenario 6.3 FAILED! rc=%s, output:\n%s\n" "$RC6_3" "$OUT6_3" >&2
+    exit 1
+  fi
+fi
+
 echo ""
 echo "=== Evaluator test suite finished successfully! ==="
