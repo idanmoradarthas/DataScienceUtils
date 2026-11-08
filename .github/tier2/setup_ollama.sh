@@ -42,10 +42,8 @@ if [ "${1:-}" = "--discover" ]; then
   echo ""
   echo "--- LLM tag digest ---"
   LLM_TAG="gemma4:e2b"
-  DIGEST_HEADER=$(curl -s -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "https://registry.ollama.ai/v2/library/gemma4/manifests/e2b" | grep -i "ollama-content-digest:" || true)
-  LLM_DIGEST=$(echo "$DIGEST_HEADER" | awk '{print $2}' | tr -d '\r\n')
   echo "OLLAMA_LLM_MODEL=\"$LLM_TAG\""
-  echo "OLLAMA_LLM_MANIFEST_DIGEST=\"$LLM_DIGEST\""
+  echo "# OLLAMA_LLM_MANIFEST_DIGEST: take it from the CI log line \"Local manifest sha256:\" after a run (see pins.env comment)."
   exit 0
 fi
 
@@ -145,8 +143,6 @@ if ! command -v ollama >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-echo "Ollama version: $(ollama --version 2>&1 || true)"
-
 # 3. Start Ollama server in background if not already running
 export OLLAMA_HOST="${OLLAMA_HOST:-127.0.0.1:11434}"
 export OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-1}"
@@ -174,6 +170,8 @@ if ! curl -s "http://$OLLAMA_HOST/api/version" >/dev/null 2>&1; then
   echo "✓ Ollama server is responding."
 fi
 
+echo "Ollama version: $(ollama --version 2>&1 || true)"
+
 # 4. Create embedding model in Ollama
 MODELFILE="$MODELS_CACHE_DIR/Modelfile.nemotron"
 cat << EOF > "$MODELFILE"
@@ -182,35 +180,28 @@ PARAMETER num_ctx 4096
 EOF
 
 echo "Creating Ollama model 'nemotron-3-embed-1b' from $GGUF_PATH ..."
-ollama create nemotron-3-embed-1b -f "$MODELFILE"
+CREATE_LOG="$MODELS_CACHE_DIR/ollama_create.log"
+if ! ollama create nemotron-3-embed-1b -f "$MODELFILE" > "$CREATE_LOG" 2>&1; then
+  echo "Error: 'ollama create' failed. Full output:" >&2
+  sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$CREATE_LOG" | tr '\r' '\n' >&2
+  exit 1
+fi
+sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$CREATE_LOG" | tr '\r' '\n' | tail -n 15
 echo "✓ Ollama model 'nemotron-3-embed-1b' created."
 
 # 5. Pull and verify LLM model
 echo "Pulling LLM model '$LLM_MODEL_CHOICE'..."
-ollama pull "$LLM_MODEL_CHOICE"
+PULL_LOG="$MODELS_CACHE_DIR/ollama_pull.log"
+if ! ollama pull "$LLM_MODEL_CHOICE" > "$PULL_LOG" 2>&1; then
+  echo "Error: 'ollama pull' failed. Full output:" >&2
+  sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$PULL_LOG" | tr '\r' '\n' >&2
+  exit 1
+fi
+sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$PULL_LOG" | tr '\r' '\n' | tail -n 15
 
 if [ "$LLM_MODEL_CHOICE" = "$OLLAMA_LLM_MODEL" ]; then
   echo "Verifying LLM manifest digest against pin ($OLLAMA_LLM_MANIFEST_DIGEST)..."
-  # Parse tag and model name
-  LLM_NAME="${LLM_MODEL_CHOICE%%:*}"
-  LLM_TAG="${LLM_MODEL_CHOICE##*:}"
-  [ "$LLM_TAG" = "$LLM_NAME" ] && LLM_TAG="latest"
-
-  OLLAMA_MODELS_DIR="${OLLAMA_MODELS:-$HOME/.ollama/models}"
-  MANIFEST_PATH="$OLLAMA_MODELS_DIR/manifests/registry.ollama.ai/library/$LLM_NAME/$LLM_TAG"
-
-  if [ ! -f "$MANIFEST_PATH" ]; then
-    echo "Error: Local Ollama manifest not found at $MANIFEST_PATH" >&2
-    exit 1
-  fi
-
-  ACTUAL_LLM_DIGEST=$(sha256sum "$MANIFEST_PATH" | awk '{print $1}')
-  if [ "$ACTUAL_LLM_DIGEST" != "$OLLAMA_LLM_MANIFEST_DIGEST" ]; then
-    echo "Error: LLM manifest digest mismatch for $LLM_MODEL_CHOICE!" >&2
-    echo "  Expected: $OLLAMA_LLM_MANIFEST_DIGEST" >&2
-    echo "  Actual:   $ACTUAL_LLM_DIGEST" >&2
-    exit 1
-  fi
+  "$SCRIPT_DIR/verify_llm_manifest.sh" "$LLM_MODEL_CHOICE" "$OLLAMA_LLM_MANIFEST_DIGEST"
 
   MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
   echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"
