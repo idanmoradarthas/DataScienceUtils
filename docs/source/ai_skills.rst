@@ -666,8 +666,15 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
     uv tool install --python 3.13 --force --with "openai>=2.21.0" "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
 
+    # Start Ollama with expanded context window for cluster evaluation
+    # OLLAMA_CONTEXT_LENGTH=32768 ollama serve
+
+    # Start passage-prefix proxy (listens on 127.0.0.1:11435, forwards to 127.0.0.1:11434;
+    # configurable via TIER2_EMBED_PROXY_PORT, TIER2_UPSTREAM, TIER2_EMBED_PREFIX)
+    # python .github/tier2/embed_prefix_proxy.py &
+
     export SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible
-    export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
+    export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11435/v1
     export SKILL_EVAL_EMBEDDING_API_KEY=ollama
     export SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b
 
@@ -678,6 +685,8 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
     ./eval-skills-tier2.sh
 
+The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``"passage: "`` on every document. While NVIDIA's hosted endpoint honours ``input_type=passage`` sent by SkillEvaluator, Ollama ignores it; without the proxy the chunks are embedded unprefixed, similarities are inflated and unrelated chunks merge into large clusters (false DUPLICATE reports). Ollama's default 4096-token context truncates large cluster prompts, hence ``OLLAMA_CONTEXT_LENGTH=32768``.
+
 The script runs ``similarity-check`` across all skills, followed by ``dedup-scan`` for each individual skill directory in an isolated temporary location. Each check is mapped to ``PASS``, ``FAIL``, or ``INCOMPLETE``. If any duplicate findings are reported, details are displayed and the script exits 1.
 
 **Manual CI Workflow**
@@ -685,6 +694,7 @@ The script runs ``similarity-check`` across all skills, followed by ``dedup-scan
 An optional, non-blocking CI workflow (``.github/workflows/skills-tier2.yml``) is available to execute Tier 2 validation in a GitHub Actions runner. Key characteristics:
 
 * **Manual trigger only**: The workflow never runs on ``push`` or ``pull_request``; it is invoked manually via ``workflow_dispatch``.
+* **Embedding prefix input**: ``embedding_prefix`` (default ``passage``) routes embeddings through the proxy; ``none`` bypasses it and is meant for A/B diagnostics only.
 * **Runtime downloads**: Model weights (such as GGUF embeddings and Ollama LLM tags) are downloaded and verified dynamically at runtime; they are not bundled or redistributed within the repository.
 * **Embedding verification**: The community GGUF embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) is verified by an automated probe comparing its pairwise cosine matrix against reference scores computed from the official upstream BF16 checkpoint (``nvidia/Nemotron-3-Embed-1B-BF16``).
 * **Positive control canary**: Synthetic canary fixtures with intentional duplicates are scanned to confirm that both inter-skill and intra-skill duplication detectors are fully operational before repository skills are evaluated.
