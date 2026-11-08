@@ -261,29 +261,43 @@ else
   fi
 fi
 
+# wait_for_listening <logfile> <pid> <timeout_seconds>
+# Prints the port on stdout and returns 0 as soon as "listening on <port>" appears in the log.
+# Returns 1 (after dumping the log to stderr) if the process dies first or the wall-clock deadline passes.
+wait_for_listening() {
+  local log="$1" pid="$2" timeout="$3" deadline line
+  deadline=$((SECONDS + timeout))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    line=$(grep -m1 "listening on " "$log" 2>/dev/null || true)
+    if [ -n "$line" ]; then
+      echo "${line##* }"
+      return 0
+    fi
+    if ! kill -0 "$pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
+  echo "proxy did not report a listening port within ${timeout}s (pid $pid); log follows:" >&2
+  cat "$log" >&2 2>/dev/null || true
+  return 1
+}
+
 # Scenario 7: Passage-Prefix Proxy and Mock Recording Check (Hermetic, no skillevaluator required)
 echo ""
 echo "--- Scenario 7: Passage-Prefix Proxy & Mock Recording Check ---"
 PROXY_RECORD_FILE="$TEST_TMP/proxy_records.jsonl"
 MOCK7_FIFO="$TEST_TMP/mock7_fifo"
 MOCK7_LOG="$TEST_TMP/mock7.log"
-PROXY_FIFO="$TEST_TMP/proxy_fifo"
 PROXY_LOG="$TEST_TMP/proxy.log"
 
-rm -f "$MOCK7_FIFO" "$PROXY_FIFO"
+rm -f "$MOCK7_FIFO"
 mkfifo "$MOCK7_FIFO"
-mkfifo "$PROXY_FIFO"
 
 MOCK_RECORD_FILE="$PROXY_RECORD_FILE" python3 "$REPO_ROOT/tests/mock_openai_server.py" 0 > "$MOCK7_FIFO" 2> "$MOCK7_LOG" &
 MOCK7_PID=$!
 read -r MOCK7_PORT < "$MOCK7_FIFO"
 rm -f "$MOCK7_FIFO"
-
-TIER2_UPSTREAM="http://127.0.0.1:$MOCK7_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_FIFO" 2> "$PROXY_LOG" &
-PROXY_PID=$!
-read -r PROXY_LINE < "$PROXY_FIFO"
-rm -f "$PROXY_FIFO"
-PROXY_PORT=$(echo "$PROXY_LINE" | awk '{print $NF}')
 
 cleanup_proxy_test() {
   if [ -n "${PROXY_PID:-}" ] && kill -0 "$PROXY_PID" 2>/dev/null; then
@@ -295,6 +309,11 @@ cleanup_proxy_test() {
     wait "$MOCK7_PID" 2>/dev/null || true
   fi
 }
+
+TIER2_UPSTREAM="http://127.0.0.1:$MOCK7_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_LOG" 2>&1 &
+PROXY_PID=$!
+
+PROXY_PORT=$(wait_for_listening "$PROXY_LOG" "$PROXY_PID" 120) || { cleanup_proxy_test; echo "✗ Scenario 7 FAILED: proxy did not start" >&2; exit 1; }
 
 echo "Proxy started on port $PROXY_PORT, forwarding to mock on port $MOCK7_PORT"
 
@@ -311,7 +330,7 @@ with urllib.request.urlopen(req) as resp:
     print(resp.status)
 ")
 
-if [ "$REQ1_STATUS" -ne 200 ]; then
+if [ "$REQ1_STATUS" != "200" ]; then
   cleanup_proxy_test
   echo "✗ Scenario 7.1 FAILED: Expected HTTP 200, got $REQ1_STATUS" >&2
   exit 1
@@ -349,7 +368,7 @@ with urllib.request.urlopen(req) as resp:
     print(resp.status)
 ")
 
-if [ "$REQ2_STATUS" -ne 200 ]; then
+if [ "$REQ2_STATUS" != "200" ]; then
   cleanup_proxy_test
   echo "✗ Scenario 7.2 FAILED: Expected HTTP 200, got $REQ2_STATUS" >&2
   exit 1
@@ -392,6 +411,148 @@ if ! echo "$CHAT_RESP" | grep -q "verdict"; then
   exit 1
 fi
 echo "✓ Scenario 7.3 passed: /v1/chat/completions passed through transparently."
+
+# Test 7.5: body [1, 2, 3] -> HTTP 400
+REQ5_STATUS=$(python3 -c "
+import urllib.request, urllib.error, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/embeddings',
+    data=json.dumps([1, 2, 3]).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+try:
+    urllib.request.urlopen(req)
+    print('FAILED_NOT_400')
+except urllib.error.HTTPError as e:
+    print(e.code)
+except Exception as e:
+    print(f'ERROR: {e}')
+")
+
+if [ "$REQ5_STATUS" = "400" ]; then
+  echo "✓ Scenario 7.5 passed: Body [1, 2, 3] returns HTTP 400."
+else
+  cleanup_proxy_test
+  echo "✗ Scenario 7.5 FAILED: Expected HTTP 400, got $REQ5_STATUS" >&2
+  exit 1
+fi
+
+# Test 7.6: input [[1, 2, 3]] reaches the mock unchanged
+REQ6_STATUS=$(python3 -c "
+import urllib.request, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_PORT/v1/embeddings',
+    data=json.dumps({'input': [[1, 2, 3]], 'model': 'test-model'}).encode('utf-8'),
+    headers={'Content-Type': 'application/json'},
+    method='POST'
+)
+with urllib.request.urlopen(req) as resp:
+    print(resp.status)
+")
+
+if [ "$REQ6_STATUS" != "200" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.6 FAILED: Expected HTTP 200, got $REQ6_STATUS" >&2
+  exit 1
+fi
+
+REC6_CHECK=$(python3 -c "
+import json
+with open('$PROXY_RECORD_FILE') as f:
+    lines = f.readlines()
+rec = json.loads(lines[-1])
+inp = rec.get('input', [])
+assert inp == [[1, 2, 3]], f'Unexpected input: {inp}'
+print('OK')
+")
+
+if [ "$REC6_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.6 FAILED: Non-str input mismatch: $REC6_CHECK" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.6 passed: Input [[1, 2, 3]] reached mock unchanged."
+
+# Test 7.7: with MOCK_GZIP=1 on mock and client sending Accept-Encoding: gzip through proxy,
+# client gets plain, decodable JSON (proxy sent Accept-Encoding: identity), and recorded input is prefixed.
+MOCK_GZIP_FIFO="$TEST_TMP/mock_gzip_fifo"
+MOCK_GZIP_LOG="$TEST_TMP/mock_gzip.log"
+MOCK_GZIP_RECORD="$TEST_TMP/mock_gzip_records.jsonl"
+PROXY_GZIP_LOG="$TEST_TMP/proxy_gzip.log"
+
+mkfifo "$MOCK_GZIP_FIFO"
+MOCK_RECORD_FILE="$MOCK_GZIP_RECORD" MOCK_GZIP=1 python3 "$REPO_ROOT/tests/mock_openai_server.py" 0 > "$MOCK_GZIP_FIFO" 2> "$MOCK_GZIP_LOG" &
+MOCK_GZIP_PID=$!
+read -r MOCK_GZIP_PORT < "$MOCK_GZIP_FIFO"
+rm -f "$MOCK_GZIP_FIFO"
+
+TIER2_UPSTREAM="http://127.0.0.1:$MOCK_GZIP_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_GZIP_LOG" 2>&1 &
+PROXY_GZIP_PID=$!
+
+PROXY_GZIP_PORT=$(wait_for_listening "$PROXY_GZIP_LOG" "$PROXY_GZIP_PID" 120) || { kill "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true; wait "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true; cleanup_proxy_test; echo "✗ Scenario 7.7 FAILED: gzip proxy did not start" >&2; exit 1; }
+
+GZIP_CHECK=$(python3 -c "
+import urllib.request, json
+req = urllib.request.Request(
+    'http://127.0.0.1:$PROXY_GZIP_PORT/v1/embeddings',
+    data=json.dumps({'input': 'gzip test', 'model': 'test-model'}).encode('utf-8'),
+    headers={'Content-Type': 'application/json', 'Accept-Encoding': 'gzip'},
+    method='POST'
+)
+with urllib.request.urlopen(req) as resp:
+    raw_body = resp.read()
+    data = json.loads(raw_body.decode('utf-8'))
+    assert data.get('object') == 'list'
+    print('OK')
+")
+
+kill "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true
+wait "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true
+
+if [ "$GZIP_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.7 FAILED: Client did not receive plain decodable JSON with MOCK_GZIP: $GZIP_CHECK" >&2
+  exit 1
+fi
+
+REC_GZIP_CHECK=$(python3 -c "
+import json
+with open('$MOCK_GZIP_RECORD') as f:
+    rec = json.loads(f.readline())
+assert rec.get('input') == ['passage: gzip test']
+print('OK')
+")
+
+if [ "$REC_GZIP_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.7 FAILED: Recorded input for gzip test not prefixed: $REC_GZIP_CHECK" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.7 passed: MOCK_GZIP=1 upstream with client Accept-Encoding: gzip yielded plain decodable JSON and prefixed input."
+
+# Test 7.8: one proxy log line exists per embeddings request and its inputs= matches
+LOG_CHECK=$(python3 -c "
+with open('$PROXY_LOG') as f:
+    lines = [line.strip() for line in f if line.startswith('embeddings:')]
+# Requests made to PROXY_PORT:
+# 7.1: inputs=['a', 'b'] -> inputs=2
+# 7.2: input='hello world' -> inputs=1
+# 7.5: body=[1, 2, 3] -> 400 error before embeddings log (not logged)
+# 7.6: input=[[1, 2, 3]] -> inputs=1
+assert len(lines) == 3, f'Expected 3 embeddings log lines, found {len(lines)}: {lines}'
+assert lines[0] == \"embeddings: inputs=2 prefix='passage: '\", f'Line 0 mismatch: {lines[0]}'
+assert lines[1] == \"embeddings: inputs=1 prefix='passage: '\", f'Line 1 mismatch: {lines[1]}'
+assert lines[2] == \"embeddings: inputs=1 prefix='passage: '\", f'Line 2 mismatch: {lines[2]}'
+print('OK')
+")
+
+if [ "$LOG_CHECK" != "OK" ]; then
+  cleanup_proxy_test
+  echo "✗ Scenario 7.8 FAILED: Proxy embeddings log lines mismatch: $LOG_CHECK" >&2
+  exit 1
+fi
+echo "✓ Scenario 7.8 passed: Exactly one proxy log line per embeddings request and inputs= matches."
 
 # Test 7.4: Unreachable upstream gives HTTP 502
 # Stop the mock upstream server

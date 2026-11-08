@@ -154,20 +154,21 @@ try:
             msg_first_line = raw_msg.splitlines()[0] if raw_msg else ''
             output_lines.append(f'[{cat}] {fp}: {msg_first_line}')
 
-            # Diagnostics for FAIL findings
+            # Diagnostics for FAIL findings (LLM dedup findings only)
             conf = meta.get('confidence')
-            reasoning = meta.get('reasoning') or meta.get('rationale') or ''
-            suggestion = f.get('suggestion') or ''
-            cluster_size = raw_msg.count('\n  vs ') + 1
+            if conf is not None:
+                reasoning = meta.get('reasoning') or meta.get('rationale') or ''
+                suggestion = f.get('suggestion') or ''
+                cluster_size = raw_msg.count('\n  vs ') + 1
 
-            cluster_note = ''
-            if cluster_size > 8:
-                cluster_note = ' (large cluster - likely over-merged by embedding similarity)'
+                cluster_note = ''
+                if cluster_size > 8:
+                    cluster_note = ' (large cluster - likely over-merged by embedding similarity)'
 
-            output_lines.append(f'    confidence: {conf}')
-            output_lines.append(f'    reasoning: {reasoning[:300]}')
-            output_lines.append(f'    suggestion: {suggestion[:200]}')
-            output_lines.append(f'    cluster size: {cluster_size}{cluster_note}')
+                output_lines.append(f'    confidence: {conf}')
+                output_lines.append(f'    reasoning: {reasoning[:300]}')
+                output_lines.append(f'    suggestion: {suggestion[:200]}')
+                output_lines.append(f'    cluster size: {cluster_size}{cluster_note}')
     print('\n'.join(output_lines))
 except Exception:
     pass

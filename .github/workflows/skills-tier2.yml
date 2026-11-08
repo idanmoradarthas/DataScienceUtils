@@ -99,7 +99,7 @@ jobs:
       OLLAMA_KEEP_ALIVE: "30m"
       OLLAMA_CONTEXT_LENGTH: "32768"
       SKILL_EVAL_EMBEDDING_PROVIDER: "openai-compatible"
-      SKILL_EVAL_EMBEDDING_BASE_URL: "http://127.0.0.1:11434/v1"
+      SKILL_EVAL_EMBEDDING_BASE_URL: ${{ inputs.embedding_prefix == 'none' && 'http://127.0.0.1:11434/v1' || 'http://127.0.0.1:11435/v1' }}
       SKILL_EVAL_EMBEDDING_API_KEY: "ollama"
       SKILL_EVAL_EMBEDDING_MODEL: "nemotron-3-embed-1b"
       SKILL_EVAL_LLM_PROVIDER: "openai-compatible"
@@ -169,24 +169,23 @@ jobs:
             PROXY_PID=$!
             echo "Proxy PID: $PROXY_PID"
 
-            RETRIES=20
+            RETRIES=60
             until curl -s "http://127.0.0.1:11435/api/version" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
               sleep 1
               RETRIES=$((RETRIES - 1))
             done
 
             if [ $RETRIES -eq 0 ]; then
-              echo "Error: Passage-prefix proxy failed to respond on http://127.0.0.1:11435/api/version within 20s" >&2
+              echo "Error: Passage-prefix proxy failed to respond on http://127.0.0.1:11435/api/version within 60s" >&2
               [ -f embed_proxy.log ] && cat embed_proxy.log >&2
               exit 1
             fi
 
             echo "✓ Passage-prefix proxy is responding."
-            echo "SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11435/v1" >> "$GITHUB_ENV"
-            echo "Embedding base URL updated to proxy: http://127.0.0.1:11435/v1"
           else
             echo "Embedding prefix proxy disabled ('none' mode). Direct upstream embedding in use."
           fi
+          echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
 
       # PROBES (Each runs as its own distinct step)
       - name: "Probe A: Embeddings Endpoint"
@@ -243,6 +242,17 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Runner Conclusion**: \`${{ job.status }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Embedding Prefix Mode**: \`${{ inputs.embedding_prefix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Embedding Base URL**: \`$SKILL_EVAL_EMBEDDING_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
+          if [ "${{ inputs.embedding_prefix }}" = "passage" ]; then
+            REQ_COUNT=0
+            INPUT_COUNT=0
+            if [ -f embed_proxy.log ]; then
+              REQ_COUNT=$(grep -c "^embeddings:" embed_proxy.log || true)
+              INPUT_COUNT=$(grep "^embeddings:" embed_proxy.log | sed -E 's/.*inputs=([0-9]+).*/\1/' | awk '{s+=$1} END {print s+0}')
+            fi
+            echo "- **Proxy-handled embedding requests**: $REQ_COUNT (inputs: $INPUT_COUNT)" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "- **Embedding Quantization**: \`${{ inputs.embedding_file }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **LLM Model**: \`${{ inputs.llm_model }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -259,11 +269,13 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           echo "### Ollama Status & Diagnostics" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`\`\`text" >> "$GITHUB_STEP_SUMMARY"
-          ollama ps || true
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          curl -s http://127.0.0.1:11434/api/ps | jq . 2>/dev/null || curl -s http://127.0.0.1:11434/api/ps || true
-          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```text'
+            ollama ps || true
+            echo
+            curl -s http://127.0.0.1:11434/api/ps | jq . 2>/dev/null || curl -s http://127.0.0.1:11434/api/ps || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           SERVER_LOG="$HOME/.cache/tier2_models/ollama_server.log"
@@ -273,17 +285,21 @@ jobs:
           fi
           echo "- **Prompt truncation events**: $TRUNC_COUNT" >> "$GITHUB_STEP_SUMMARY"
           if [ "$TRUNC_COUNT" -gt 0 ]; then
-            echo "  \`\`\`text" >> "$GITHUB_STEP_SUMMARY"
-            grep -i "truncating input prompt" "$SERVER_LOG" | head -n 3 >> "$GITHUB_STEP_SUMMARY" || true
-            echo "  \`\`\`" >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo '  ```text'
+              grep -i "truncating input prompt" "$SERVER_LOG" | head -n 3 || true
+              echo '  ```'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           echo "### System Resources" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
-          free -h || true
-          df -h || true
-          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```text'
+            free -h || true
+            df -h || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           if [ -f eval_tier2.log ]; then
