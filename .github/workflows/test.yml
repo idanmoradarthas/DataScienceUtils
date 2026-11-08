@@ -112,6 +112,7 @@ jobs:
             [[ -z "$line" || "$line" =~ ^# ]] && continue
             uv tool install --python 3.13 "$line"
           done < requirements-skills.txt
+          uv tool install --python 3.13 --force --with "openai>=2.21.0" "$(grep -E '^skillevaluator' requirements-skills.txt)"
 
       - name: Install Gitleaks
         if: runner.os == 'Linux'
