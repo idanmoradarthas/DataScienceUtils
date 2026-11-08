@@ -261,35 +261,43 @@ else
   fi
 fi
 
+# wait_for_listening <logfile> <pid> <timeout_seconds>
+# Prints the port on stdout and returns 0 as soon as "listening on <port>" appears in the log.
+# Returns 1 (after dumping the log to stderr) if the process dies first or the wall-clock deadline passes.
+wait_for_listening() {
+  local log="$1" pid="$2" timeout="$3" deadline line
+  deadline=$((SECONDS + timeout))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    line=$(grep -m1 "listening on " "$log" 2>/dev/null || true)
+    if [ -n "$line" ]; then
+      echo "${line##* }"
+      return 0
+    fi
+    if ! kill -0 "$pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
+  echo "proxy did not report a listening port within ${timeout}s (pid $pid); log follows:" >&2
+  cat "$log" >&2 2>/dev/null || true
+  return 1
+}
+
 # Scenario 7: Passage-Prefix Proxy and Mock Recording Check (Hermetic, no skillevaluator required)
 echo ""
 echo "--- Scenario 7: Passage-Prefix Proxy & Mock Recording Check ---"
 PROXY_RECORD_FILE="$TEST_TMP/proxy_records.jsonl"
 MOCK7_FIFO="$TEST_TMP/mock7_fifo"
 MOCK7_LOG="$TEST_TMP/mock7.log"
-PROXY_FIFO="$TEST_TMP/proxy_fifo"
 PROXY_LOG="$TEST_TMP/proxy.log"
 
-rm -f "$MOCK7_FIFO" "$PROXY_FIFO"
+rm -f "$MOCK7_FIFO"
 mkfifo "$MOCK7_FIFO"
-mkfifo "$PROXY_FIFO"
 
 MOCK_RECORD_FILE="$PROXY_RECORD_FILE" python3 "$REPO_ROOT/tests/mock_openai_server.py" 0 > "$MOCK7_FIFO" 2> "$MOCK7_LOG" &
 MOCK7_PID=$!
 read -r MOCK7_PORT < "$MOCK7_FIFO"
 rm -f "$MOCK7_FIFO"
-
-TIER2_UPSTREAM="http://127.0.0.1:$MOCK7_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_LOG" 2>&1 &
-PROXY_PID=$!
-rm -f "$PROXY_FIFO"
-
-RETRIES=30
-while ! grep -q "listening on " "$PROXY_LOG" 2>/dev/null && [ $RETRIES -gt 0 ]; do
-  sleep 0.1
-  RETRIES=$((RETRIES - 1))
-done
-PROXY_LINE=$(grep "listening on " "$PROXY_LOG")
-PROXY_PORT=$(echo "$PROXY_LINE" | awk '{print $NF}')
 
 cleanup_proxy_test() {
   if [ -n "${PROXY_PID:-}" ] && kill -0 "$PROXY_PID" 2>/dev/null; then
@@ -301,6 +309,11 @@ cleanup_proxy_test() {
     wait "$MOCK7_PID" 2>/dev/null || true
   fi
 }
+
+TIER2_UPSTREAM="http://127.0.0.1:$MOCK7_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_LOG" 2>&1 &
+PROXY_PID=$!
+
+PROXY_PORT=$(wait_for_listening "$PROXY_LOG" "$PROXY_PID" 120) || { cleanup_proxy_test; echo "✗ Scenario 7 FAILED: proxy did not start" >&2; exit 1; }
 
 echo "Proxy started on port $PROXY_PORT, forwarding to mock on port $MOCK7_PORT"
 
@@ -317,7 +330,7 @@ with urllib.request.urlopen(req) as resp:
     print(resp.status)
 ")
 
-if [ "$REQ1_STATUS" -ne 200 ]; then
+if [ "$REQ1_STATUS" != "200" ]; then
   cleanup_proxy_test
   echo "✗ Scenario 7.1 FAILED: Expected HTTP 200, got $REQ1_STATUS" >&2
   exit 1
@@ -355,7 +368,7 @@ with urllib.request.urlopen(req) as resp:
     print(resp.status)
 ")
 
-if [ "$REQ2_STATUS" -ne 200 ]; then
+if [ "$REQ2_STATUS" != "200" ]; then
   cleanup_proxy_test
   echo "✗ Scenario 7.2 FAILED: Expected HTTP 200, got $REQ2_STATUS" >&2
   exit 1
@@ -438,7 +451,7 @@ with urllib.request.urlopen(req) as resp:
     print(resp.status)
 ")
 
-if [ "$REQ6_STATUS" -ne 200 ]; then
+if [ "$REQ6_STATUS" != "200" ]; then
   cleanup_proxy_test
   echo "✗ Scenario 7.6 FAILED: Expected HTTP 200, got $REQ6_STATUS" >&2
   exit 1
@@ -477,12 +490,7 @@ rm -f "$MOCK_GZIP_FIFO"
 TIER2_UPSTREAM="http://127.0.0.1:$MOCK_GZIP_PORT" TIER2_EMBED_PROXY_PORT=0 python3 "$REPO_ROOT/.github/tier2/embed_prefix_proxy.py" > "$PROXY_GZIP_LOG" 2>&1 &
 PROXY_GZIP_PID=$!
 
-RETRIES=30
-while ! grep -q "listening on " "$PROXY_GZIP_LOG" 2>/dev/null && [ $RETRIES -gt 0 ]; do
-  sleep 0.1
-  RETRIES=$((RETRIES - 1))
-done
-PROXY_GZIP_PORT=$(grep "listening on " "$PROXY_GZIP_LOG" | awk '{print $NF}')
+PROXY_GZIP_PORT=$(wait_for_listening "$PROXY_GZIP_LOG" "$PROXY_GZIP_PID" 120) || { kill "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true; wait "$PROXY_GZIP_PID" "$MOCK_GZIP_PID" 2>/dev/null || true; cleanup_proxy_test; echo "✗ Scenario 7.7 FAILED: gzip proxy did not start" >&2; exit 1; }
 
 GZIP_CHECK=$(python3 -c "
 import urllib.request, json
