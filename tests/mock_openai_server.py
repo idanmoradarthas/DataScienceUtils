@@ -13,6 +13,7 @@ Serves:
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import math
@@ -84,8 +85,17 @@ class MockOpenAIHandler(BaseHTTPRequestHandler):
                 "usage": {"prompt_tokens": len(inputs) * 5, "total_tokens": len(inputs) * 5},
             }
             resp_bytes = json.dumps(resp).encode("utf-8")
+            content_encoding = None
+            if os.environ.get("MOCK_GZIP") == "1":
+                accept_encoding = self.headers.get("Accept-Encoding", "")
+                if "gzip" in accept_encoding:
+                    resp_bytes = gzip.compress(resp_bytes)
+                    content_encoding = "gzip"
+
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            if content_encoding:
+                self.send_header("Content-Encoding", content_encoding)
             self.send_header("Content-Length", str(len(resp_bytes)))
             self.end_headers()
             self.wfile.write(resp_bytes)

@@ -82,12 +82,27 @@ class EmbeddingProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(resp)
             return
 
+        if not isinstance(data, dict):
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            resp = json.dumps({"error": "Request body must be a JSON object"}).encode("utf-8")
+            self.send_header("Content-Length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
+        num_inputs = 0
         if "input" in data:
             inp = data["input"]
             if isinstance(inp, str):
+                num_inputs = 1
                 data["input"] = f"{EMBED_PREFIX}{inp}"
             elif isinstance(inp, list):
-                data["input"] = [f"{EMBED_PREFIX}{item}" for item in inp]
+                num_inputs = len(inp)
+                data["input"] = [f"{EMBED_PREFIX}{item}" if isinstance(item, str) else item for item in inp]
+
+        # Log one flushed line per embeddings request
+        print(f"embeddings: inputs={num_inputs} prefix={repr(EMBED_PREFIX)}", flush=True)
 
         # Remove input_type if present
         data.pop("input_type", None)
@@ -96,9 +111,10 @@ class EmbeddingProxyHandler(BaseHTTPRequestHandler):
         headers = {}
         for k, v in self.headers.items():
             k_lower = k.lower()
-            if k_lower in ("host", "content-length"):
+            if k_lower in ("host", "content-length", "accept-encoding"):
                 continue
             headers[k] = v
+        headers["Accept-Encoding"] = "identity"
         headers["Content-Length"] = str(len(forward_body))
         headers["Content-Type"] = "application/json"
 
@@ -126,6 +142,8 @@ class EmbeddingProxyHandler(BaseHTTPRequestHandler):
         self.send_response(resp_status)
         content_type = resp_headers.get("Content-Type", "application/json")
         self.send_header("Content-Type", content_type)
+        if "Content-Encoding" in resp_headers:
+            self.send_header("Content-Encoding", resp_headers["Content-Encoding"])
         self.send_header("Content-Length", str(len(resp_body)))
         self.end_headers()
         self.wfile.write(resp_body)
@@ -137,9 +155,10 @@ class EmbeddingProxyHandler(BaseHTTPRequestHandler):
         headers = {}
         for k, v in self.headers.items():
             k_lower = k.lower()
-            if k_lower in ("host", "content-length"):
+            if k_lower in ("host", "content-length", "accept-encoding"):
                 continue
             headers[k] = v
+        headers["Accept-Encoding"] = "identity"
         if body is not None:
             headers["Content-Length"] = str(len(body))
 
@@ -167,6 +186,8 @@ class EmbeddingProxyHandler(BaseHTTPRequestHandler):
         self.send_response(resp_status)
         if "Content-Type" in resp_headers:
             self.send_header("Content-Type", resp_headers["Content-Type"])
+        if "Content-Encoding" in resp_headers:
+            self.send_header("Content-Encoding", resp_headers["Content-Encoding"])
         self.send_header("Content-Length", str(len(resp_body)))
         self.end_headers()
         if method != "HEAD":
