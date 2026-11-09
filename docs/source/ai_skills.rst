@@ -666,12 +666,13 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
     uv tool install --python 3.13 --force --with "openai>=2.21.0" "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
 
-    # Start Ollama with expanded context window for cluster evaluation
+    # Ollama must already be running (another terminal or a service) with OLLAMA_CONTEXT_LENGTH=32768, e.g.:
     # OLLAMA_CONTEXT_LENGTH=32768 ollama serve
 
     # Start passage-prefix proxy (listens on 127.0.0.1:11435, forwards to 127.0.0.1:11434;
     # configurable via TIER2_EMBED_PROXY_PORT, TIER2_UPSTREAM, TIER2_EMBED_PREFIX)
-    # python .github/tier2/embed_prefix_proxy.py &
+    python .github/tier2/embed_prefix_proxy.py &
+    PROXY_PID=$!
 
     export SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible
     export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11435/v1
@@ -684,6 +685,7 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
     export SKILL_EVAL_LLM_MODEL=gemma4:e2b
 
     ./eval-skills-tier2.sh
+    kill "$PROXY_PID"
 
 The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``"passage: "`` on every document. While NVIDIA's hosted endpoint honours ``input_type=passage`` sent by SkillEvaluator, Ollama ignores it; without the proxy the chunks are embedded unprefixed, similarities are inflated and unrelated chunks merge into large clusters (false DUPLICATE reports). Ollama's default 4096-token context truncates large cluster prompts, hence ``OLLAMA_CONTEXT_LENGTH=32768``.
 

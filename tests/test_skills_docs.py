@@ -1,13 +1,12 @@
 """Regression test verifying function and class signatures in skill API references."""
 
 import ast
+from collections import Counter
 import importlib
 import inspect
 from pathlib import Path
 import pkgutil
 import re
-
-from collections import Counter
 
 import ds_utils
 import pytest
