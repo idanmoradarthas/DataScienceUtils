@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _load_probe_module():
-    probe_path = Path(".github/tier2/probes/probe_reference_cosines.py")
+    probe_path = Path(__file__).resolve().parent.parent / ".github" / "tier2" / "probes" / "probe_reference_cosines.py"
     spec = importlib.util.spec_from_file_location("probe_reference_cosines", probe_path)
     assert spec is not None
     assert spec.loader is not None
@@ -88,20 +88,3 @@ def test_compare_variants_perturbed():
     assert res["best_variant"] == "bos"
     assert res["variants"]["bos"]["min_direct_cos"] > 0.99
     assert res["variants"]["plain"]["min_direct_cos"] < 0.1
-
-
-def test_missing_variants_handling():
-    """Test that absence of 'variants' key in ref_data is gracefully handled."""
-    probe = _load_probe_module()
-
-    # ref_data without 'variants'
-    ref_data = {
-        "texts": probe.FIXED_TEXTS,
-        "token_counts": {"raw": [5] * len(probe.FIXED_TEXTS), "passage": [6] * len(probe.FIXED_TEXTS)},
-        "raw_cosines": [[1.0] * len(probe.FIXED_TEXTS) for _ in range(len(probe.FIXED_TEXTS))],
-        "passage_cosines": [[1.0] * len(probe.FIXED_TEXTS) for _ in range(len(probe.FIXED_TEXTS))],
-    }
-
-    # Verify that ref_data.get("variants") is None
-    assert ref_data.get("variants") is None
-    assert ref_data.get("default_variant") is None

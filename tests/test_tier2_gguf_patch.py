@@ -6,10 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
+import gguf
+import numpy as np
 
-gguf = pytest.importorskip("gguf")
-np = pytest.importorskip("numpy")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def create_synthetic_gguf(path: Path) -> None:
@@ -46,7 +46,7 @@ def test_patch_gguf_success_and_idempotency(tmp_path: Path) -> None:
     dst = tmp_path / "patched.gguf"
     create_synthetic_gguf(src)
 
-    script = Path(".github/tier2/patch_gguf_add_bos.py")
+    script = REPO_ROOT / ".github" / "tier2" / "patch_gguf_add_bos.py"
 
     # Run patch script
     res = subprocess.run([sys.executable, str(script), str(src), str(dst)], capture_output=True, text=True)
@@ -76,7 +76,7 @@ def test_patch_gguf_success_and_idempotency(tmp_path: Path) -> None:
 
 def test_patch_gguf_error_cases(tmp_path: Path) -> None:
     """Test error handling when src does not exist or src == dst."""
-    script = Path(".github/tier2/patch_gguf_add_bos.py")
+    script = REPO_ROOT / ".github" / "tier2" / "patch_gguf_add_bos.py"
 
     # Non-existent src
     non_existent = tmp_path / "does_not_exist.gguf"

@@ -264,7 +264,7 @@ jobs:
             fi
             echo "- **Proxy-handled embedding requests**: $REQ_COUNT (inputs: $INPUT_COUNT)" >> "$GITHUB_STEP_SUMMARY"
           fi
-          if [ -f "$HOME/.cache/tier2_models/patched_gguf.sha256" ]; then
+          if [ "${{ inputs.embedding_bos }}" = "disabled" ] && [ -f "$HOME/.cache/tier2_models/patched_gguf.sha256" ]; then
             PATCHED_SHA=$(cat "$HOME/.cache/tier2_models/patched_gguf.sha256")
             echo "- **Patched GGUF sha256**: \`$PATCHED_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           fi
