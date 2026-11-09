@@ -165,6 +165,7 @@ plot_clusters(
 - `matplotlib.axes._axes.Axes`
 
 ### Raises
+- `ValueError`: `"X must be a 2D array with at least 1 feature."` — when `X` is not 2-D or has no feature columns.
 - `ValueError`: `"X must have at least 2 features for 2D scatter visualization."` — when `X` has only 1 feature.
 - `ValueError`: `"X and cluster_labels must have the same length."` — when lengths differ.
 - `ValueError`: `"Number of cluster centers must match the number of unique labels."` — when `len(cluster_centers)` does not equal the number of unique labels.
@@ -218,12 +219,7 @@ plot_clusters_plotly(
 - `plotly.graph_objs._figure.Figure`
 
 ### Raises
-- `ValueError`: `"X must have at least 2 features for 2D scatter visualization."` — when `X` has only 1 feature.
-- `ValueError`: `"X and cluster_labels must have the same length."` — when lengths differ.
-- `ValueError`: `"Number of cluster centers must match the number of unique labels."` — when `len(cluster_centers)` does not equal the number of unique labels.
-- `ValueError`: `"Unknown reduction_method: '<name>'. Choose from 'pca', 'tsne', 'umap'."` — when an unsupported method is given.
-- `ImportError`: `"UMAP is not installed. To use reduction_method='umap', install it via: \`pip install data-science-utils[umap]\` or \`pip install umap-learn\`."` — when `reduction_method='umap'` and `umap-learn` is absent.
-- `UserWarning`: `"t-SNE cannot transform new data; centroids will not be plotted."` — when `reduction_method='tsne'` and `cluster_centers` is provided.
+Same exceptions and warning as `plot_clusters` (both share the input validation and the dimensionality reduction); see its **Raises** section above.
 
 ### Example
 ```python

@@ -105,7 +105,7 @@ plot_roc_curve_with_thresholds_annotations(
 - `**kwargs`: Forwarded to underlying figure configuration.
 
 ### Returns
-- `plotly.graph_objs._figure.Figure`: Display with `fig.show()`.
+- `plotly.graph_objs._figure.Figure`: ROC figure with one threshold-annotated curve per entry of `classifiers_names_and_scores_dict`, plus the dashed chance diagonal when `add_random_classifier_line=True`. Draws on `fig` when given. Display with `fig.show()`.
 
 ---
 
@@ -145,7 +145,7 @@ plot_precision_recall_curve_with_thresholds_annotations(
 - `**kwargs`: Forwarded to figure configuration.
 
 ### Returns
-- `plotly.graph_objs._figure.Figure`: Display with `fig.show()`.
+- `plotly.graph_objs._figure.Figure`: Precision-Recall figure with one threshold-annotated curve per entry of `classifiers_names_and_scores_dict`, plus the chance-level baseline when `plot_chance_level=True`. Draws on `fig` when given. Display with `fig.show()`.
 
 ---
 

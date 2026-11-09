@@ -1,6 +1,7 @@
 """Regression test verifying function and class signatures in skill API references."""
 
 import ast
+from collections import Counter
 import importlib
 import inspect
 from pathlib import Path
@@ -9,6 +10,9 @@ import re
 
 import ds_utils
 import pytest
+
+# exact duplicate sections inflate agent context and are reported HIGH by SkillEvaluator Tier 2 dedup-scan
+MIN_DUPLICATE_SECTION_CHARS = 60
 
 # Map of function/class names to import module in ds_utils
 SYMBOL_MODULES = {
@@ -384,4 +388,51 @@ def test_skill_md_has_no_unresolved_path_like_tokens(skill_name):
 
     assert not failures, f"Found {len(failures)} unresolved path-like token(s) in {skill_name}/SKILL.md:\n" + "\n".join(
         failures
+    )
+
+
+def test_skill_api_references_have_no_identical_subsections():
+    """Verify that no API reference markdown file contains identical non-trivial sections."""
+    repo_root = Path(__file__).resolve().parent.parent
+    ref_files = sorted(repo_root.glob("skills/*/references/api_reference.md"))
+
+    duplicate_findings = []
+
+    for ref_path in ref_files:
+        lines = ref_path.read_text(encoding="utf-8").splitlines()
+        in_code_block = False
+        current_heading = None
+        current_body_lines = []
+        sections = []
+
+        for line in lines:
+            if line.startswith("```"):
+                in_code_block = not in_code_block
+                current_body_lines.append(line)
+                continue
+
+            if not in_code_block and (re.match(r"^#{1,6}\s", line) or line.strip() == "---"):
+                if current_heading is not None:
+                    body = "\n".join(current_body_lines).strip()
+                    if len(body) >= MIN_DUPLICATE_SECTION_CHARS:
+                        sections.append((current_heading, body))
+                current_heading = line.strip()
+                current_body_lines = []
+                continue
+
+            current_body_lines.append(line)
+
+        if current_heading is not None:
+            body = "\n".join(current_body_lines).strip()
+            if len(body) >= MIN_DUPLICATE_SECTION_CHARS:
+                sections.append((current_heading, body))
+
+        counts = Counter(sections)
+        for (heading, body), count in counts.items():
+            if count > 1:
+                rel_path = ref_path.relative_to(repo_root).as_posix()
+                duplicate_findings.append(f"{rel_path}: heading '{heading}' appears {count} times with identical body")
+
+    assert not duplicate_findings, "Found duplicate subsections in skill API references:\n" + "\n".join(
+        duplicate_findings
     )
