@@ -11,6 +11,14 @@ on:
           - passage
           - none
         default: passage
+      embedding_bos:
+        description: "disabled = write add_bos_token=false into a derived GGUF (diagnostic)"
+        required: true
+        type: choice
+        options:
+          - default
+          - disabled
+        default: default
       embedding_file:
         description: "GGUF Quantization File for Nemotron-3-Embed-1B"
         required: true
@@ -152,6 +160,8 @@ jobs:
 
       - name: Setup Ollama and Models
         id: setup-ollama
+        env:
+          TIER2_EMBED_ADD_BOS: ${{ inputs.embedding_bos }}
         run: |
           start_time=$(date +%s)
           .github/tier2/setup_ollama.sh "${{ inputs.embedding_file }}" "${{ inputs.llm_model }}"
@@ -242,6 +252,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Runner Conclusion**: \`${{ job.status }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Embedding Prefix Mode**: \`${{ inputs.embedding_prefix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Embedding BOS mode**: \`${{ inputs.embedding_bos }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Embedding Base URL**: \`$SKILL_EVAL_EMBEDDING_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
           if [ "${{ inputs.embedding_prefix }}" = "passage" ]; then
@@ -252,6 +263,20 @@ jobs:
               INPUT_COUNT=$(grep "^embeddings:" embed_proxy.log | sed -E 's/.*inputs=([0-9]+).*/\1/' | awk '{s+=$1} END {print s+0}')
             fi
             echo "- **Proxy-handled embedding requests**: $REQ_COUNT (inputs: $INPUT_COUNT)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$HOME/.cache/tier2_models/patched_gguf.sha256" ]; then
+            PATCHED_SHA=$(cat "$HOME/.cache/tier2_models/patched_gguf.sha256")
+            echo "- **Patched GGUF sha256**: \`$PATCHED_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f probe_b.log ]; then
+            PROBE_B_LINE=$(grep "^PROBE_B_JSON:" probe_b.log | tail -n 1 | sed 's/^PROBE_B_JSON: //' || true)
+            if [ -n "$PROBE_B_LINE" ]; then
+              BEST_VAR=$(echo "$PROBE_B_LINE" | jq -r '.best_variant // empty' 2>/dev/null || true)
+              DEF_VAR=$(echo "$PROBE_B_LINE" | jq -r '.default_variant // "none"' 2>/dev/null || true)
+              if [ -n "$BEST_VAR" ]; then
+                echo "- **Probe B best reference variant**: $BEST_VAR (tokenizer default: $DEF_VAR)" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
           fi
           echo "- **Embedding Quantization**: \`${{ inputs.embedding_file }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **LLM Model**: \`${{ inputs.llm_model }}\`" >> "$GITHUB_STEP_SUMMARY"

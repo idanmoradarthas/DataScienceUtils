@@ -172,22 +172,44 @@ fi
 
 echo "Ollama version: $(ollama --version 2>&1 || true)"
 
+# Check TIER2_EMBED_ADD_BOS mode
+TIER2_EMBED_ADD_BOS="${TIER2_EMBED_ADD_BOS:-default}"
+MODELFILE_GGUF_PATH="$GGUF_PATH"
+PATCHED_GGUF_PATH=""
+
+if [ "$TIER2_EMBED_ADD_BOS" = "disabled" ]; then
+  echo "Opt-in: patching GGUF to disable implicit BOS token..."
+  python3 -m pip install --quiet "gguf==0.19.0"
+  PATCHED_GGUF_PATH="$MODELS_CACHE_DIR/$(basename "$GGUF_PATH" .gguf).no-bos.gguf"
+  python3 "$SCRIPT_DIR/patch_gguf_add_bos.py" "$GGUF_PATH" "$PATCHED_GGUF_PATH"
+  sha256sum "$PATCHED_GGUF_PATH" | awk '{print $1}' > "$MODELS_CACHE_DIR/patched_gguf.sha256"
+  MODELFILE_GGUF_PATH="$PATCHED_GGUF_PATH"
+fi
+
 # 4. Create embedding model in Ollama
 MODELFILE="$MODELS_CACHE_DIR/Modelfile.nemotron"
 cat << EOF > "$MODELFILE"
-FROM $GGUF_PATH
+FROM $MODELFILE_GGUF_PATH
+# Embedder context is intentionally 4096 (observed embedding prompts peak below 1k tokens, no truncation); OLLAMA_CONTEXT_LENGTH only affects the LLM.
 PARAMETER num_ctx 4096
 EOF
 
-echo "Creating Ollama model 'nemotron-3-embed-1b' from $GGUF_PATH ..."
+echo "Creating Ollama model 'nemotron-3-embed-1b' from $MODELFILE_GGUF_PATH ..."
 CREATE_LOG="$MODELS_CACHE_DIR/ollama_create.log"
 if ! ollama create nemotron-3-embed-1b -f "$MODELFILE" > "$CREATE_LOG" 2>&1; then
   echo "Error: 'ollama create' failed. Full output:" >&2
   sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$CREATE_LOG" | tr '\r' '\n' >&2
+  [ -n "$PATCHED_GGUF_PATH" ] && [ -f "$PATCHED_GGUF_PATH" ] && rm -f "$PATCHED_GGUF_PATH"
   exit 1
 fi
 sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$CREATE_LOG" | tr '\r' '\n' | tail -n 15
 echo "✓ Ollama model 'nemotron-3-embed-1b' created."
+
+# Delete patched GGUF if created so it does not end up in actions/cache
+if [ -n "$PATCHED_GGUF_PATH" ] && [ -f "$PATCHED_GGUF_PATH" ]; then
+  echo "Cleaning up temporary patched GGUF: $PATCHED_GGUF_PATH"
+  rm -f "$PATCHED_GGUF_PATH"
+fi
 
 # 5. Pull and verify LLM model
 echo "Pulling LLM model '$LLM_MODEL_CHOICE'..."
