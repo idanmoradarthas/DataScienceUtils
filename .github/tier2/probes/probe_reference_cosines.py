@@ -198,6 +198,72 @@ def generate_reference_matrix_with_transformers() -> dict[str, Any]:
     raw_compact = [[round(x, 6) for x in vec] for vec in raw_embeds]
     passage_compact = [[round(x, 6) for x in vec] for vec in passage_embeds]
 
+    bos_id = tokenizer.bos_token_id
+    eos_id = tokenizer.eos_token_id
+    print(f"Tokenizer special IDs: bos_id={bos_id}, eos_id={eos_id}")
+
+    default_t0_ids = tokenizer(passage_texts[0])["input_ids"]
+    t0_first_3 = default_t0_ids[:3]
+    t0_last_2 = default_t0_ids[-2:] if len(default_t0_ids) >= 2 else default_t0_ids
+    print(
+        f"Passage text 0 default token IDs: first 3={t0_first_3} ({tokenizer.convert_ids_to_tokens(t0_first_3)}), "
+        f"last 2={t0_last_2} ({tokenizer.convert_ids_to_tokens(t0_last_2)})"
+    )
+
+    # Build variants for each passage text
+    # "plain" = ids | "bos" = [bos_id]+ids | "eos" = ids+[eos_id] | "bos_eos" = [bos_id]+ids+[eos_id]
+    candidate_variants: dict[str, list[list[int]]] = {"plain": []}
+    if bos_id is not None:
+        candidate_variants["bos"] = []
+    if eos_id is not None:
+        candidate_variants["eos"] = []
+    if bos_id is not None and eos_id is not None:
+        candidate_variants["bos_eos"] = []
+
+    for text in passage_texts:
+        ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+        candidate_variants["plain"].append(ids)
+        if bos_id is not None:
+            candidate_variants["bos"].append([bos_id] + ids)
+        if eos_id is not None:
+            candidate_variants["eos"].append(ids + [eos_id])
+        if bos_id is not None and eos_id is not None:
+            candidate_variants["bos_eos"].append([bos_id] + ids + [eos_id])
+
+    variants_data: dict[str, dict[str, Any]] = {}
+    default_ids_per_text = [tokenizer(t)["input_ids"] for t in passage_texts]
+
+    default_variant = None
+    for name, id_lists in candidate_variants.items():
+        if id_lists == default_ids_per_text:
+            default_variant = name
+
+        padded = tokenizer.pad({"input_ids": id_lists}, padding=True, return_tensors="pt")
+        with torch.no_grad():
+            output = model(**padded)
+            pooled = average_pool(output.last_hidden_state, padded["attention_mask"])
+            v_embeds = F.normalize(pooled, p=2, dim=-1)
+        v_list = v_embeds.cpu().tolist()
+        compact_v = [[round(x, 6) for x in vec] for vec in v_list]
+        v_counts = [len(lst) for lst in id_lists]
+        variants_data[name] = {
+            "embeddings": compact_v,
+            "token_counts": v_counts,
+        }
+
+    print(f"Default tokenizer variant: {default_variant}")
+    if default_variant is not None:
+        def_embeds = variants_data[default_variant]["embeddings"]
+        max_diff_default = 0.0
+        for e1, e2 in zip(def_embeds, passage_compact):
+            for x1, x2 in zip(e1, e2):
+                d = abs(x1 - x2)
+                if d > max_diff_default:
+                    max_diff_default = d
+        print(
+            f"Max abs diff between default variant '{default_variant}' and passage_embeddings: {max_diff_default:.8f}"
+        )
+
     return {
         "metadata": {
             "model_id": model_id,
@@ -214,6 +280,8 @@ def generate_reference_matrix_with_transformers() -> dict[str, Any]:
         "passage_embeddings": passage_compact,
         "raw_cosines": raw_cosines,
         "passage_cosines": passage_cosines,
+        "variants": variants_data,
+        "default_variant": default_variant,
     }
 
 
@@ -240,6 +308,64 @@ def compute_metrics(
     pairs.sort(key=lambda x: x["diff"], reverse=True)
     worst_5 = pairs[:5]
     return max_abs_diff, spearman, worst_5
+
+
+def compare_variants(
+    ref_variants: dict[str, dict[str, Any]],
+    ollama_embeddings: list[list[float]],
+    ollama_token_counts: list[int | None],
+) -> dict[str, Any]:
+    """Compare Ollama passage embeddings against reference tokenizer variants.
+
+    Returns a dict with per-variant metrics and 'best_variant' (highest min_direct_cos).
+    """
+    results: dict[str, Any] = {}
+    best_variant: str | None = None
+    best_min_cos: float = -1.0
+
+    ollama_pairwise = compute_pairwise_cosines(ollama_embeddings)
+    n = len(ollama_embeddings)
+    ollama_flat = [ollama_pairwise[i][j] for i in range(n) for j in range(i + 1, n)]
+
+    for name, v_info in ref_variants.items():
+        v_embeds = v_info.get("embeddings", [])
+        v_tokens = v_info.get("token_counts", [])
+
+        # direct cosines
+        direct_cosines = [
+            cosine_sim(ollama_embeddings[i], v_embeds[i]) for i in range(min(len(ollama_embeddings), len(v_embeds)))
+        ]
+        mean_direct = sum(direct_cosines) / len(direct_cosines) if direct_cosines else 0.0
+        min_direct = min(direct_cosines) if direct_cosines else 0.0
+
+        # pairwise cosines & spearman & max abs diff
+        v_pairwise = compute_pairwise_cosines(v_embeds)
+        v_flat = [v_pairwise[i][j] for i in range(n) for j in range(i + 1, n)]
+        spearman = compute_spearman(v_flat, ollama_flat)
+        diffs = [abs(a - b) for a, b in zip(v_flat, ollama_flat)]
+        max_abs = max(diffs) if diffs else 0.0
+
+        # token counts match
+        token_match = len(ollama_token_counts) == len(v_tokens) and all(
+            oc is not None and oc == vc for oc, vc in zip(ollama_token_counts, v_tokens)
+        )
+
+        results[name] = {
+            "mean_direct_cos": mean_direct,
+            "min_direct_cos": min_direct,
+            "spearman": spearman,
+            "max_abs_diff": max_abs,
+            "token_counts_match": token_match,
+        }
+
+        if min_direct > best_min_cos:
+            best_min_cos = min_direct
+            best_variant = name
+
+    return {
+        "variants": results,
+        "best_variant": best_variant,
+    }
 
 
 def run_sanity_block(label: str, cosines: list[list[float]]) -> None:
@@ -336,6 +462,37 @@ def main() -> None:
     else:
         print("  [NOTE: Reference JSON does not contain embedding vectors; skipping direct cosine comparison]")
 
+    # Variant comparison (diagnostic)
+    ref_variants = ref_data.get("variants")
+    default_variant = ref_data.get("default_variant")
+    variant_comparison: dict[str, Any] | None = None
+    if ref_variants:
+        print("\n================ Tokenizer Variant Comparison (Passage) ================")
+        variant_comparison = compare_variants(ref_variants, ollama_passage_embeds, ollama_passage_tokens)
+        v_results = variant_comparison["variants"]
+        best_v = variant_comparison["best_variant"]
+
+        hdr = (
+            f"{'variant':<12} | {'token counts match':<18} | {'mean cos':<10} | "
+            f"{'min cos':<10} | {'Spearman':<10} | {'max |diff|':<10}"
+        )
+        print(hdr)
+        print("-" * len(hdr))
+        for v_name, stats in v_results.items():
+            t_match = "yes" if stats["token_counts_match"] else "no"
+            print(
+                f"{v_name:<12} | {t_match:<18} | {stats['mean_direct_cos']:<10.6f} | "
+                f"{stats['min_direct_cos']:<10.6f} | {stats['spearman']:<10.6f} | {stats['max_abs_diff']:<10.6f}"
+            )
+        min_cos_best = v_results[best_v]["min_direct_cos"] if best_v and best_v in v_results else 0.0
+        def_var_str = default_variant if default_variant is not None else "none"
+        print(
+            f"\nBest-matching reference variant: {best_v} (min direct cosine {min_cos_best:.6f}); "
+            f"tokenizer default variant: {def_var_str}"
+        )
+    else:
+        print("\n[NOTE: Reference JSON does not contain 'variants'; skipping tokenizer variant comparison]")
+
     # Pairwise cosine matrices
     ollama_raw_cosines = compute_pairwise_cosines(ollama_raw_embeds)
     ollama_passage_cosines = compute_pairwise_cosines(ollama_passage_embeds)
@@ -368,11 +525,16 @@ def main() -> None:
     run_sanity_block("Ollama Passage", ollama_passage_cosines)
 
     # Check gates
-    headline = {
+    headline: dict[str, Any] = {
         "raw": {"max_diff": raw_max_diff, "spearman": raw_spearman},
         "passage": {"max_diff": pass_max_diff, "spearman": pass_spearman},
         "gated_variant": gate_variant,
     }
+
+    if variant_comparison is not None:
+        headline["best_variant"] = variant_comparison.get("best_variant")
+        headline["default_variant"] = default_variant
+        headline["variants"] = variant_comparison.get("variants")
 
     gated_diff = pass_max_diff if gate_variant == "passage" else raw_max_diff
     gated_spearman = pass_spearman if gate_variant == "passage" else raw_spearman
