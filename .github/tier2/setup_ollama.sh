@@ -173,7 +173,11 @@ fi
 echo "Ollama version: $(ollama --version 2>&1 || true)"
 
 # Check TIER2_EMBED_ADD_BOS mode
-TIER2_EMBED_ADD_BOS="${TIER2_EMBED_ADD_BOS:-default}"
+TIER2_EMBED_ADD_BOS="${TIER2_EMBED_ADD_BOS:-disabled}"
+if [ "$TIER2_EMBED_ADD_BOS" != "default" ] && [ "$TIER2_EMBED_ADD_BOS" != "disabled" ]; then
+  echo "Error: TIER2_EMBED_ADD_BOS must be 'default' or 'disabled' (got '$TIER2_EMBED_ADD_BOS')" >&2
+  exit 1
+fi
 # The models cache key is shared by both BOS modes, so a sha file from an earlier run may be restored from cache.
 rm -f "$MODELS_CACHE_DIR/patched_gguf.sha256"
 MODELFILE_GGUF_PATH="$GGUF_PATH"
