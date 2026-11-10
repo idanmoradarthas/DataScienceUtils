@@ -234,6 +234,11 @@ if [ "$LLM_MODEL_CHOICE" = "$OLLAMA_LLM_MODEL" ]; then
   MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
   echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"
   echo "✓ Pulled LLM: $LLM_MODEL_CHOICE (verified against pinned digest $OLLAMA_LLM_MANIFEST_DIGEST)"
+else
+  echo "LLM '$LLM_MODEL_CHOICE' has no pinned digest (pinned model: $OLLAMA_LLM_MODEL); recording its manifest digest for provenance:"
+  "$SCRIPT_DIR/verify_llm_manifest.sh" "$LLM_MODEL_CHOICE" || echo "Warning: could not read the local manifest for $LLM_MODEL_CHOICE" >&2
+  MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
+  echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"
 fi
 
 echo ""
