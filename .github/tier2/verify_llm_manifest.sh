@@ -2,18 +2,27 @@
 #
 # Verify local Ollama LLM manifest digest against expected sha256 pin.
 #
-# Usage: verify_llm_manifest.sh <model:tag> <expected_sha256>
+# Usage: verify_llm_manifest.sh <model:tag> [expected_sha256]
 #
 
 set -euo pipefail
 
-if [ "$#" -lt 2 ]; then
-  echo "Usage: $0 <model:tag> <expected_sha256>" >&2
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <model:tag> [expected_sha256]" >&2
   exit 1
 fi
 
 MODEL_SPEC="$1"
-EXPECTED_SHA256="$2"
+HAVE_PIN=0
+EXPECTED_SHA256=""
+if [ "$#" -ge 2 ]; then
+  HAVE_PIN=1
+  EXPECTED_SHA256="$2"
+  if [ -z "$EXPECTED_SHA256" ]; then
+    echo "Error: expected sha256 pin for $MODEL_SPEC is empty; refusing to skip verification." >&2
+    exit 1
+  fi
+fi
 
 LLM_NAME="${MODEL_SPEC%%:*}"
 LLM_TAG="${MODEL_SPEC##*:}"
@@ -36,6 +45,11 @@ if command -v jq >/dev/null 2>&1; then
   if [ -n "$CONFIG_DIGEST" ]; then
     echo "config $CONFIG_DIGEST"
   fi
+fi
+
+if [ "$HAVE_PIN" -eq 0 ]; then
+  echo "No pin given: manifest NOT verified."
+  exit 0
 fi
 
 if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
