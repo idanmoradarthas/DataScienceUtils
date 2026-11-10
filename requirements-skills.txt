@@ -1,8 +1,8 @@
 # Pinned dependencies for evaluating Agent Skills with NVIDIA SkillEvaluator
-# Pinned to commit a61e1f3ff609118c0c07e5f569aaf58fa5a76be0 (reports version 0.6.0).
+# SkillEvaluator is pinned to a PyPI release. The [tier2] extra installs the openai client that the Tier 2 checks need.
+# SkillSpector is not published on PyPI, so it stays pinned to a git tag.
 # Install standalone with:
-#   uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+#   uv tool install --python 3.13 "skillevaluator[tier2]==0.7.2"
 #   uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
-# Note: Tier 2 deduplication checks require --with "openai>=2.21.0".
-skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0
+skillevaluator[tier2]==0.7.2
 skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
