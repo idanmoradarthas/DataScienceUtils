@@ -13,7 +13,16 @@ if [ "$#" -lt 1 ]; then
 fi
 
 MODEL_SPEC="$1"
-EXPECTED_SHA256="${2:-}"
+HAVE_PIN=0
+EXPECTED_SHA256=""
+if [ "$#" -ge 2 ]; then
+  HAVE_PIN=1
+  EXPECTED_SHA256="$2"
+  if [ -z "$EXPECTED_SHA256" ]; then
+    echo "Error: expected sha256 pin for $MODEL_SPEC is empty; refusing to skip verification." >&2
+    exit 1
+  fi
+fi
 
 LLM_NAME="${MODEL_SPEC%%:*}"
 LLM_TAG="${MODEL_SPEC##*:}"
@@ -38,7 +47,7 @@ if command -v jq >/dev/null 2>&1; then
   fi
 fi
 
-if [ -z "$EXPECTED_SHA256" ]; then
+if [ "$HAVE_PIN" -eq 0 ]; then
   echo "No pin given: manifest NOT verified."
   exit 0
 fi
