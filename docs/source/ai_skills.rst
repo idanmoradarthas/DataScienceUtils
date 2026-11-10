@@ -689,6 +689,10 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
 The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``"passage: "`` on every document. While NVIDIA's hosted endpoint honours ``input_type=passage`` sent by SkillEvaluator, Ollama ignores it; without the proxy the chunks are embedded unprefixed, similarities are inflated and unrelated chunks merge into large clusters (false DUPLICATE reports). Ollama's default 4096-token context truncates large cluster prompts, hence ``OLLAMA_CONTEXT_LENGTH=32768``.
 
+The community GGUF of ``nemotron-3-embed-1b`` does not set ``tokenizer.ggml.add_bos_token``, so llama.cpp/Ollama silently prepends a BOS token that the BF16 reference does not use. Embeddings are then consistently offset (on the Probe B gate: pairwise max abs diff 0.071, Spearman 0.982, one extra token per text). Derive a GGUF with the key set to false before ``ollama create``: ``pip install gguf==0.19.0`` and then ``python .github/tier2/patch_gguf_add_bos.py SRC.gguf DST.gguf`` (tensors are copied byte-identically). With the derived file the gate numbers are 0.003 / 0.9997 with exact token counts.
+
+The local dedup LLM is advisory. A small local judge (for example ``gemma4:e2b``) is shown only the file, heading, line range and text of each cluster member, never the function name, so parameter lists of different functions that share parameter names can be reported as ``DUPLICATE``; verdicts can also differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review.
+
 The script runs ``similarity-check`` across all skills, followed by ``dedup-scan`` for each individual skill directory in an isolated temporary location. Each check is mapped to ``PASS``, ``FAIL``, or ``INCOMPLETE``. If any duplicate findings are reported, details are displayed and the script exits 1.
 
 **Manual CI Workflow**
@@ -697,8 +701,9 @@ An optional, non-blocking CI workflow (``.github/workflows/skills-tier2.yml``) i
 
 * **Manual trigger only**: The workflow never runs on ``push`` or ``pull_request``; it is invoked manually via ``workflow_dispatch``.
 * **Embedding prefix input**: ``embedding_prefix`` (default ``passage``) routes embeddings through the proxy; ``none`` bypasses it and is meant for A/B diagnostics only.
+* **Embedding BOS input**: ``embedding_bos`` (default ``disabled``) derives a GGUF with ``add_bos_token=false`` before ``ollama create`` so the embeddings match the BF16 reference; ``default`` uses the community GGUF as published and is meant for A/B diagnostics only.
 * **Runtime downloads**: Model weights (such as GGUF embeddings and Ollama LLM tags) are downloaded and verified dynamically at runtime; they are not bundled or redistributed within the repository.
-* **Embedding verification**: The community GGUF embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) is verified by an automated probe comparing its pairwise cosine matrix against reference scores computed from the official upstream BF16 checkpoint (``nvidia/Nemotron-3-Embed-1B-BF16``).
+* **Embedding verification**: The community GGUF embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) is verified by an automated probe comparing its pairwise cosine matrix against reference scores computed from the official upstream BF16 checkpoint (``nvidia/Nemotron-3-Embed-1B-BF16``). Probe B reports which reference tokenizer variant (plain, bos, eos, bos_eos) the Ollama vectors match best.
 * **Positive control canary**: Synthetic canary fixtures with intentional duplicates are scanned to confirm that both inter-skill and intra-skill duplication detectors are fully operational before repository skills are evaluated.
 
 Troubleshooting

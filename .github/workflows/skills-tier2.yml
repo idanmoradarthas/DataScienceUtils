@@ -12,13 +12,13 @@ on:
           - none
         default: passage
       embedding_bos:
-        description: "disabled = write add_bos_token=false into a derived GGUF (diagnostic)"
+        description: "disabled (default) = embed with a GGUF derived with add_bos_token=false so Ollama matches the BF16 reference; default = use the community GGUF as published (A/B diagnostic only)"
         required: true
         type: choice
         options:
           - default
           - disabled
-        default: default
+        default: disabled
       embedding_file:
         description: "GGUF Quantization File for Nemotron-3-Embed-1B"
         required: true
