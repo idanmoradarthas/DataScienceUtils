@@ -121,12 +121,7 @@ plot_magnitude_vs_cardinality(
 ```
 
 ### Parameters
-- `X`: Input feature dataset (`numpy.ndarray`).
-- `labels`: Assigned cluster labels (`numpy.ndarray`).
-- `cluster_centers`: Cluster center coordinates (`kmeans.cluster_centers_`).
-- `distance_function`: Callable metric function (`Callable[[numpy.ndarray, numpy.ndarray], float]`).
-- `ax` (*keyword-only*, optional, default `None`): Target matplotlib axes.
-- `**kwargs`: Forwarded to underlying plot function (`Axes.scatter`).
+Same parameters as `plot_cluster_magnitude` (`X`, `labels`, `cluster_centers`, `distance_function`, keyword-only `ax`), except that `**kwargs` is forwarded to `Axes.scatter`.
 
 ### Returns
 - `matplotlib.axes._axes.Axes`
