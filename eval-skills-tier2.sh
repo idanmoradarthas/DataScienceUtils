@@ -21,17 +21,57 @@ for arg in "$@"; do
     echo "  SKILL_EVAL_EMBEDDING_BASE_URL  e.g. http://127.0.0.1:11434/v1"
     echo "  SKILL_EVAL_EMBEDDING_API_KEY   e.g. ollama"
     echo "  SKILL_EVAL_EMBEDDING_MODEL     e.g. nemotron-3-embed-1b"
-    echo "  SKILL_EVAL_LLM_PROVIDER        e.g. openai-compatible"
-    echo "  SKILL_EVAL_LLM_BASE_URL        e.g. http://127.0.0.1:11434/v1"
-    echo "  SKILL_EVAL_LLM_API_KEY         e.g. ollama"
-    echo "  SKILL_EVAL_LLM_MODEL           e.g. granite4.1:3b"
+    echo "  SKILL_EVAL_LLM_PROVIDER        e.g. openai-compatible (required unless TIER2_MODE=similarity)"
+    echo "  SKILL_EVAL_LLM_BASE_URL        e.g. http://127.0.0.1:11434/v1 (required unless TIER2_MODE=similarity)"
+    echo "  SKILL_EVAL_LLM_API_KEY         e.g. ollama (required unless TIER2_MODE=similarity)"
+    echo "  SKILL_EVAL_LLM_MODEL           e.g. granite4.1:3b (required unless TIER2_MODE=similarity)"
     echo ""
     echo "Optional environment variables:"
     echo "  SKILLS_DIR                     Path to skills directory (default: skills)"
+    echo "  TIER2_MODE                     Mode to run: all, similarity, dedup (default: all)"
+    echo "  TIER2_SKILLS                   Space- or comma-separated skill names for dedup (default: all)"
     echo "  TIER2_REPORTS_DIR              Directory to copy JSON reports into at exit"
     exit 0
   fi
 done
+
+# Validate TIER2_MODE
+TIER2_MODE="${TIER2_MODE:-all}"
+case "$TIER2_MODE" in
+  all|similarity|dedup)
+    ;;
+  *)
+    echo "Error: TIER2_MODE must be one of: all, similarity, dedup (got '$TIER2_MODE')" >&2
+    exit 1
+    ;;
+esac
+
+SKILLS_DIR_TARGET="${SKILLS_DIR:-skills}"
+if [ ! -d "$SKILLS_DIR_TARGET" ]; then
+  echo "Error: Skills directory '$SKILLS_DIR_TARGET' does not exist." >&2
+  exit 1
+fi
+
+# Validate and collect TIER2_SKILLS
+SELECTED_SKILLS=()
+if [ -n "${TIER2_SKILLS:-}" ]; then
+  skills_spaced="${TIER2_SKILLS//,/ }"
+  for s in $skills_spaced; do
+    [ -z "$s" ] && continue
+    if [ ! -d "$SKILLS_DIR_TARGET/$s" ]; then
+      echo "Error: unknown skill '$s' in TIER2_SKILLS" >&2
+      exit 1
+    fi
+    SELECTED_SKILLS+=("$s")
+  done
+fi
+
+if [ ${#SELECTED_SKILLS[@]} -eq 0 ]; then
+  for s_dir in "$SKILLS_DIR_TARGET"/*/; do
+    [ -d "$s_dir" ] || continue
+    SELECTED_SKILLS+=("$(basename "$s_dir")")
+  done
+fi
 
 # 1. Verify prerequisite CLI
 if ! command -v skillevaluator >/dev/null 2>&1; then
@@ -47,10 +87,13 @@ MISSING_VARS=()
 [ -z "${SKILL_EVAL_EMBEDDING_BASE_URL:-}" ] && MISSING_VARS+=("SKILL_EVAL_EMBEDDING_BASE_URL")
 [ -z "${SKILL_EVAL_EMBEDDING_API_KEY:-}" ] && MISSING_VARS+=("SKILL_EVAL_EMBEDDING_API_KEY")
 [ -z "${SKILL_EVAL_EMBEDDING_MODEL:-}" ] && MISSING_VARS+=("SKILL_EVAL_EMBEDDING_MODEL")
-[ -z "${SKILL_EVAL_LLM_PROVIDER:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_PROVIDER")
-[ -z "${SKILL_EVAL_LLM_BASE_URL:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_BASE_URL")
-[ -z "${SKILL_EVAL_LLM_API_KEY:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_API_KEY")
-[ -z "${SKILL_EVAL_LLM_MODEL:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_MODEL")
+
+if [ "$TIER2_MODE" != "similarity" ]; then
+  [ -z "${SKILL_EVAL_LLM_PROVIDER:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_PROVIDER")
+  [ -z "${SKILL_EVAL_LLM_BASE_URL:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_BASE_URL")
+  [ -z "${SKILL_EVAL_LLM_API_KEY:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_API_KEY")
+  [ -z "${SKILL_EVAL_LLM_MODEL:-}" ] && MISSING_VARS+=("SKILL_EVAL_LLM_MODEL")
+fi
 
 if [ ${#MISSING_VARS[@]} -ne 0 ]; then
   echo "Error: Missing required Tier 2 provider environment variable(s):" >&2
@@ -58,22 +101,7 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     echo "  - $var" >&2
   done
   echo "" >&2
-  echo "Please configure both the embedding and LLM providers before running Tier 2 checks." >&2
-  echo "For Ollama running locally, you can export:" >&2
-  echo "  export SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible" >&2
-  echo "  export SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1" >&2
-  echo "  export SKILL_EVAL_EMBEDDING_API_KEY=ollama" >&2
-  echo "  export SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b" >&2
-  echo "  export SKILL_EVAL_LLM_PROVIDER=openai-compatible" >&2
-  echo "  export SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:11434/v1" >&2
-  echo "  export SKILL_EVAL_LLM_API_KEY=ollama" >&2
-  echo "  export SKILL_EVAL_LLM_MODEL=granite4.1:3b" >&2
-  exit 1
-fi
-
-SKILLS_DIR_TARGET="${SKILLS_DIR:-skills}"
-if [ ! -d "$SKILLS_DIR_TARGET" ]; then
-  echo "Error: Skills directory '$SKILLS_DIR_TARGET' does not exist." >&2
+  echo "Please configure provider environment variables before running Tier 2 checks." >&2
   exit 1
 fi
 
@@ -176,63 +204,67 @@ except Exception:
 }
 
 # 1. Similarity Check (Inter-skill)
-echo ""
-echo "----------------------------------------------------------"
-echo ">>> Running inter-skill similarity-check on $SKILLS_DIR_TARGET"
-echo "----------------------------------------------------------"
-SIM_OUT="$TIER2_TEMP_DIR/similarity"
-mkdir -p "$SIM_OUT"
+if [ "$TIER2_MODE" != "dedup" ]; then
+  echo ""
+  echo "----------------------------------------------------------"
+  echo ">>> Running inter-skill similarity-check on $SKILLS_DIR_TARGET"
+  echo "----------------------------------------------------------"
+  SIM_OUT="$TIER2_TEMP_DIR/similarity"
+  mkdir -p "$SIM_OUT"
 
-sim_start=$(date +%s)
-skillevaluator similarity-check "$SKILLS_DIR_TARGET" --type skill -r cli,json -o "$SIM_OUT"
-sim_rc=$?
-sim_end=$(date +%s)
-sim_duration=$((sim_end - sim_start))
+  sim_start=$(date +%s)
+  skillevaluator similarity-check "$SKILLS_DIR_TARGET" --type skill -r cli,json -o "$SIM_OUT"
+  sim_rc=$?
+  sim_end=$(date +%s)
+  sim_duration=$((sim_end - sim_start))
 
-sim_status=$(parse_status "$SIM_OUT/skillevaluator-similarity.json" "$sim_rc")
-sim_findings=""
-[ "$sim_status" = "FAIL" ] && sim_findings=$(extract_findings "$SIM_OUT/skillevaluator-similarity.json")
+  sim_status=$(parse_status "$SIM_OUT/skillevaluator-similarity.json" "$sim_rc")
+  sim_findings=""
+  [ "$sim_status" = "FAIL" ] && sim_findings=$(extract_findings "$SIM_OUT/skillevaluator-similarity.json")
 
-CHECK_NAMES+=("similarity-check")
-CHECK_STATUSES+=("$sim_status")
-CHECK_DURATIONS+=("${sim_duration}s")
-CHECK_FINDINGS+=("$sim_findings")
+  CHECK_NAMES+=("similarity-check")
+  CHECK_STATUSES+=("$sim_status")
+  CHECK_DURATIONS+=("${sim_duration}s")
+  CHECK_FINDINGS+=("$sim_findings")
 
-if [ "$sim_status" != "PASS" ]; then
-  OVERALL_FAILED=1
+  if [ "$sim_status" != "PASS" ]; then
+    OVERALL_FAILED=1
+  fi
 fi
 
 # 2. Intra-skill Dedup Scan per skill directory
-for s_dir in "$SKILLS_DIR_TARGET"/*/; do
-  [ -d "$s_dir" ] || continue
-  s_name=$(basename "$s_dir")
-  echo ""
-  echo "----------------------------------------------------------"
-  echo ">>> Running dedup-scan on $s_name"
-  echo "----------------------------------------------------------"
+if [ "$TIER2_MODE" != "similarity" ]; then
+  for s_name in "${SELECTED_SKILLS[@]}"; do
+    s_dir="$SKILLS_DIR_TARGET/$s_name"
+    [ -d "$s_dir" ] || continue
+    echo ""
+    echo "----------------------------------------------------------"
+    echo ">>> Running dedup-scan on $s_name"
+    echo "----------------------------------------------------------"
 
-  dedup_out="$TIER2_TEMP_DIR/dedup-$s_name"
-  mkdir -p "$dedup_out"
+    dedup_out="$TIER2_TEMP_DIR/dedup-$s_name"
+    mkdir -p "$dedup_out"
 
-  dedup_start=$(date +%s)
-  skillevaluator dedup-scan "$s_dir" -r cli,json -o "$dedup_out"
-  dedup_rc=$?
-  dedup_end=$(date +%s)
-  dedup_duration=$((dedup_end - dedup_start))
+    dedup_start=$(date +%s)
+    skillevaluator dedup-scan "$s_dir" -r cli,json -o "$dedup_out"
+    dedup_rc=$?
+    dedup_end=$(date +%s)
+    dedup_duration=$((dedup_end - dedup_start))
 
-  dedup_status=$(parse_status "$dedup_out/skillevaluator-dedup.json" "$dedup_rc")
-  dedup_findings=""
-  [ "$dedup_status" = "FAIL" ] && dedup_findings=$(extract_findings "$dedup_out/skillevaluator-dedup.json")
+    dedup_status=$(parse_status "$dedup_out/skillevaluator-dedup.json" "$dedup_rc")
+    dedup_findings=""
+    [ "$dedup_status" = "FAIL" ] && dedup_findings=$(extract_findings "$dedup_out/skillevaluator-dedup.json")
 
-  CHECK_NAMES+=("dedup:$s_name")
-  CHECK_STATUSES+=("$dedup_status")
-  CHECK_DURATIONS+=("${dedup_duration}s")
-  CHECK_FINDINGS+=("$dedup_findings")
+    CHECK_NAMES+=("dedup:$s_name")
+    CHECK_STATUSES+=("$dedup_status")
+    CHECK_DURATIONS+=("${dedup_duration}s")
+    CHECK_FINDINGS+=("$dedup_findings")
 
-  if [ "$dedup_status" != "PASS" ]; then
-    OVERALL_FAILED=1
-  fi
-done
+    if [ "$dedup_status" != "PASS" ]; then
+      OVERALL_FAILED=1
+    fi
+  done
+fi
 
 echo ""
 echo "==================================================================="
@@ -271,6 +303,10 @@ if [ $OVERALL_FAILED -ne 0 ]; then
   exit 1
 else
   echo ""
-  echo "All Tier 2 similarity and deduplication checks successfully passed!"
+  if [ "$TIER2_MODE" = "all" ]; then
+    echo "All Tier 2 similarity and deduplication checks successfully passed!"
+  else
+    echo "All Tier 2 $TIER2_MODE checks successfully passed!"
+  fi
   exit 0
 fi

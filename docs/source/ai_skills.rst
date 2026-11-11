@@ -735,6 +735,26 @@ Some early flags were genuine (fixed in #149 and #152); the later ones were sibl
 
 The script runs ``similarity-check`` across all skills, followed by ``dedup-scan`` for each individual skill directory in an isolated temporary location. Each check is mapped to ``PASS``, ``FAIL``, or ``INCOMPLETE``. If any duplicate findings are reported, details are displayed and the script exits 1.
 
+Pull request checks
+^^^^^^^^^^^^^^^^^^^
+
+Pull requests touching skills or the Tier 2 pipeline are evaluated by the automated workflow ``Skills Tier 2 (PR)`` (``.github/workflows/skills-tier2-pr.yml``), comprising two distinct jobs:
+
+* **Tier 2 similarity (blocking)**: Executes cross-skill embedding similarity at SkillEvaluator's default threshold (0.75). Only embeddings are used (no LLM). Any score meeting or exceeding the threshold fails the check and blocks the PR. In branch protection rules, **only this job should be marked as a required status check**.
+* **Tier 2 dedup (advisory)**: Executes intra-skill LLM deduplication scanning **only on skills touched by the PR**. Findings are surfaced exclusively as GitHub warning annotations on changed lines and summarized in the GitHub Actions step summary (never posted as PR comments). Because sibling functions can share common headings and structural patterns, this job is strictly advisory and **never fails the PR** due to reported findings or incomplete scans; it must never be made a required status check.
+
+The LLM judge used for the advisory scan is read dynamically from ``.github/tier2/pins.env`` (default ``granite4.1:3b``) and verified against its pinned sha256 manifest digest.
+
+To reproduce these checks locally:
+
+.. code-block:: bash
+
+    # Run only the blocking similarity check:
+    TIER2_MODE=similarity ./eval-skills-tier2.sh
+
+    # Run the advisory dedup check on specific skills:
+    TIER2_MODE=dedup TIER2_SKILLS="ds-utils-metrics,ds-utils-preprocess" ./eval-skills-tier2.sh
+
 **Manual CI Workflow**
 
 An optional, non-blocking CI workflow (``.github/workflows/skills-tier2.yml``) is available to execute Tier 2 validation in a GitHub Actions runner. Key characteristics:

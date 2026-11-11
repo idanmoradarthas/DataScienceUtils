@@ -1,0 +1,270 @@
+name: Skills Tier 2 (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skills-tier2-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  similarity:
+    name: "Tier 2 similarity (blocking)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TIER2_MODE: similarity
+      OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_KEEP_ALIVE: "30m"
+      OLLAMA_CONTEXT_LENGTH: "32768"
+      SKILL_EVAL_EMBEDDING_PROVIDER: openai-compatible
+      SKILL_EVAL_EMBEDDING_BASE_URL: http://127.0.0.1:11435/v1
+      SKILL_EVAL_EMBEDDING_API_KEY: ollama
+      SKILL_EVAL_EMBEDDING_MODEL: nemotron-3-embed-1b
+      SKILL_EVAL_LLM_PROVIDER: openai-compatible
+      SKILL_EVAL_LLM_BASE_URL: http://127.0.0.1:11434/v1
+      SKILL_EVAL_LLM_API_KEY: ollama
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute PR Change Scope
+        id: changes
+        run: |
+          python3 .github/tier2/pr_scope.py --base "${{ github.event.pull_request.base.sha }}" --output scope.json --github-output "$GITHUB_OUTPUT"
+
+      - name: Set up uv
+        if: steps.changes.outputs.run_similarity == 'true'
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+
+      - name: Set up Python 3.13
+        if: steps.changes.outputs.run_similarity == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install SkillEvaluator
+        if: steps.changes.outputs.run_similarity == 'true'
+        run: |
+          uv tool install --python 3.13 "$(grep -E '^skillevaluator' requirements-skills.txt)"
+
+      - name: Cache Model Files
+        if: steps.changes.outputs.run_similarity == 'true'
+        id: cache-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/tier2_models
+          key: tier2-models-${{ hashFiles('.github/tier2/pins.env') }}-q8_0
+
+      - name: Setup Ollama and Embedding Model
+        if: steps.changes.outputs.run_similarity == 'true'
+        env:
+          TIER2_SKIP_LLM: "1"
+          TIER2_EMBED_ADD_BOS: disabled
+        run: |
+          .github/tier2/setup_ollama.sh q8_0
+
+      - name: Start Passage-Prefix Proxy
+        if: steps.changes.outputs.run_similarity == 'true'
+        id: start-proxy
+        run: |
+          echo "Starting passage-prefix proxy in background..."
+          export TIER2_EMBED_PROXY_PORT=11435
+          export TIER2_UPSTREAM="http://127.0.0.1:11434"
+          python3 .github/tier2/embed_prefix_proxy.py > embed_proxy.log 2>&1 &
+          PROXY_PID=$!
+          echo "Proxy PID: $PROXY_PID"
+
+          RETRIES=60
+          until curl -s "http://127.0.0.1:11435/api/version" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+            sleep 1
+            RETRIES=$((RETRIES - 1))
+          done
+
+          if [ $RETRIES -eq 0 ]; then
+            echo "Error: Passage-prefix proxy failed to respond on http://127.0.0.1:11435/api/version within 60s" >&2
+            [ -f embed_proxy.log ] && cat embed_proxy.log >&2
+            exit 1
+          fi
+
+          echo "✓ Passage-prefix proxy is responding."
+          echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
+
+      - name: Probe Embeddings
+        if: steps.changes.outputs.run_similarity == 'true'
+        run: |
+          python3 .github/tier2/probes/probe_embeddings.py
+
+      - name: Run Enforced Similarity Check
+        if: steps.changes.outputs.run_similarity == 'true'
+        id: similarity
+        run: |
+          TIER2_REPORTS_DIR=tier2_reports ./eval-skills-tier2.sh | tee eval_similarity.log
+
+      - name: Run Margin Similarity Probe
+        if: always() && steps.changes.outputs.run_similarity == 'true'
+        continue-on-error: true
+        run: |
+          skillevaluator similarity-check skills --type skill --threshold 0.65 -r json -o tier2_margin
+
+      - name: Generate Similarity Summary
+        if: always() && steps.changes.outputs.run_similarity == 'true'
+        run: |
+          python3 .github/tier2/pr_similarity_report.py \
+            --enforced tier2_reports/similarity/skillevaluator-similarity.json \
+            --margin tier2_margin/skillevaluator-similarity.json \
+            --threshold 0.75 \
+            --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Write Final Summary
+        if: always()
+        run: |
+          if [ "${{ steps.changes.outputs.run_similarity }}" != 'true' ]; then
+            echo "No files under skills/ or in the Tier 2 pipeline changed; Tier 2 similarity was not needed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  dedup-advisory:
+    name: "Tier 2 dedup (advisory)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TIER2_MODE: dedup
+      OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_KEEP_ALIVE: "30m"
+      OLLAMA_CONTEXT_LENGTH: "32768"
+      SKILL_EVAL_EMBEDDING_PROVIDER: openai-compatible
+      SKILL_EVAL_EMBEDDING_BASE_URL: http://127.0.0.1:11435/v1
+      SKILL_EVAL_EMBEDDING_API_KEY: ollama
+      SKILL_EVAL_EMBEDDING_MODEL: nemotron-3-embed-1b
+      SKILL_EVAL_LLM_PROVIDER: openai-compatible
+      SKILL_EVAL_LLM_BASE_URL: http://127.0.0.1:11434/v1
+      SKILL_EVAL_LLM_API_KEY: ollama
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute PR Change Scope
+        id: changes
+        run: |
+          python3 .github/tier2/pr_scope.py --base "${{ github.event.pull_request.base.sha }}" --output scope.json --github-output "$GITHUB_OUTPUT"
+
+      - name: Set up uv
+        if: steps.changes.outputs.run_dedup == 'true'
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+
+      - name: Set up Python 3.13
+        if: steps.changes.outputs.run_dedup == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install SkillEvaluator
+        if: steps.changes.outputs.run_dedup == 'true'
+        run: |
+          uv tool install --python 3.13 "$(grep -E '^skillevaluator' requirements-skills.txt)"
+
+      - name: Cache Model Files
+        if: steps.changes.outputs.run_dedup == 'true'
+        id: cache-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/tier2_models
+          key: tier2-models-${{ hashFiles('.github/tier2/pins.env') }}-q8_0
+
+      - name: Read LLM Judge from Pins
+        if: steps.changes.outputs.run_dedup == 'true'
+        run: |
+          source .github/tier2/pins.env
+          echo "SKILL_EVAL_LLM_MODEL=$OLLAMA_LLM_MODEL" >> "$GITHUB_ENV"
+          echo "TIER2_LLM_PIN=$(.github/tier2/llm_pin_for.sh "$OLLAMA_LLM_MODEL")" >> "$GITHUB_ENV"
+
+      - name: Setup Ollama and Models
+        if: steps.changes.outputs.run_dedup == 'true'
+        id: setup-ollama
+        continue-on-error: true
+        env:
+          TIER2_EMBED_ADD_BOS: disabled
+        run: |
+          .github/tier2/setup_ollama.sh q8_0 "$SKILL_EVAL_LLM_MODEL"
+
+      - name: Start Passage-Prefix Proxy
+        if: steps.changes.outputs.run_dedup == 'true' && steps.setup-ollama.outcome == 'success'
+        id: start-proxy
+        continue-on-error: true
+        run: |
+          echo "Starting passage-prefix proxy in background..."
+          export TIER2_EMBED_PROXY_PORT=11435
+          export TIER2_UPSTREAM="http://127.0.0.1:11434"
+          python3 .github/tier2/embed_prefix_proxy.py > embed_proxy.log 2>&1 &
+          PROXY_PID=$!
+          echo "Proxy PID: $PROXY_PID"
+
+          RETRIES=60
+          until curl -s "http://127.0.0.1:11435/api/version" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+            sleep 1
+            RETRIES=$((RETRIES - 1))
+          done
+
+          if [ $RETRIES -eq 0 ]; then
+            echo "Error: Passage-prefix proxy failed to respond on http://127.0.0.1:11435/api/version within 60s" >&2
+            [ -f embed_proxy.log ] && cat embed_proxy.log >&2
+            exit 1
+          fi
+
+          echo "✓ Passage-prefix proxy is responding."
+          echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
+
+      - name: Probe Embeddings
+        if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python3 .github/tier2/probes/probe_embeddings.py
+
+      - name: Run Advisory Dedup Scan on Touched Skills
+        if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
+        id: eval-dedup
+        continue-on-error: true
+        run: |
+          TIER2_SKILLS="${{ steps.changes.outputs.dedup_skills }}" TIER2_REPORTS_DIR=tier2_reports ./eval-skills-tier2.sh | tee eval_dedup.log
+
+      - name: Report Dedup Findings and Annotations
+        if: always()
+        run: |
+          if [ "${{ steps.changes.outputs.run_dedup }}" != 'true' ]; then
+            echo "## Tier 2 dedup (advisory)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "No skill files modified in this PR; advisory dedup scan was not needed." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.setup-ollama.outcome }}" != 'success' ] || [ "${{ steps.start-proxy.outcome }}" != 'success' ] || [ "${{ steps.eval-dedup.outcome }}" != 'success' ]; then
+            echo "::warning title=Tier 2 dedup (advisory)::Advisory dedup scan did not complete successfully during setup or evaluation."
+            python3 .github/tier2/pr_dedup_report.py \
+              --scope scope.json \
+              --reports tier2_reports \
+              --model "${SKILL_EVAL_LLM_MODEL:-unknown}" \
+              --digest "${TIER2_LLM_PIN:-}" \
+              --summary-file "$GITHUB_STEP_SUMMARY"
+          else
+            python3 .github/tier2/pr_dedup_report.py \
+              --scope scope.json \
+              --reports tier2_reports \
+              --model "$SKILL_EVAL_LLM_MODEL" \
+              --digest "$TIER2_LLM_PIN" \
+              --summary-file "$GITHUB_STEP_SUMMARY"
+          fi
