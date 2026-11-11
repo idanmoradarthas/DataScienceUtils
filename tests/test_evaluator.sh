@@ -234,6 +234,52 @@ else
     exit 1
   fi
 
+  # Test 6.4: TIER2_MODE=similarity with the SKILL_EVAL_LLM_* variables UNSET
+  echo "RELATED_BUT_DISTINCT" > "$VERDICT_FILE"
+  ENV_SIM_ONLY=(
+    "TIER2_MODE=similarity"
+    "SKILL_EVAL_EMBEDDING_PROVIDER=openai-compatible"
+    "SKILL_EVAL_EMBEDDING_BASE_URL=http://127.0.0.1:$MOCK_PORT/v1"
+    "SKILL_EVAL_EMBEDDING_API_KEY=ollama"
+    "SKILL_EVAL_EMBEDDING_MODEL=nemotron-3-embed-1b"
+  )
+  OUT6_4=$(env "${ENV_SIM_ONLY[@]}" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_4=$?
+  if [ $RC6_4 -eq 0 ] && echo "$OUT6_4" | grep -q "similarity-check" && ! echo "$OUT6_4" | grep -q "dedup:"; then
+    echo "✓ Scenario 6.4 passed: TIER2_MODE=similarity with LLM unset exits 0, shows similarity-check and no dedup row."
+  else
+    stop_mock
+    printf "✗ Scenario 6.4 FAILED! rc=%s, output:\n%s\n" "$RC6_4" "$OUT6_4" >&2
+    exit 1
+  fi
+
+  # Test 6.5: TIER2_SKILLS="ds-utils-strings" with RELATED_BUT_DISTINCT verdict
+  echo "RELATED_BUT_DISTINCT" > "$VERDICT_FILE"
+  OUT6_5=$(env "${ENV_COMMON[@]}" TIER2_SKILLS="ds-utils-strings" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_5=$?
+  DEDUP_ROW_COUNT=$(echo "$OUT6_5" | grep -c "dedup:" || true)
+  if [ $RC6_5 -eq 0 ] && [ "$DEDUP_ROW_COUNT" -eq 1 ] && echo "$OUT6_5" | grep -q "dedup:ds-utils-strings"; then
+    echo "✓ Scenario 6.5 passed: TIER2_SKILLS=ds-utils-strings exits 0 and has exactly one dedup row: dedup:ds-utils-strings."
+  else
+    stop_mock
+    printf "✗ Scenario 6.5 FAILED! rc=%s (dedup rows: %s), output:\n%s\n" "$RC6_5" "$DEDUP_ROW_COUNT" "$OUT6_5" >&2
+    exit 1
+  fi
+
+  # Test 6.6: TIER2_MODE=bogus -> rc 1; TIER2_SKILLS="no-such-skill" -> rc 1
+  OUT6_6A=$(env "${ENV_COMMON[@]}" TIER2_MODE="bogus" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_6A=$?
+  OUT6_6B=$(env "${ENV_COMMON[@]}" TIER2_SKILLS="no-such-skill" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
+  RC6_6B=$?
+  if [ $RC6_6A -eq 1 ] && echo "$OUT6_6A" | grep -q "TIER2_MODE must be one of: all, similarity, dedup" && \
+     [ $RC6_6B -eq 1 ] && echo "$OUT6_6B" | grep -q "unknown skill 'no-such-skill' in TIER2_SKILLS"; then
+    echo "✓ Scenario 6.6 passed: Invalid TIER2_MODE and TIER2_SKILLS exit 1 with expected messages."
+  else
+    stop_mock
+    printf "✗ Scenario 6.6 FAILED! rc_a=%s, rc_b=%s, output_a:\n%s\noutput_b:\n%s\n" "$RC6_6A" "$RC6_6B" "$OUT6_6A" "$OUT6_6B" >&2
+    exit 1
+  fi
+
   # Stop mock server before unreachable port test
   stop_mock
 
