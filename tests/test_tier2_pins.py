@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -53,7 +54,10 @@ def test_pins_env_parses_and_llm_pins_are_valid():
     )
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash executable not available")
+@pytest.mark.skipif(
+    sys.platform == "win32" or shutil.which("bash") is None,
+    reason="llm_pin_for.sh only runs on Linux CI runners; on Windows 'bash' is the WSL launcher stub",
+)
 class TestLlmPinForHelper:
     """Tests for .github/tier2/llm_pin_for.sh."""
 
