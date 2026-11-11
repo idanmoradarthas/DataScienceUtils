@@ -41,8 +41,9 @@ if [ "${1:-}" = "--discover" ]; then
 
   echo ""
   echo "--- LLM tag digest ---"
-  LLM_TAG="gemma4:e2b"
+  LLM_TAG="granite4.1:3b"
   echo "OLLAMA_LLM_MODEL=\"$LLM_TAG\""
+  echo "OLLAMA_LLM_ALT_MODEL=\"phi4-mini:3.8b\""
   echo "# OLLAMA_LLM_MANIFEST_DIGEST: take it from the CI log line \"Local manifest sha256:\" after a run (see pins.env comment)."
   exit 0
 fi
@@ -60,7 +61,8 @@ source "$PINS_FILE"
 for var in OLLAMA_VERSION OLLAMA_LINUX_AMD64_SHA256 GGUF_REPO GGUF_REVISION \
            GGUF_SHA256_Q8_0 GGUF_SHA256_F16 GGUF_SHA256_Q4_K_M \
            UPSTREAM_BF16_REPO UPSTREAM_BF16_REVISION \
-           OLLAMA_LLM_MODEL OLLAMA_LLM_MANIFEST_DIGEST; do
+           OLLAMA_LLM_MODEL OLLAMA_LLM_MANIFEST_DIGEST \
+           OLLAMA_LLM_ALT_MODEL OLLAMA_LLM_ALT_MANIFEST_DIGEST; do
   if [ -z "${!var:-}" ]; then
     echo "Error: Pin '$var' is not set in $PINS_FILE. Run $0 --discover or set pins manually." >&2
     exit 1
@@ -227,15 +229,16 @@ if ! ollama pull "$LLM_MODEL_CHOICE" > "$PULL_LOG" 2>&1; then
 fi
 sed -E 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$PULL_LOG" | tr '\r' '\n' | tail -n 15
 
-if [ "$LLM_MODEL_CHOICE" = "$OLLAMA_LLM_MODEL" ]; then
-  echo "Verifying LLM manifest digest against pin ($OLLAMA_LLM_MANIFEST_DIGEST)..."
-  "$SCRIPT_DIR/verify_llm_manifest.sh" "$LLM_MODEL_CHOICE" "$OLLAMA_LLM_MANIFEST_DIGEST"
+LLM_PIN=$("$SCRIPT_DIR/llm_pin_for.sh" "$LLM_MODEL_CHOICE" "$PINS_FILE")
+if [ -n "$LLM_PIN" ]; then
+  echo "Verifying LLM manifest digest against pin ($LLM_PIN)..."
+  "$SCRIPT_DIR/verify_llm_manifest.sh" "$LLM_MODEL_CHOICE" "$LLM_PIN"
 
   MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
   echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"
-  echo "✓ Pulled LLM: $LLM_MODEL_CHOICE (verified against pinned digest $OLLAMA_LLM_MANIFEST_DIGEST)"
+  echo "✓ Pulled LLM: $LLM_MODEL_CHOICE (verified against pinned digest $LLM_PIN)"
 else
-  echo "LLM '$LLM_MODEL_CHOICE' has no pinned digest (pinned model: $OLLAMA_LLM_MODEL); recording its manifest digest for provenance:"
+  echo "LLM '$LLM_MODEL_CHOICE' has no pinned digest (pinned models: $OLLAMA_LLM_MODEL, $OLLAMA_LLM_ALT_MODEL); recording its manifest digest for provenance:"
   "$SCRIPT_DIR/verify_llm_manifest.sh" "$LLM_MODEL_CHOICE" || echo "Warning: could not read the local manifest for $LLM_MODEL_CHOICE" >&2
   MODEL_INFO=$(curl -s "http://$OLLAMA_HOST/api/show" -d "{\"model\": \"$LLM_MODEL_CHOICE\"}")
   echo "Model details: $(echo "$MODEL_INFO" | jq -c '.details // empty' 2>/dev/null || true)"

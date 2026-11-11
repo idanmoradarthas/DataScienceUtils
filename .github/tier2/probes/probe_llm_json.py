@@ -67,7 +67,7 @@ def main() -> None:
     """Run Probe C checks on LLM structured JSON output."""
     base_url = os.environ.get("SKILL_EVAL_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
     api_key = os.environ.get("SKILL_EVAL_LLM_API_KEY", "ollama")
-    model = os.environ.get("SKILL_EVAL_LLM_MODEL", "gemma4:e2b")
+    model = os.environ.get("SKILL_EVAL_LLM_MODEL", "granite4.1:3b")
 
     client = OpenAI(base_url=base_url, api_key=api_key)
 

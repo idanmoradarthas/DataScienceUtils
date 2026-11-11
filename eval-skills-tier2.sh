@@ -24,7 +24,7 @@ for arg in "$@"; do
     echo "  SKILL_EVAL_LLM_PROVIDER        e.g. openai-compatible"
     echo "  SKILL_EVAL_LLM_BASE_URL        e.g. http://127.0.0.1:11434/v1"
     echo "  SKILL_EVAL_LLM_API_KEY         e.g. ollama"
-    echo "  SKILL_EVAL_LLM_MODEL           e.g. gemma4:e2b"
+    echo "  SKILL_EVAL_LLM_MODEL           e.g. granite4.1:3b"
     echo ""
     echo "Optional environment variables:"
     echo "  SKILLS_DIR                     Path to skills directory (default: skills)"
@@ -67,7 +67,7 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
   echo "  export SKILL_EVAL_LLM_PROVIDER=openai-compatible" >&2
   echo "  export SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:11434/v1" >&2
   echo "  export SKILL_EVAL_LLM_API_KEY=ollama" >&2
-  echo "  export SKILL_EVAL_LLM_MODEL=gemma4:e2b" >&2
+  echo "  export SKILL_EVAL_LLM_MODEL=granite4.1:3b" >&2
   exit 1
 fi
 
