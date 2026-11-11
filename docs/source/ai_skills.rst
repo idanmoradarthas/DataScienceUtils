@@ -688,7 +688,7 @@ The ``[tier2]`` extra installs the OpenAI client used by the Tier 2 checks, so n
     export SKILL_EVAL_LLM_PROVIDER=openai-compatible
     export SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
     export SKILL_EVAL_LLM_API_KEY=ollama
-    export SKILL_EVAL_LLM_MODEL=gemma4:e2b
+    export SKILL_EVAL_LLM_MODEL=granite4.1:3b
 
     ./eval-skills-tier2.sh
     kill "$PROXY_PID"
@@ -697,7 +697,41 @@ The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``
 
 The community GGUF of ``nemotron-3-embed-1b`` does not set ``tokenizer.ggml.add_bos_token``, so llama.cpp/Ollama silently prepends a BOS token that the BF16 reference does not use. Embeddings are then consistently offset (on the Probe B gate: pairwise max abs diff 0.071, Spearman 0.982, one extra token per text). Derive a GGUF with the key set to false before ``ollama create``: ``pip install gguf==0.19.0`` and then ``python .github/tier2/patch_gguf_add_bos.py SRC.gguf DST.gguf`` (tensors are copied byte-identically). With the derived file the gate numbers are 0.003 / 0.9997 with exact token counts.
 
-The local dedup LLM is advisory. A small local judge (for example ``gemma4:e2b``) is shown only the file, heading, line range and text of each cluster member, never the function name, so parameter lists of different functions that share parameter names can be reported as ``DUPLICATE``; verdicts can also differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review.
+The local dedup LLM is advisory. The judge is shown only the file, heading, line range and text of each cluster member, never the function name, so sections of different functions that share a heading and structure (``### Parameters``, ``### Example``) can be reported as ``DUPLICATE``, and a verdict can differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review. The default judge is ``granite4.1:3b``; ``phi4-mini:3.8b`` is a pinned alternate for a second opinion (pass it as the ``llm_model`` workflow input or as ``SKILL_EVAL_LLM_MODEL``). Both have their Ollama manifest digest pinned in ``.github/tier2/pins.env``; any other model tag runs unpinned and its digest is printed for provenance.
+
+Choosing the judge
+^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 15 40
+
+   * - Judge
+     - Runs with a DUPLICATE flag
+     - Scan time
+     - Note
+   * - gemma4:e2b
+     - 3 of 3
+     - ~9 min
+     - confidence was always 0.95
+   * - gemma4:e4b
+     - 1 of 2
+     - ~25 min
+     -
+   * - ministral-3:3b
+     - 1 of 1
+     - ~7 min
+     - flagged the ROC/PR ``### Parameters`` pair
+   * - granite4.1:3b
+     - 1 of 3
+     - 6-13 min
+     - flagged one ``### Example`` pair of sibling functions; labelled the identical-sentence pair of Probe C ``DUPLICATE``
+   * - phi4-mini:3.8b
+     - 0 of 3
+     - 8-9 min
+     - most stable verdicts; labelled the Probe C identical-sentence pair ``RELATED_BUT_DISTINCT``
+
+Some early flags were genuine (fixed in #149 and #152); the later ones were sibling-function sections that share a heading. Counts are small and the skills contain no true duplicates, so the table measures false positives, not recall.
 
 The script runs ``similarity-check`` across all skills, followed by ``dedup-scan`` for each individual skill directory in an isolated temporary location. Each check is mapped to ``PASS``, ``FAIL``, or ``INCOMPLETE``. If any duplicate findings are reported, details are displayed and the script exits 1.
 

@@ -201,7 +201,7 @@ else
     "SKILL_EVAL_LLM_PROVIDER=openai-compatible"
     "SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:$MOCK_PORT/v1"
     "SKILL_EVAL_LLM_API_KEY=ollama"
-    "SKILL_EVAL_LLM_MODEL=gemma4:e2b"
+    "SKILL_EVAL_LLM_MODEL=granite4.1:3b"
   )
 
   # Test 6.1: RELATED_BUT_DISTINCT -> exits 0 with all PASS
@@ -246,7 +246,7 @@ else
     "SKILL_EVAL_LLM_PROVIDER=openai-compatible"
     "SKILL_EVAL_LLM_BASE_URL=http://127.0.0.1:1/v1"
     "SKILL_EVAL_LLM_API_KEY=ollama"
-    "SKILL_EVAL_LLM_MODEL=gemma4:e2b"
+    "SKILL_EVAL_LLM_MODEL=granite4.1:3b"
   )
   OUT6_3=$(env "${ENV_UNREACHABLE[@]}" "$REPO_ROOT/eval-skills-tier2.sh" 2>&1)
   RC6_3=$?
