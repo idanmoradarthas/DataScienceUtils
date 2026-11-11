@@ -17,6 +17,7 @@ import re
 import subprocess
 
 _HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+_VALID_SKILL_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 _INFRA_EXACT = {
     ".github/workflows/skills-tier2-pr.yml",
@@ -121,12 +122,17 @@ def compute_scope(
         elif _is_infra_path(path):
             infra_changed = True
 
-    # dedup_skills: changed skills whose directory exists on disk and has at least one added/modified file
+    # dedup_skills: changed skills whose directory exists on disk, has at least one added/modified file,
+    # and whose name matches ^[A-Za-z0-9._-]+$. Invalid names are put in skipped_skills.
     dedup_skills: list[str] = []
+    skipped_skills: list[str] = []
     for skill_name in sorted(skills_with_add_mod):
         skill_path = root / skills_dir / skill_name
         if skill_path.is_dir():
-            dedup_skills.append(skill_name)
+            if _VALID_SKILL_NAME_RE.match(skill_name):
+                dedup_skills.append(skill_name)
+            else:
+                skipped_skills.append(skill_name)
 
     run_similarity = skills_changed or infra_changed
     run_dedup = len(dedup_skills) > 0
@@ -136,6 +142,7 @@ def compute_scope(
         "changed_files": sorted(touched_files),
         "changed_skills": sorted(changed_skills),
         "dedup_skills": dedup_skills,
+        "skipped_skills": sorted(skipped_skills),
         "run_similarity": run_similarity,
         "run_dedup": run_dedup,
         "changed_lines": {k: v for k, v in sorted(changed_lines.items()) if v},

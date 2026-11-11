@@ -1,10 +1,11 @@
 """Unit tests for Tier 2 pull request helper scripts.
 
 Tests cover:
-- pr_scope.py in temporary git repositories (modifications, additions, deletions, renames, infra, non-skill files)
+- pr_scope.py in temporary git repositories (modifications, additions, deletions, renames, infra, non-skill files,
+  invalid skill names)
 - pr_dedup_report.py with JSON fixtures (touching vs non-touching candidates, >10 annotations truncation, escaping,
-  incomplete scans, llm_refused, corrupt/missing files)
-- pr_similarity_report.py (enforced pass/fail, margin near-threshold extraction, missing margin)
+  incomplete scans with real work_limit and legacy.errors shapes, real llm_refused, other findings, corrupt files)
+- pr_similarity_report.py (enforced pass/fail, margin near-threshold extraction, missing margin, empty near-threshold)
 """
 
 from __future__ import annotations
@@ -77,6 +78,7 @@ class TestPrScope:
         assert scope["run_dedup"] is True
         assert scope["changed_skills"] == ["skill-a"]
         assert scope["dedup_skills"] == ["skill-a"]
+        assert scope["skipped_skills"] == []
         assert "skills/skill-a/SKILL.md" in scope["changed_lines"]
         ranges = scope["changed_lines"]["skills/skill-a/SKILL.md"]
         assert len(ranges) >= 1
@@ -96,6 +98,7 @@ class TestPrScope:
         assert scope["run_dedup"] is True
         assert "skill-c" in scope["changed_skills"]
         assert "skill-c" in scope["dedup_skills"]
+        assert scope["skipped_skills"] == []
 
     def test_delete_skill(self, temp_git_repo: Path) -> None:
         """Delete an entire skill: run_similarity is True, but run_dedup is False (dir deleted)."""
@@ -107,6 +110,7 @@ class TestPrScope:
         assert scope["run_dedup"] is False
         assert scope["changed_skills"] == ["skill-b"]
         assert scope["dedup_skills"] == []
+        assert scope["skipped_skills"] == []
 
     def test_infra_only_change(self, temp_git_repo: Path) -> None:
         """Change only infra file: run_similarity is True, but run_dedup is False."""
@@ -119,6 +123,7 @@ class TestPrScope:
         assert scope["run_dedup"] is False
         assert scope["changed_skills"] == []
         assert scope["dedup_skills"] == []
+        assert scope["skipped_skills"] == []
 
     def test_non_skill_change(self, temp_git_repo: Path) -> None:
         """Change unrelated file: neither similarity nor dedup run."""
@@ -131,6 +136,7 @@ class TestPrScope:
         assert scope["run_dedup"] is False
         assert scope["changed_skills"] == []
         assert scope["dedup_skills"] == []
+        assert scope["skipped_skills"] == []
 
     def test_pure_deletion_hunk(self) -> None:
         """Hunk with count 0 (e.g. @@ -5,2 +5,0 @@) records no changed line ranges."""
@@ -145,6 +151,20 @@ index 111..222 100644
         changed_lines, touched_files, _deleted_files = pr_scope.parse_git_diff_output(diff_text)
         assert "skills/skill-a/SKILL.md" in touched_files
         assert changed_lines.get("skills/skill-a/SKILL.md") == []
+
+    def test_invalid_skill_name_skipped(self, temp_git_repo: Path) -> None:
+        """Skill directory named 'bad name' is excluded from dedup_skills and listed in skipped_skills."""
+        bad_dir = temp_git_repo / "skills" / "bad name"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "SKILL.md").write_text("# Bad Name\n", encoding="utf-8", newline="\n")
+        _run_git(["add", "."], cwd=temp_git_repo)
+        _run_git(["commit", "-m", "Add bad name skill"], cwd=temp_git_repo)
+
+        scope = pr_scope.compute_scope(base="HEAD~1", head="HEAD", repo_root=temp_git_repo)
+        assert scope["run_similarity"] is True
+        assert "bad name" in scope["changed_skills"]
+        assert "bad name" not in scope["dedup_skills"]
+        assert scope["skipped_skills"] == ["bad name"]
 
 
 class TestPrDedupReport:
@@ -224,7 +244,7 @@ class TestPrDedupReport:
         assert "file=skills/skill-a/references/api.md,line=134,endLine=146" in captured.out
 
         summary_text = summary_file.read_text(encoding="utf-8")
-        assert "| `skill-a` | failed | 1 | 1 |" in summary_text
+        assert "| `skill-a` | findings | 1 | 1 |" in summary_text
         assert "(touches this PR)" in summary_text
         assert "(pre-existing)" in summary_text
         assert "Judge: `granite4.1:3b` (abcdef123456)" in summary_text
@@ -334,8 +354,8 @@ class TestPrDedupReport:
         # In message, % -> %25 and \n -> %0A
         assert "100%25 discount%0Aand newline." in captured.out
 
-    def test_incomplete_scan_and_llm_refused(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-        """Handle overall_status incomplete and llm_refused findings properly."""
+    def test_incomplete_scan_work_limit_real_shape(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        """Handle real SkillEvaluator work_limit shape when overall_status is incomplete."""
         scope_data = {
             "skills_dir": "skills",
             "dedup_skills": ["skill-a"],
@@ -352,21 +372,14 @@ class TestPrDedupReport:
             "overall_status": "incomplete",
             "results": [
                 {
-                    "metadata": {
-                        "work_limit": {
-                            "check_name": "chunk_count_limit",
-                            "actual": 120,
-                            "limit": 100,
-                        }
+                    "status": "incomplete",
+                    "findings": [],
+                    "work_limit": {
+                        "check_name": "chunk_count_limit",
+                        "file_path": "SKILL.md",
+                        "actual": 120,
+                        "limit": 100,
                     },
-                    "findings": [
-                        {
-                            "category": "CONTENT_DEDUP",
-                            "check_name": "llm_refused",
-                            "message": "The LLM declined to classify",
-                            "file_path": "SKILL.md",
-                        }
-                    ],
                 }
             ],
         }
@@ -382,10 +395,150 @@ class TestPrDedupReport:
         )
 
         captured = capsys.readouterr()
-        # File-less warning emitted for incomplete scan
-        assert "::warning title=Tier 2 dedup (advisory)::Tier 2 dedup scan incomplete for skill-a" in captured.out
-        # llm_refused is never treated as a duplicate candidate
-        assert "No duplicate candidates" in summary_file.read_text(encoding="utf-8")
+        expected_msg = (
+            "::warning title=Tier 2 dedup (advisory)::Tier 2 dedup scan incomplete for skill-a: "
+            "tripped work limit chunk_count_limit (file_path=SKILL.md, actual=120, limit=100)"
+        )
+        assert expected_msg in captured.out
+        summary_text = summary_file.read_text(encoding="utf-8")
+        expected_summary = (
+            "- Tier 2 dedup scan incomplete for skill-a: "
+            "tripped work limit chunk_count_limit (file_path=SKILL.md, actual=120, limit=100)"
+        )
+        assert expected_summary in summary_text
+        assert "| `skill-a` | incomplete | 0 | 0 |" in summary_text
+
+    def test_incomplete_scan_legacy_errors_real_shape(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        """Handle real SkillEvaluator legacy.errors shape when overall_status is incomplete."""
+        scope_data = {
+            "skills_dir": "skills",
+            "dedup_skills": ["skill-a"],
+            "changed_lines": {"skills/skill-a/SKILL.md": [[1, 10]]},
+        }
+        scope_file = tmp_path / "scope.json"
+        scope_file.write_text(json.dumps(scope_data), encoding="utf-8")
+
+        reports_dir = tmp_path / "reports"
+        skill_dir = reports_dir / "dedup-skill-a"
+        skill_dir.mkdir(parents=True)
+
+        err_msg = (
+            "LLM analysis did not complete for 4 of 4 content clusters (provider: openai-compatible; "
+            "model: granite4.1:3b). 4 cluster(s): LLM connection failed. Check provider connectivity "
+            "and endpoint configuration."
+        )
+        report_data = {
+            "overall_status": "incomplete",
+            "results": [
+                {
+                    "status": "incomplete",
+                    "findings": [],
+                    "legacy": {
+                        "errors": [err_msg],
+                    },
+                    "llm_analysis": {
+                        "clusters_total": 4,
+                        "clusters_completed": 0,
+                        "clusters_refused": 0,
+                        "clusters_failed": 4,
+                    },
+                }
+            ],
+        }
+        (skill_dir / "skillevaluator-dedup.json").write_text(json.dumps(report_data), encoding="utf-8")
+
+        summary_file = tmp_path / "summary.md"
+        pr_dedup_report.process_dedup_report(
+            scope_file=scope_file,
+            reports_dir=reports_dir,
+            model="granite4.1:3b",
+            digest="abc",
+            summary_file=summary_file,
+        )
+
+        captured = capsys.readouterr()
+        assert f"::warning title=Tier 2 dedup (advisory)::Tier 2 dedup scan incomplete for skill-a: {err_msg}" in (
+            captured.out
+        )
+        summary_text = summary_file.read_text(encoding="utf-8")
+        assert f"- Tier 2 dedup scan incomplete for skill-a: {err_msg}" in summary_text
+        assert "| `skill-a` | incomplete | 0 | 0 |" in summary_text
+
+    def test_llm_refused_and_other_findings_summary(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        """Verify real llm_refused and other findings appear in summary, not in annotations or candidates."""
+        scope_data = {
+            "skills_dir": "skills",
+            "dedup_skills": ["skill-a"],
+            "changed_lines": {"skills/skill-a/references/api_reference.md": [[90, 106]]},
+        }
+        scope_file = tmp_path / "scope.json"
+        scope_file.write_text(json.dumps(scope_data), encoding="utf-8")
+
+        reports_dir = tmp_path / "reports"
+        skill_dir = reports_dir / "dedup-skill-a"
+        skill_dir.mkdir(parents=True)
+
+        report_data = {
+            "overall_status": "passed",
+            "results": [
+                {
+                    "findings": [
+                        {
+                            "category": "CONTENT_DEDUP",
+                            "severity": "medium",
+                            "check_name": "llm_refused",
+                            "message": (
+                                "The LLM declined to classify overlapping content within references/api_reference.md:\n"
+                                '  "### Parameters" in references/api_reference.md (lines 90-106)\n'
+                                '  vs "### Parameters" in references/api_reference.md (lines 134-146)'
+                            ),
+                            "file_path": "references/api_reference.md",
+                            "line_number": 90,
+                            "suggestion": "Review this overlap manually.",
+                            "metadata": {
+                                "source_files": ["references/api_reference.md"],
+                                "llm_provider": "openai-compatible",
+                                "llm_model": "granite4.1:3b",
+                            },
+                        },
+                        {
+                            "category": "CONTENT_DEDUP",
+                            "severity": "low",
+                            "check_name": "trivial_intra_file",
+                            "message": "Trivial comment repeated\nline 2",
+                            "file_path": "SKILL.md",
+                        },
+                    ]
+                }
+            ],
+        }
+        (skill_dir / "skillevaluator-dedup.json").write_text(json.dumps(report_data), encoding="utf-8")
+
+        summary_file = tmp_path / "summary.md"
+        pr_dedup_report.process_dedup_report(
+            scope_file=scope_file,
+            reports_dir=reports_dir,
+            model="granite4.1:3b",
+            digest="abcdef",
+            summary_file=summary_file,
+        )
+
+        captured = capsys.readouterr()
+        # No annotations emitted
+        assert "::warning" not in captured.out
+
+        summary_text = summary_file.read_text(encoding="utf-8")
+        assert "| `skill-a` | clean | 0 | 0 |" in summary_text
+        assert "No duplicate candidates" in summary_text
+        assert "### LLM declined to judge" in summary_text
+        expected_refused_line = (
+            "- `skill-a`: `references/api_reference.md:90` - "
+            "The LLM declined to classify overlapping content within references/api_reference.md: - granite4.1:3b"
+        )
+        assert expected_refused_line in summary_text
+        assert "These overlaps were not classified; review them manually or rerun with another judge." in summary_text
+        assert "### Other findings" in summary_text
+        assert "- `skill-a`: trivial_intra_file (low) - Trivial comment repeated" in summary_text
 
     def test_missing_report_and_corrupt_json(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
         """Handle missing report file and malformed JSON gracefully without raising exceptions."""
@@ -466,6 +619,7 @@ class TestPrSimilarityReport:
             margin_file=margin,
             threshold=0.75,
             summary_file=summary_file,
+            margin_threshold=0.65,
         )
 
         content = summary_file.read_text(encoding="utf-8")
@@ -477,6 +631,25 @@ class TestPrSimilarityReport:
         assert idx_68 != -1
         assert idx_72 < idx_68
         assert "pairA" not in content
+
+    def test_margin_empty_near_threshold(self, tmp_path: Path) -> None:
+        """When margin probe has no pairs below enforced threshold, output formatted sentence."""
+        enforced = tmp_path / "enforced.json"
+        enforced.write_text(json.dumps({"overall_status": "passed", "results": []}), encoding="utf-8")
+        margin = tmp_path / "margin.json"
+        margin.write_text(json.dumps({"overall_status": "passed", "results": []}), encoding="utf-8")
+
+        summary_file = tmp_path / "sim_summary.md"
+        pr_similarity_report.process_similarity_report(
+            enforced_file=enforced,
+            margin_file=margin,
+            threshold=0.75,
+            summary_file=summary_file,
+            margin_threshold=0.65,
+        )
+
+        content = summary_file.read_text(encoding="utf-8")
+        assert "No pair scored between 0.65 and 0.75." in content
 
     def test_missing_margin(self, tmp_path: Path) -> None:
         """Missing margin report outputs 'margin unavailable'."""

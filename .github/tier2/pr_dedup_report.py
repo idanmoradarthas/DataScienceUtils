@@ -151,6 +151,8 @@ def process_dedup_report(
     skill_statuses: list[dict] = []
     all_candidates: list[Candidate] = []
     incomplete_msgs: list[str] = []
+    refused_findings: list[tuple[str, dict]] = []
+    other_findings: list[tuple[str, dict]] = []
 
     for skill in dedup_skills:
         report_path = reports_dir / f"dedup-{skill}" / "skillevaluator-dedup.json"
@@ -184,21 +186,34 @@ def process_dedup_report(
             )
             continue
 
-        overall_status = report_data.get("overall_status", "").lower()
-        if overall_status == "incomplete":
+        raw_overall_status = report_data.get("overall_status", "").lower()
+        if raw_overall_status == "passed":
+            mapped_status = "clean"
+        elif raw_overall_status == "failed":
+            mapped_status = "findings"
+        elif raw_overall_status == "incomplete":
+            mapped_status = "incomplete"
+        else:
+            mapped_status = raw_overall_status or "clean"
+
+        if raw_overall_status == "incomplete":
             inc_detail = ""
             for r in report_data.get("results", []):
-                work_limit = r.get("metadata", {}).get("work_limit")
-                if work_limit:
+                # (a) work_limit
+                work_limit = r.get("work_limit")
+                if work_limit and isinstance(work_limit, dict):
                     chk = work_limit.get("check_name", "limit")
-                    actual = work_limit.get("actual")
-                    limit = work_limit.get("limit")
-                    inc_detail = f"tripped work limit {chk} (actual {actual}, limit {limit})"
+                    other_items = [f"{k}={v}" for k, v in work_limit.items() if k != "check_name"]
+                    items_str = ", ".join(other_items)
+                    inc_detail = f"tripped work limit {chk} ({items_str})"
                     break
-                errors = r.get("errors", [])
-                if errors:
-                    inc_detail = errors[0]
-                    break
+                # (b) legacy.errors[0]
+                legacy = r.get("legacy")
+                if legacy and isinstance(legacy, dict):
+                    errors = legacy.get("errors", [])
+                    if errors and isinstance(errors, list):
+                        inc_detail = str(errors[0])[:300]
+                        break
             if not inc_detail:
                 inc_detail = "scan reported incomplete"
             inc_msg = f"Tier 2 dedup scan incomplete for {skill}: {inc_detail}"
@@ -213,7 +228,8 @@ def process_dedup_report(
             for f in r.get("findings", []):
                 check_name = f.get("check_name", "")
                 if check_name == "llm_refused":
-                    # LLM declined to judge, not a candidate duplicate
+                    # LLM declined to judge
+                    refused_findings.append((skill, f))
                     continue
                 meta = f.get("metadata", {})
                 if meta.get("confidence") is not None:
@@ -236,11 +252,14 @@ def process_dedup_report(
                         skill_candidates_changed += 1
                     else:
                         skill_candidates_elsewhere += 1
+                else:
+                    # Other findings
+                    other_findings.append((skill, f))
 
         skill_statuses.append(
             {
                 "skill": skill,
-                "status": overall_status or "passed",
+                "status": mapped_status,
                 "on_changed": skill_candidates_changed,
                 "elsewhere": skill_candidates_elsewhere,
             }
@@ -310,6 +329,36 @@ def process_dedup_report(
             summary_lines.append("")
     else:
         summary_lines.append("No duplicate candidates for the skills changed in this PR.")
+        summary_lines.append("")
+
+    # LLM declined to judge section
+    if refused_findings:
+        summary_lines.append("### LLM declined to judge")
+        summary_lines.append("")
+        for s_name, f in refused_findings:
+            fp = f.get("file_path", "")
+            ln = f.get("line_number")
+            loc = f"{fp}:{ln}" if ln is not None else fp
+            raw_msg = f.get("message", "")
+            msg_first = raw_msg.splitlines()[0] if raw_msg else ""
+            msg_snippet = msg_first[:200]
+            judge_model = f.get("metadata", {}).get("llm_model") or model
+            summary_lines.append(f"- `{s_name}`: `{loc}` - {msg_snippet} - {judge_model}")
+        summary_lines.append("")
+        summary_lines.append("These overlaps were not classified; review them manually or rerun with another judge.")
+        summary_lines.append("")
+
+    # Other findings section
+    if other_findings:
+        summary_lines.append("### Other findings")
+        summary_lines.append("")
+        for s_name, f in other_findings:
+            chk = f.get("check_name", "finding")
+            sev = f.get("severity", "unknown")
+            raw_msg = f.get("message", "")
+            msg_first = raw_msg.splitlines()[0] if raw_msg else ""
+            msg_snippet = msg_first[:200]
+            summary_lines.append(f"- `{s_name}`: {chk} ({sev}) - {msg_snippet}")
         summary_lines.append("")
 
     summary_lines.append(

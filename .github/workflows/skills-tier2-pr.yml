@@ -103,6 +103,10 @@ jobs:
           echo "✓ Passage-prefix proxy is responding."
           echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
 
+      - name: Install Probe Dependency
+        if: steps.changes.outputs.run_similarity == 'true'
+        run: python3 -m pip install --quiet "openai>=2.21.0"
+
       - name: Probe Embeddings
         if: steps.changes.outputs.run_similarity == 'true'
         run: |
@@ -127,6 +131,7 @@ jobs:
             --enforced tier2_reports/similarity/skillevaluator-similarity.json \
             --margin tier2_margin/skillevaluator-similarity.json \
             --threshold 0.75 \
+            --margin-threshold 0.65 \
             --summary-file "$GITHUB_STEP_SUMMARY"
 
       - name: Write Final Summary
@@ -232,6 +237,11 @@ jobs:
           echo "✓ Passage-prefix proxy is responding."
           echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
 
+      - name: Install Probe Dependency
+        if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
+        continue-on-error: true
+        run: python3 -m pip install --quiet "openai>=2.21.0"
+
       - name: Probe Embeddings
         if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
         continue-on-error: true
@@ -242,29 +252,32 @@ jobs:
         if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
         id: eval-dedup
         continue-on-error: true
+        env:
+          DEDUP_SKILLS: ${{ steps.changes.outputs.dedup_skills }}
         run: |
-          TIER2_SKILLS="${{ steps.changes.outputs.dedup_skills }}" TIER2_REPORTS_DIR=tier2_reports ./eval-skills-tier2.sh | tee eval_dedup.log
+          TIER2_SKILLS="$DEDUP_SKILLS" TIER2_REPORTS_DIR=tier2_reports ./eval-skills-tier2.sh | tee eval_dedup.log
 
       - name: Report Dedup Findings and Annotations
         if: always()
+        env:
+          RUN_DEDUP: ${{ steps.changes.outputs.run_dedup }}
+          SETUP_OUTCOME: ${{ steps.setup-ollama.outcome }}
+          PROXY_OUTCOME: ${{ steps.start-proxy.outcome }}
         run: |
-          if [ "${{ steps.changes.outputs.run_dedup }}" != 'true' ]; then
-            echo "## Tier 2 dedup (advisory)" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "No skill files modified in this PR; advisory dedup scan was not needed." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ steps.setup-ollama.outcome }}" != 'success' ] || [ "${{ steps.start-proxy.outcome }}" != 'success' ] || [ "${{ steps.eval-dedup.outcome }}" != 'success' ]; then
-            echo "::warning title=Tier 2 dedup (advisory)::Advisory dedup scan did not complete successfully during setup or evaluation."
-            python3 .github/tier2/pr_dedup_report.py \
-              --scope scope.json \
-              --reports tier2_reports \
-              --model "${SKILL_EVAL_LLM_MODEL:-unknown}" \
-              --digest "${TIER2_LLM_PIN:-}" \
-              --summary-file "$GITHUB_STEP_SUMMARY"
-          else
-            python3 .github/tier2/pr_dedup_report.py \
-              --scope scope.json \
-              --reports tier2_reports \
-              --model "$SKILL_EVAL_LLM_MODEL" \
-              --digest "$TIER2_LLM_PIN" \
-              --summary-file "$GITHUB_STEP_SUMMARY"
+          if [ "$RUN_DEDUP" != 'true' ]; then
+            {
+              echo "## Tier 2 dedup (advisory)"
+              echo ""
+              echo "No skill files modified in this PR; advisory dedup scan was not needed."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          if [ "$SETUP_OUTCOME" != 'success' ] || [ "$PROXY_OUTCOME" != 'success' ]; then
+            echo "::warning title=Tier 2 dedup (advisory)::The advisory dedup scan did not run because Ollama or the embedding proxy failed to start."
+          fi
+          python3 .github/tier2/pr_dedup_report.py \
+            --scope scope.json \
+            --reports tier2_reports \
+            --model "${SKILL_EVAL_LLM_MODEL:-unknown}" \
+            --digest "${TIER2_LLM_PIN:-}" \
+            --summary-file "$GITHUB_STEP_SUMMARY"

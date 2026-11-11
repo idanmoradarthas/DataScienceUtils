@@ -41,6 +41,7 @@ def process_similarity_report(
     margin_file: Path,
     threshold: float,
     summary_file: Path | None,
+    margin_threshold: float = 0.65,
 ) -> None:
     """Format and write similarity check summary."""
     lines: list[str] = [
@@ -83,7 +84,7 @@ def process_similarity_report(
                     pairs.append((score_val, str(entry_a), str(entry_b)))
 
         if not pairs:
-            lines.append("No pairs found below the enforced threshold in margin probe.")
+            lines.append(f"No pair scored between {margin_threshold} and {threshold}.")
         else:
             # Sort descending by score, take top 10
             pairs.sort(key=lambda x: x[0], reverse=True)
@@ -111,6 +112,7 @@ def main() -> None:
     parser.add_argument("--enforced", required=True, help="Path to enforced skillevaluator-similarity.json")
     parser.add_argument("--margin", required=True, help="Path to margin skillevaluator-similarity.json")
     parser.add_argument("--threshold", type=float, default=0.75, help="Enforced threshold (default: 0.75)")
+    parser.add_argument("--margin-threshold", type=float, default=0.65, help="Margin probe threshold (default: 0.65)")
     parser.add_argument("--summary-file", help="Path to append Markdown summary")
 
     args = parser.parse_args()
@@ -120,6 +122,7 @@ def main() -> None:
         margin_file=Path(args.margin),
         threshold=args.threshold,
         summary_file=Path(args.summary_file) if args.summary_file else None,
+        margin_threshold=args.margin_threshold,
     )
 
 
