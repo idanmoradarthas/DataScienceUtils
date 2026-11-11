@@ -1,6 +1,5 @@
 """Tests for Tier 2 deduplication judge pins and llm_pin_for.sh helper."""
 
-import os
 from pathlib import Path
 import re
 import shutil
@@ -49,7 +48,9 @@ def test_pins_env_parses_and_llm_pins_are_valid():
 
     sha256_pattern = re.compile(r"^[0-9a-f]{64}$")
     assert sha256_pattern.match(digest), f"OLLAMA_LLM_MANIFEST_DIGEST '{digest}' is not a valid 64-char hex sha256"
-    assert sha256_pattern.match(alt_digest), f"OLLAMA_LLM_ALT_MANIFEST_DIGEST '{alt_digest}' is not a valid 64-char hex sha256"
+    assert sha256_pattern.match(alt_digest), (
+        f"OLLAMA_LLM_ALT_MANIFEST_DIGEST '{alt_digest}' is not a valid 64-char hex sha256"
+    )
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="bash executable not available")
@@ -57,6 +58,7 @@ class TestLlmPinForHelper:
     """Tests for .github/tier2/llm_pin_for.sh."""
 
     def run_helper(self, model: str, pins_file: Path | str | None = None) -> subprocess.CompletedProcess:
+        """Run llm_pin_for.sh for a model, optionally against a custom pins file."""
         args = ["bash", str(PIN_HELPER), model]
         if pins_file is not None:
             args.append(str(pins_file))
@@ -69,6 +71,7 @@ class TestLlmPinForHelper:
         )
 
     def test_default_model_returns_default_digest(self):
+        """The default model resolves to the default manifest digest."""
         pins = parse_env_file(PINS_FILE)
         proc = self.run_helper(pins["OLLAMA_LLM_MODEL"])
         assert proc.returncode == 0
@@ -76,6 +79,7 @@ class TestLlmPinForHelper:
         assert proc.stderr == ""
 
     def test_alt_model_returns_alt_digest(self):
+        """The alternate model resolves to the alternate manifest digest."""
         pins = parse_env_file(PINS_FILE)
         proc = self.run_helper(pins["OLLAMA_LLM_ALT_MODEL"])
         assert proc.returncode == 0
@@ -83,11 +87,13 @@ class TestLlmPinForHelper:
         assert proc.stderr == ""
 
     def test_unpinned_model_returns_empty_and_exits_zero(self):
+        """A model without a pin prints nothing and exits 0."""
         proc = self.run_helper("gemma4:e4b")
         assert proc.returncode == 0
         assert proc.stdout == ""
 
     def test_empty_digest_fails_closed(self, tmp_path):
+        """A matching model with an empty digest exits 1 and prints nothing."""
         temp_pins = tmp_path / "pins.env"
         temp_pins.write_text(
             'OLLAMA_LLM_MODEL="granite4.1:3b"\n'
@@ -116,6 +122,7 @@ class TestLlmPinForHelper:
         assert "unset or empty" in proc_alt.stderr
 
     def test_missing_pins_file_exits_one(self, tmp_path):
+        """A missing pins file exits 1 with a clear message."""
         non_existent = tmp_path / "does_not_exist.env"
         proc = self.run_helper("granite4.1:3b", non_existent)
         assert proc.returncode == 1
