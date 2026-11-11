@@ -1,0 +1,70 @@
+name: Skills Tier 1 (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skills-tier1-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  tier1:
+    name: "Tier 1 static validation (blocking)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install SkillEvaluator and SkillSpector
+        run: |
+          while IFS= read -r line || [ -n "$line" ]; do
+            line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            [[ -z "$line" || "$line" =~ ^# ]] && continue
+            uv tool install --python 3.13 "$line"
+          done < requirements-skills.txt
+
+      - name: Install Gitleaks
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C "$RUNNER_TEMP/bin" gitleaks
+          echo "$RUNNER_TEMP/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Run Tier 1 Static Validation
+        id: tier1
+        run: |
+          set -o pipefail
+          ./eval-skills.sh 2>&1 | tee eval_tier1.log
+
+      - name: Generate Tier 1 Summary
+        if: always()
+        run: |
+          {
+            echo "## Tier 1 static validation (blocking)"
+            echo ""
+            if [ -f eval_tier1.log ] && grep -q "EVALUATION SUMMARY" eval_tier1.log; then
+              echo '```text'
+              awk '/EVALUATION SUMMARY/{f=1} f' eval_tier1.log
+              echo '```'
+            else
+              echo "Tier 1 did not reach the summary; see the step log."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
