@@ -616,7 +616,7 @@ External security scanners provide static security coverage: Gitleaks is require
 
 Only ``quality-check`` and Tier 1 static validation (``tier1 --no-llm``) are run; Tier 2 and Tier 3 validation stages are not executed. With both ``skillspector`` and ``gitleaks`` installed, all six skills pass static checks completely without reporting ``INCOMPLETE``. To maintain complete Tier 1 static validation, ``SKILL.md`` prose and frontmatter must avoid backticked or quoted ``name.ext`` tokens that could be misinterpreted as missing bundled files (guarded by ``test_skill_md_has_no_unresolved_path_like_tokens`` in ``tests/test_skills_docs.py``).
 
-To upgrade SkillEvaluator, change the version in ``requirements-skills.txt`` and in the install snippets in this page and in the ``eval-skills*`` hints together, then run ``./eval-skills.sh`` and the manual Tier 2 workflow. The upstream ``skillevaluator ci init`` workflow generator is intentionally not used: Tier 1 already gates pull requests in ``test.yml`` and Tier 2 runs through the workflows described below.
+To upgrade SkillEvaluator, change the version in ``requirements-skills.txt`` and in the install snippets in this page and in the ``eval-skills*`` hints together, then run ``./eval-skills.sh`` and ``./eval-skills-tier2.sh``; the Tier 2 pull request workflow also runs on the PR that bumps the pin, because ``requirements-skills.txt`` is part of the Tier 2 pipeline. The upstream ``skillevaluator ci init`` workflow generator is intentionally not used: Tier 1 already gates pull requests in ``test.yml`` and Tier 2 runs through the workflows described below.
 
 **Running Static Validation and Quality Checks**
 
@@ -697,7 +697,7 @@ The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``
 
 The community GGUF of ``nemotron-3-embed-1b`` does not set ``tokenizer.ggml.add_bos_token``, so llama.cpp/Ollama silently prepends a BOS token that the BF16 reference does not use. Embeddings are then consistently offset (on the Probe B gate: pairwise max abs diff 0.071, Spearman 0.982, one extra token per text). Derive a GGUF with the key set to false before ``ollama create``: ``pip install gguf==0.19.0`` and then ``python .github/tier2/patch_gguf_add_bos.py SRC.gguf DST.gguf`` (tensors are copied byte-identically). With the derived file the gate numbers are 0.003 / 0.9997 with exact token counts.
 
-The local dedup LLM is advisory. The judge is shown only the file, heading, line range and text of each cluster member, never the function name, so sections of different functions that share a heading and structure (``### Parameters``, ``### Example``) can be reported as ``DUPLICATE``, and a verdict can differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review. The default judge is ``granite4.1:3b``; ``phi4-mini:3.8b`` is a pinned alternate for a second opinion (pass it as the ``llm_model`` workflow input or as ``SKILL_EVAL_LLM_MODEL``). Both have their Ollama manifest digest pinned in ``.github/tier2/pins.env``; any other model tag runs unpinned and its digest is printed for provenance.
+The local dedup LLM is advisory. The judge is shown only the file, heading, line range and text of each cluster member, never the function name, so sections of different functions that share a heading and structure (``### Parameters``, ``### Example``) can be reported as ``DUPLICATE``, and a verdict can differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review. The default judge is ``granite4.1:3b``; ``phi4-mini:3.8b`` is a pinned alternate for a second opinion (set ``SKILL_EVAL_LLM_MODEL`` and pass the tag as the second argument of ``.github/tier2/setup_ollama.sh``). Both have their Ollama manifest digest pinned in ``.github/tier2/pins.env``; any other model tag runs unpinned and its digest is printed for provenance.
 
 Choosing the judge
 ^^^^^^^^^^^^^^^^^^
@@ -755,16 +755,11 @@ To reproduce these checks locally:
     # Run the advisory dedup check on specific skills:
     TIER2_MODE=dedup TIER2_SKILLS="ds-utils-metrics,ds-utils-preprocess" ./eval-skills-tier2.sh
 
-**Manual CI Workflow**
+Model weights (GGUF embeddings and Ollama LLM tags) are downloaded and verified at runtime against the sha256 / manifest digest pins in ``.github/tier2/pins.env``; they are not bundled or redistributed in the repository.
 
-An optional, non-blocking CI workflow (``.github/workflows/skills-tier2.yml``) is available to execute Tier 2 validation in a GitHub Actions runner. Key characteristics:
+During the spike the embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) was validated by a manual workflow (since removed) that compared its pairwise cosine matrix with scores computed from the upstream BF16 checkpoint (Probe B), probed LLM structured output (Probe C) and scanned canary fixtures with intentional duplicates (Probe D); the scripts remain in ``.github/tier2/probes/`` and can be run locally against a running Ollama (see the header of each script); re-run Probe B after changing the GGUF or Ollama pins.
 
-* **Manual trigger only**: The workflow never runs on ``push`` or ``pull_request``; it is invoked manually via ``workflow_dispatch``.
-* **Embedding prefix input**: ``embedding_prefix`` (default ``passage``) routes embeddings through the proxy; ``none`` bypasses it and is meant for A/B diagnostics only.
-* **Embedding BOS input**: ``embedding_bos`` (default ``disabled``) derives a GGUF with ``add_bos_token=false`` before ``ollama create`` so the embeddings match the BF16 reference; ``default`` uses the community GGUF as published and is meant for A/B diagnostics only.
-* **Runtime downloads**: Model weights (such as GGUF embeddings and Ollama LLM tags) are downloaded and verified dynamically at runtime; they are not bundled or redistributed within the repository.
-* **Embedding verification**: The community GGUF embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) is verified by an automated probe comparing its pairwise cosine matrix against reference scores computed from the official upstream BF16 checkpoint (``nvidia/Nemotron-3-Embed-1B-BF16``). Probe B reports which reference tokenizer variant (plain, bos, eos, bos_eos) the Ollama vectors match best.
-* **Positive control canary**: Synthetic canary fixtures with intentional duplicates are scanned to confirm that both inter-skill and intra-skill duplication detectors are fully operational before repository skills are evaluated.
+The PR workflow always uses the default judge from ``pins.env``; to get a second opinion locally, set ``SKILL_EVAL_LLM_MODEL`` and pass the same tag as the second argument of ``.github/tier2/setup_ollama.sh``.
 
 Troubleshooting
 ---------------
