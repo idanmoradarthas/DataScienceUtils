@@ -25,7 +25,7 @@ cmd="$1"
 shift
 
 if [ "$cmd" = "--version" ]; then
-  echo "skillevaluator, version 0.6.0 (stub)"
+  echo "skillevaluator, version 0.7.2 (stub)"
   exit 0
 fi
 
@@ -214,7 +214,7 @@ else
     stop_mock
     printf "✗ Scenario 6.1 FAILED! rc=%s, output:\n%s\n" "$RC6_1" "$OUT6_1" >&2
     if echo "$OUT6_1" | grep -q "package is required"; then
-      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+      echo 'hint: reinstall SkillEvaluator as pinned in requirements-skills.txt (the pin includes the [tier2] extra that provides the openai package)' >&2
     fi
     exit 1
   fi
@@ -229,7 +229,7 @@ else
     stop_mock
     printf "✗ Scenario 6.2 FAILED! rc=%s, output:\n%s\n" "$RC6_2" "$OUT6_2" >&2
     if echo "$OUT6_2" | grep -q "package is required"; then
-      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+      echo 'hint: reinstall SkillEvaluator as pinned in requirements-skills.txt (the pin includes the [tier2] extra that provides the openai package)' >&2
     fi
     exit 1
   fi
@@ -255,7 +255,7 @@ else
   else
     printf "✗ Scenario 6.3 FAILED! rc=%s, output:\n%s\n" "$RC6_3" "$OUT6_3" >&2
     if echo "$OUT6_3" | grep -q "package is required"; then
-      echo 'hint: install SkillEvaluator with --with "openai>=2.21.0"' >&2
+      echo 'hint: reinstall SkillEvaluator as pinned in requirements-skills.txt (the pin includes the [tier2] extra that provides the openai package)' >&2
     fi
     exit 1
   fi

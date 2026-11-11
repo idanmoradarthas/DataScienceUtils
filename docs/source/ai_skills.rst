@@ -593,11 +593,11 @@ All skills in DataScienceUtils are validated using `NVIDIA SkillEvaluator <https
 
 **Prerequisites and Installation**
 
-Install the pinned versions of SkillEvaluator and SkillSpector matching ``requirements-skills.txt`` in Python 3.13 via ``uv``:
+Install the pinned versions of SkillEvaluator (a PyPI release) and SkillSpector (a git tag) matching ``requirements-skills.txt`` in Python 3.13 via ``uv``:
 
 .. code-block:: bash
 
-    uv tool install --python 3.13 "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+    uv tool install --python 3.13 "skillevaluator[tier2]==0.7.2"
     uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
 
 External security scanners provide static security coverage: Gitleaks is required for secret detection (Tier 1 reports ``INCOMPLETE`` without it, together with ``skillspector``). Bandit and Semgrep are only invoked for skills that bundle code files. The current skills are Markdown-only, so they are not needed here. If you add code files to a skill, install both, otherwise Tier 1 reports ``INCOMPLETE`` and exits 1:
@@ -615,6 +615,8 @@ External security scanners provide static security coverage: Gitleaks is require
     pip install bandit semgrep
 
 Only ``quality-check`` and Tier 1 static validation (``tier1 --no-llm``) are run; Tier 2 and Tier 3 validation stages are not executed. With both ``skillspector`` and ``gitleaks`` installed, all six skills pass static checks completely without reporting ``INCOMPLETE``. To maintain complete Tier 1 static validation, ``SKILL.md`` prose and frontmatter must avoid backticked or quoted ``name.ext`` tokens that could be misinterpreted as missing bundled files (guarded by ``test_skill_md_has_no_unresolved_path_like_tokens`` in ``tests/test_skills_docs.py``).
+
+To upgrade SkillEvaluator, change the version in ``requirements-skills.txt`` and in the install snippets in this page and in the ``eval-skills*`` hints together, then run ``./eval-skills.sh`` and the manual Tier 2 workflow. The upstream ``skillevaluator ci init`` workflow generator is intentionally not used: Tier 1 already gates pull requests in ``test.yml`` and Tier 2 runs through the workflows described below.
 
 **Running Static Validation and Quality Checks**
 
@@ -664,7 +666,11 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
 .. code-block:: bash
 
-    uv tool install --python 3.13 --force --with "openai>=2.21.0" "skillevaluator @ git+https://github.com/NVIDIA/SkillEvaluator.git@a61e1f3ff609118c0c07e5f569aaf58fa5a76be0"
+    uv tool install --python 3.13 --force "skillevaluator[tier2]==0.7.2"
+
+The ``[tier2]`` extra installs the OpenAI client used by the Tier 2 checks, so no extra ``--with`` flag is needed.
+
+.. code-block:: bash
 
     # Ollama must already be running (another terminal or a service) with OLLAMA_CONTEXT_LENGTH=32768, e.g.:
     # OLLAMA_CONTEXT_LENGTH=32768 ollama serve
