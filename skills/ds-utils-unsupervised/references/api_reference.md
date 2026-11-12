@@ -88,12 +88,14 @@ plot_silhouette_analysis(
 
 ### Example
 ```python
-from sklearn.cluster import KMeans
-from ds_utils.unsupervised import plot_silhouette_analysis
 import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
+from ds_utils.unsupervised import plot_silhouette_analysis
 
-kmeans = KMeans(n_clusters=4, random_state=42).fit(X)
-plot_silhouette_analysis(X, kmeans.labels_)
+labels = AgglomerativeClustering(n_clusters=4).fit_predict(X)
+fig, ax = plt.subplots(figsize=(8, 5))
+plot_silhouette_analysis(X, labels, metric="manhattan", ax=ax)
+ax.set_title("Silhouette analysis")
 plt.show()
 ```
 
