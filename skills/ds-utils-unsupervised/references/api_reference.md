@@ -10,6 +10,7 @@ from ds_utils.unsupervised import (
     plot_cluster_magnitude,
     plot_magnitude_vs_cardinality,
     plot_loss_vs_cluster_number,
+    plot_silhouette_analysis,
     plot_clusters,
     plot_clusters_plotly,
 )
@@ -46,6 +47,55 @@ plot_loss_vs_cluster_number(
 
 ### Returns
 - `matplotlib.axes._axes.Axes`
+
+---
+
+## plot_silhouette_analysis
+
+Plots the silhouette coefficient of every sample, grouped and sorted per cluster, with an optional dashed line at the average score. Use it to validate a candidate $k$ or to spot weak, uneven or misassigned clusters for any algorithm that produces discrete labels.
+
+### Signature
+```python
+plot_silhouette_analysis(
+    X: numpy.ndarray,
+    labels: numpy.ndarray,
+    *,
+    metric: str = 'euclidean',
+    colors: Optional[Sequence[Any]] = None,
+    show_avg_line: bool = True,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
+    **kwargs,
+) -> matplotlib.axes._axes.Axes
+```
+
+### Parameters
+- `X`: Feature matrix of shape `(n_samples, n_features)` (`numpy.ndarray` or DataFrame), the same data the labels were computed on.
+- `labels`: 1D array of shape `(n_samples,)` with the cluster of each sample. Every distinct value, including the DBSCAN noise label `-1`, is drawn as one cluster.
+- `metric` (*keyword-only*, default `'euclidean'`): Distance metric name passed to `sklearn.metrics.silhouette_samples`, e.g. `'manhattan'` or `'cosine'`.
+- `colors` (*keyword-only*, optional, default `None`): One color per cluster, in the order of the sorted labels. When `None`, or when fewer colors than clusters are given (a `UserWarning` is emitted), a `tab10` (up to 10 clusters) or `tab20` palette is used.
+- `show_avg_line` (*keyword-only*, default `True`): Draw the average silhouette score as a dashed red vertical line with a legend entry.
+- `ax` (*keyword-only*, optional, default `None`): Target matplotlib axes.
+- `**kwargs`: Forwarded to underlying plot function (`Axes.fill_betweenx`), default `alpha=0.7`.
+
+### Returns
+- `matplotlib.axes._axes.Axes`
+
+### Raises
+- `ValueError`: `"X and labels must have the same length."` — when lengths differ.
+- `ValueError`: `"Silhouette analysis requires at least 2 clusters."` — when `labels` holds a single distinct value.
+- `ValueError`: `"Silhouette analysis requires fewer clusters than samples."` — when every sample is its own cluster.
+- `UserWarning`: `"colors has <n> entries for <k> clusters; falling back to the default palette."` — when `colors` has fewer entries than there are clusters.
+
+### Example
+```python
+from sklearn.cluster import KMeans
+from ds_utils.unsupervised import plot_silhouette_analysis
+import matplotlib.pyplot as plt
+
+kmeans = KMeans(n_clusters=4, random_state=42).fit(X)
+plot_silhouette_analysis(X, kmeans.labels_)
+plt.show()
+```
 
 ---
 
