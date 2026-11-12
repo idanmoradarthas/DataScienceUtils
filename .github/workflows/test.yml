@@ -208,6 +208,7 @@ jobs:
                   }
               }
 
+              Write-Host "Failure path test: the 'Could not fetch complete ... skill' errors below are EXPECTED (RAW_URL points to an unreachable server). The step passes only if install.ps1 exits non-zero."
               # 3. Test failure path (unreachable URL)
               $failDir = Join-Path $env:TEMP "test_install_ps1_fail"
               New-Item -ItemType Directory -Force -Path $failDir | Out-Null
