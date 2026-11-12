@@ -740,9 +740,11 @@ Pull request checks
 
 Pull requests are evaluated by dedicated automated workflows:
 
-* **Tier 1 static validation (blocking)**: runs ./eval-skills.sh (quality check and tier1 --no-llm with SkillSpector and gitleaks) on every skill; mark it as a required status check together with "Tier 2 similarity (blocking)".
-* **Tier 2 similarity (blocking)**: Executes cross-skill embedding similarity at SkillEvaluator's default threshold (0.75). Only embeddings are used (no LLM). Any score meeting or exceeding the threshold fails the check and blocks the PR. In branch protection rules, **only this job should be marked as a required status check**.
-* **Tier 2 dedup (advisory)**: Executes intra-skill LLM deduplication scanning **only on skills touched by the PR**. Findings are surfaced exclusively as GitHub warning annotations on changed lines and summarized in the GitHub Actions step summary (never posted as PR comments). Because sibling functions can share common headings and structural patterns, this job is strictly advisory and **never fails the PR** due to reported findings or incomplete scans; it must never be made a required status check.
+* **Tier 1 static validation (blocking)** (``.github/workflows/skills-tier1-pr.yml``): runs ``./eval-skills.sh`` (quality check and ``tier1 --no-llm`` with SkillSpector and gitleaks) on every skill; any failure blocks the PR. Mark it as a required status check.
+* **Tier 2 similarity (blocking)** (``.github/workflows/skills-tier2-pr.yml``): Executes cross-skill embedding similarity at SkillEvaluator's default threshold (0.75). Only embeddings are used (no LLM). Any score meeting or exceeding the threshold fails the check and blocks the PR. Mark it as a required status check in the branch protection rules; never mark the advisory dedup job.
+* **Tier 2 dedup (advisory)** (``.github/workflows/skills-tier2-pr.yml``): Executes intra-skill LLM deduplication scanning **only on skills touched by the PR**. Findings are surfaced exclusively as GitHub warning annotations on changed lines and summarized in the GitHub Actions step summary (never posted as PR comments). Because sibling functions can share common headings and structural patterns, this job is strictly advisory and **never fails the PR** due to reported findings or incomplete scans; it must never be made a required status check.
+
+Required status checks: **Tier 1 static validation (blocking)** and **Tier 2 similarity (blocking)**; the advisory dedup job must never be required.
 
 The LLM judge used for the advisory scan is read dynamically from ``.github/tier2/pins.env`` (default ``granite4.1:3b``) and verified against its pinned sha256 manifest digest.
 
