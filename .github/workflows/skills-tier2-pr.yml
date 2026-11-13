@@ -49,6 +49,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
+          enable-cache: false
 
       - name: Set up Python 3.13
         if: steps.changes.outputs.run_similarity == 'true'
@@ -182,6 +183,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
+          enable-cache: false
 
       - name: Set up Python 3.13
         if: steps.changes.outputs.run_dedup == 'true'
