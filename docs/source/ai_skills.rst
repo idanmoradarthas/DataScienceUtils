@@ -697,7 +697,7 @@ The passage-prefix proxy is necessary because ``nemotron-3-embed-1b`` expects ``
 
 The community GGUF of ``nemotron-3-embed-1b`` does not set ``tokenizer.ggml.add_bos_token``, so llama.cpp/Ollama silently prepends a BOS token that the BF16 reference does not use. Embeddings are then consistently offset (on the Probe B gate: pairwise max abs diff 0.071, Spearman 0.982, one extra token per text). Derive a GGUF with the key set to false before ``ollama create``: ``pip install gguf==0.19.0`` and then ``python .github/tier2/patch_gguf_add_bos.py SRC.gguf DST.gguf`` (tensors are copied byte-identically). With the derived file the gate numbers are 0.003 / 0.9997 with exact token counts.
 
-The local dedup LLM is advisory. The judge is shown only the file, heading, line range and text of each cluster member, never the function name, so sections of different functions that share a heading and structure (``### Parameters``, ``### Example``) can be reported as ``DUPLICATE``, and a verdict can differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review. The default judge is ``granite4.1:3b``; ``phi4-mini:3.8b`` is a pinned alternate for a second opinion (set ``SKILL_EVAL_LLM_MODEL`` and pass the tag as the second argument of ``.github/tier2/setup_ollama.sh``). Both have their Ollama manifest digest pinned in ``.github/tier2/pins.env``; any other model tag runs unpinned and its digest is printed for provenance.
+The local dedup LLM is advisory. The judge is shown only the file, heading, line range and text of each cluster member, never the function name, so sections of different functions that share a heading and structure (``### Parameters``, ``### Example``) can be reported as ``DUPLICATE``, and a verdict can differ between runs on unchanged content. Treat ``DUPLICATE`` findings as candidates for manual review. The default judge is ``granite4.1:3b``; ``phi4-mini:3.8b`` is the pinned second judge that the pull request workflow uses to cross-check granite's findings (locally, set ``SKILL_EVAL_LLM_MODEL`` and pass the tag as the second argument of ``.github/tier2/setup_ollama.sh``, or pull it into a running Ollama with ``.github/tier2/pull_llm.sh``). Both have their Ollama manifest digest pinned in ``.github/tier2/pins.env``; any other model tag runs unpinned and its digest is printed for provenance.
 
 Choosing the judge
 ^^^^^^^^^^^^^^^^^^
@@ -742,11 +742,19 @@ Pull requests are evaluated by dedicated automated workflows:
 
 * **Tier 1 static validation (blocking)** (``.github/workflows/skills-tier1-pr.yml``): runs ``./eval-skills.sh`` (quality check and ``tier1 --no-llm`` with SkillSpector and gitleaks) on every skill; any failure blocks the PR. Mark it as a required status check.
 * **Tier 2 similarity (blocking)** (``.github/workflows/skills-tier2-pr.yml``): Executes cross-skill embedding similarity at SkillEvaluator's default threshold (0.75). Only embeddings are used (no LLM). Any score meeting or exceeding the threshold fails the check and blocks the PR. Mark it as a required status check in the branch protection rules; never mark the advisory dedup job.
-* **Tier 2 dedup (advisory)** (``.github/workflows/skills-tier2-pr.yml``): Executes intra-skill LLM deduplication scanning **only on skills touched by the PR**. Findings are surfaced exclusively as GitHub warning annotations on changed lines and summarized in the GitHub Actions step summary (never posted as PR comments). Because sibling functions can share common headings and structural patterns, this job is strictly advisory and **never fails the PR** due to reported findings or incomplete scans; it must never be made a required status check.
+* **Tier 2 dedup (advisory)** (``.github/workflows/skills-tier2-pr.yml``): Runs intra-skill LLM deduplication on the skills touched by the PR. A skill counts as touched when one of its files is added, modified or deleted; when the Tier 2 pipeline itself changes (the workflow, ``eval-skills-tier2.sh``, ``requirements-skills.txt`` or anything under ``.github/tier2/``), every skill is scanned so that the PR exercises the whole pipeline.
+
+  Two judges are used. ``granite4.1:3b`` scans the touched skills first; ``phi4-mini:3.8b`` then re-checks only the skills where granite flagged a candidate that matters for this PR (a candidate overlapping a changed line, or any candidate in a skill that had a file deleted). A candidate is raised only when both judges flag the same cluster of sections, so scanning unflagged skills with the second judge would never change the outcome and is skipped. Raised findings are shown in three places:
+
+  * warning annotations on the changed lines;
+  * one sticky comment on the PR (hidden marker, updated in place on every push; once a later push is clean the comment is updated to say so instead of being deleted);
+  * a separate check row, **Tier 2 dedup findings (advisory)**: neutral when there are findings, green when clean, red when the scan could not complete (GitHub Actions jobs cannot finish neutral, so this row is the neutral signal).
+
+  The job **Tier 2 dedup (advisory)** itself stays green on findings. It goes red only when the scan could not run: Ollama or model setup, the embedding proxy or the embedding probe failed, a report is missing or incomplete, or the second judge could not run although it was needed. Findings that only one judge reported, and findings away from the changed lines, are listed in the job summary only. On pull requests from forks and Dependabot the token is read-only, so the comment and the check row are skipped and the result stays in the job summary. Because sibling functions can share headings and structure, this check is advisory and must never be made a required status check.
 
 Required status checks: **Tier 1 static validation (blocking)** and **Tier 2 similarity (blocking)**; the advisory dedup job must never be required.
 
-The LLM judge used for the advisory scan is read dynamically from ``.github/tier2/pins.env`` (default ``granite4.1:3b``) and verified against its pinned sha256 manifest digest.
+The judges used for the advisory scan are read from ``.github/tier2/pins.env`` (``OLLAMA_LLM_MODEL``, default ``granite4.1:3b``, scans first; ``OLLAMA_LLM_ALT_MODEL``, ``phi4-mini:3.8b``, cross-checks) and each is verified against its pinned sha256 manifest digest.
 
 To reproduce these checks locally:
 
@@ -758,11 +766,14 @@ To reproduce these checks locally:
     # Run the advisory dedup check on specific skills:
     TIER2_MODE=dedup TIER2_SKILLS="ds-utils-metrics,ds-utils-preprocess" ./eval-skills-tier2.sh
 
+    # Preview which skills and changed lines a pull request would scan:
+    python .github/tier2/pr_scope.py --base origin/master
+
 Model weights (GGUF embeddings and Ollama LLM tags) are downloaded and verified at runtime against the sha256 / manifest digest pins in ``.github/tier2/pins.env``; they are not bundled or redistributed in the repository.
 
 During the spike the embedding conversion (``NeoRoth/nemotron-3-embed-1b-gguf``) was validated by a manual workflow (since removed) that compared its pairwise cosine matrix with scores computed from the upstream BF16 checkpoint (Probe B), probed LLM structured output (Probe C) and scanned canary fixtures with intentional duplicates (Probe D); the scripts remain in ``.github/tier2/probes/`` and can be run locally against a running Ollama (see the header of each script); re-run Probe B after changing the GGUF or Ollama pins.
 
-The PR workflow always uses the default judge from ``pins.env``; to get a second opinion locally, set ``SKILL_EVAL_LLM_MODEL`` and pass the same tag as the second argument of ``.github/tier2/setup_ollama.sh``.
+The PR workflow always uses the two judges from ``pins.env``; to try another judge locally, set ``SKILL_EVAL_LLM_MODEL`` and pass the same tag as the second argument of ``.github/tier2/setup_ollama.sh``.
 
 Troubleshooting
 ---------------

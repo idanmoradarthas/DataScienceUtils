@@ -144,7 +144,13 @@ jobs:
   dedup-advisory:
     name: "Tier 2 dedup (advisory)"
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    # Findings never fail this job; it goes red only when the scan could not run. The sticky PR comment needs
+    # pull-requests: write and the neutral "Tier 2 dedup findings (advisory)" check row needs checks: write.
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
     env:
       TIER2_MODE: dedup
       OLLAMA_HOST: "127.0.0.1:11434"
@@ -168,6 +174,16 @@ jobs:
         id: changes
         run: |
           python3 .github/tier2/pr_scope.py --base "${{ github.event.pull_request.base.sha }}" --output scope.json --github-output "$GITHUB_OUTPUT"
+
+      - name: Read LLM Judges from Pins
+        run: |
+          source .github/tier2/pins.env
+          {
+            echo "SKILL_EVAL_LLM_MODEL=$OLLAMA_LLM_MODEL"
+            echo "TIER2_LLM_PIN=$(.github/tier2/llm_pin_for.sh "$OLLAMA_LLM_MODEL")"
+            echo "TIER2_SECOND_LLM_MODEL=$OLLAMA_LLM_ALT_MODEL"
+            echo "TIER2_SECOND_LLM_PIN=$(.github/tier2/llm_pin_for.sh "$OLLAMA_LLM_ALT_MODEL")"
+          } >> "$GITHUB_ENV"
 
       - name: Set up uv
         if: steps.changes.outputs.run_dedup == 'true'
@@ -193,13 +209,6 @@ jobs:
         with:
           path: ~/.cache/tier2_models
           key: tier2-models-${{ hashFiles('.github/tier2/pins.env') }}-q8_0
-
-      - name: Read LLM Judge from Pins
-        if: steps.changes.outputs.run_dedup == 'true'
-        run: |
-          source .github/tier2/pins.env
-          echo "SKILL_EVAL_LLM_MODEL=$OLLAMA_LLM_MODEL" >> "$GITHUB_ENV"
-          echo "TIER2_LLM_PIN=$(.github/tier2/llm_pin_for.sh "$OLLAMA_LLM_MODEL")" >> "$GITHUB_ENV"
 
       - name: Setup Ollama and Models
         if: steps.changes.outputs.run_dedup == 'true'
@@ -238,17 +247,21 @@ jobs:
           echo "Effective embedding base URL: $SKILL_EVAL_EMBEDDING_BASE_URL"
 
       - name: Install Probe Dependency
+        id: probe-deps
         if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
         continue-on-error: true
         run: python3 -m pip install --quiet "openai>=2.21.0"
 
       - name: Probe Embeddings
+        id: probe
         if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
         continue-on-error: true
         run: |
           python3 .github/tier2/probes/probe_embeddings.py
 
-      - name: Run Advisory Dedup Scan on Touched Skills
+      # The scan script exits 1 both for duplicate findings and for failures, so this step must not fail the job:
+      # the report step reads the JSON reports and decides.
+      - name: Run Dedup Scan on Touched Skills (first judge)
         if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
         id: eval-dedup
         continue-on-error: true
@@ -257,27 +270,96 @@ jobs:
         run: |
           TIER2_SKILLS="$DEDUP_SKILLS" TIER2_REPORTS_DIR=tier2_reports ./eval-skills-tier2.sh | tee eval_dedup.log
 
-      - name: Report Dedup Findings and Annotations
-        if: always()
+      # The second judge cross-checks only what the first judge flagged: a candidate is raised only when both agree,
+      # so scanning unflagged skills a second time could never change the outcome.
+      - name: Select Skills for the Second Judge
+        if: steps.changes.outputs.run_dedup == 'true' && steps.start-proxy.outcome == 'success'
+        id: second-select
+        run: |
+          python3 .github/tier2/pr_dedup_report.py select-second-pass \
+            --scope scope.json \
+            --reports tier2_reports \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Pull Second Judge
+        if: steps.second-select.outputs.run_second_pass == 'true'
+        id: second-pull
+        continue-on-error: true
+        run: |
+          .github/tier2/pull_llm.sh "$TIER2_SECOND_LLM_MODEL"
+
+      - name: Run Dedup Scan on Flagged Skills (second judge)
+        if: steps.second-select.outputs.run_second_pass == 'true' && steps.second-pull.outcome == 'success'
+        id: eval-second
+        continue-on-error: true
         env:
-          RUN_DEDUP: ${{ steps.changes.outputs.run_dedup }}
+          SECOND_SKILLS: ${{ steps.second-select.outputs.second_pass_skills }}
+        run: |
+          SKILL_EVAL_LLM_MODEL="$TIER2_SECOND_LLM_MODEL" TIER2_SKILLS="$SECOND_SKILLS" TIER2_REPORTS_DIR=tier2_reports_second ./eval-skills-tier2.sh | tee eval_second.log
+
+      # The report, publish and gate steps use !cancelled() rather than always(): when a newer push cancels this run,
+      # it must not post a stale "could not complete" result on the pull request.
+      - name: Report Dedup Findings and Annotations
+        if: ${{ !cancelled() }}
+        id: report
+        env:
           SETUP_OUTCOME: ${{ steps.setup-ollama.outcome }}
           PROXY_OUTCOME: ${{ steps.start-proxy.outcome }}
+          PROBE_DEPS_OUTCOME: ${{ steps.probe-deps.outcome }}
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+          SECOND_PULL_OUTCOME: ${{ steps.second-pull.outcome }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ "$RUN_DEDUP" != 'true' ]; then
-            {
-              echo "## Tier 2 dedup (advisory)"
-              echo ""
-              echo "No skill files modified in this PR; advisory dedup scan was not needed."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          if [ "$SETUP_OUTCOME" != 'success' ] || [ "$PROXY_OUTCOME" != 'success' ]; then
-            echo "::warning title=Tier 2 dedup (advisory)::The advisory dedup scan did not run because Ollama or the embedding proxy failed to start."
-          fi
-          python3 .github/tier2/pr_dedup_report.py \
+          BLOCKERS=()
+          [ "$SETUP_OUTCOME" = 'failure' ] && BLOCKERS+=(--blocker "Ollama or model setup failed.")
+          [ "$PROXY_OUTCOME" = 'failure' ] && BLOCKERS+=(--blocker "The embedding proxy failed to start.")
+          [ "$PROBE_DEPS_OUTCOME" = 'failure' ] && BLOCKERS+=(--blocker "Installing the embedding probe dependency failed.")
+          [ "$PROBE_OUTCOME" = 'failure' ] && BLOCKERS+=(--blocker "The embedding probe failed, so the embeddings cannot be trusted.")
+          [ "$SECOND_PULL_OUTCOME" = 'failure' ] && BLOCKERS+=(--blocker "The second judge model could not be pulled or verified against its pinned digest.")
+          python3 .github/tier2/pr_dedup_report.py report \
             --scope scope.json \
             --reports tier2_reports \
             --model "${SKILL_EVAL_LLM_MODEL:-unknown}" \
             --digest "${TIER2_LLM_PIN:-}" \
-            --summary-file "$GITHUB_STEP_SUMMARY"
+            --second-reports tier2_reports_second \
+            --second-model "${TIER2_SECOND_LLM_MODEL:-}" \
+            --second-digest "${TIER2_SECOND_LLM_PIN:-}" \
+            --summary-file "$GITHUB_STEP_SUMMARY" \
+            --result-file dedup_result.json \
+            --github-output "$GITHUB_OUTPUT" \
+            --repo "$GITHUB_REPOSITORY" \
+            --sha "$HEAD_SHA" \
+            --run-url "$RUN_URL" \
+            "${BLOCKERS[@]}"
+
+      - name: Publish Dedup Result on the Pull Request
+        if: ${{ !cancelled() && steps.report.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 .github/tier2/pr_dedup_publish.py \
+            --result dedup_result.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --pr "$PR_NUMBER" \
+            --sha "$HEAD_SHA" \
+            --run-url "$RUN_URL"
+
+      - name: Fail When the Dedup Scan Could Not Run
+        if: ${{ !cancelled() }}
+        env:
+          REPORT_OUTCOME: ${{ steps.report.outcome }}
+          DEDUP_STATUS: ${{ steps.report.outputs.dedup_status }}
+        run: |
+          if [ "$REPORT_OUTCOME" != 'success' ]; then
+            echo "::error title=Tier 2 dedup (advisory)::The dedup report step did not complete."
+            exit 1
+          fi
+          if [ "$DEDUP_STATUS" = 'cannot_run' ]; then
+            echo "::error title=Tier 2 dedup (advisory)::The dedup scan could not complete; see the job summary and the PR comment."
+            exit 1
+          fi
+          echo "Dedup status: ${DEDUP_STATUS:-unknown}"
