@@ -708,6 +708,32 @@ plt.show()
 
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
+### Silhouette Analysis
+
+The silhouette coefficient of a sample compares how close it is to its own cluster with how close it is to the nearest
+other cluster. It ranges from -1 to 1: values near 1 mean the sample is well matched to its cluster, values near 0 mean
+it lies on the boundary between two clusters, and negative values suggest it was assigned to the wrong cluster. This
+method plots the coefficient of every sample, grouped and sorted per cluster, with a dashed line at the average score,
+so you can validate a choice of `k` and spot weak, uneven or misassigned clusters. It works with any clustering
+algorithm that produces labels.
+
+```python
+import pandas as pd
+from matplotlib import pyplot as plt
+from sklearn.cluster import KMeans
+from ds_utils.unsupervised import plot_silhouette_analysis
+
+data = pd.read_csv(path / to / dataset)
+
+estimator = KMeans(n_clusters=8, random_state=42)
+estimator.fit(data)
+
+plot_silhouette_analysis(data.values, estimator.labels_)
+plt.show()
+```
+
+![Silhouette Analysis](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_silhouette_analysis.png)
+
 ### Plot Clusters
 
 This method creates a 2D scatter plot of clustering results. Each cluster is shown

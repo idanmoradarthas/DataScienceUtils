@@ -1,7 +1,7 @@
 ---
 name: ds-utils-unsupervised
 description: >
-  Unsupervised clustering analysis, optimal cluster count selection, and 2D scatter plots (PCA, t-SNE, UMAP). Use for elbow loss curves, cluster cardinality, centroid magnitude, and cluster assignments. Do NOT use for supervised classification metrics or text binarization.
+  Unsupervised clustering analysis, optimal cluster count selection, and 2D scatter plots (PCA, t-SNE, UMAP). Use for elbow loss curves, silhouette plots, cluster cardinality, centroid magnitude, and cluster assignments. Do NOT use for supervised classification metrics or text binarization.
 version: 1.0.0
 license: MIT
 metadata:
@@ -12,6 +12,7 @@ metadata:
     - kmeans
     - cluster-cardinality
     - elbow-method
+    - silhouette-analysis
     - cluster-visualization
     - pca
     - tsne
@@ -23,13 +24,13 @@ metadata:
 
 # ds-utils-unsupervised
 
-Tools for choosing cluster count, diagnosing clustering quality using cardinality and magnitude analysis, and visualizing cluster assignments in 2D scatter plots.
+Tools for choosing cluster count, diagnosing clustering quality using silhouette, cardinality and magnitude analysis, and visualizing cluster assignments in 2D scatter plots.
 
 ## Purpose
 
-ds_utils.unsupervised provides diagnostics for centroid-based clustering (specifically scikit-learn KMeans) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
+ds_utils.unsupervised provides diagnostics for centroid-based clustering (specifically scikit-learn KMeans) and 2D scatter visualization of clustering results. It helps data scientists determine the optimal number of clusters $k$ via custom distance loss sweeps, validate cluster separation with per-sample silhouette coefficients, evaluate cluster compactness and stability using cardinality (number of points) and magnitude (total distance to centroid), and visualize cluster assignments via PCA, t-SNE, or UMAP reduction in matplotlib or Plotly.
 
-- **When to use**: Selecting $k$ with the elbow method, verifying that clusters are balanced and compact, spotting anomalous or diffuse clusters, and creating 2D scatter plots of clustering results.
+- **When to use**: Selecting $k$ with the elbow method, validating separation with a silhouette plot, verifying that clusters are balanced and compact, spotting anomalous or diffuse clusters, and creating 2D scatter plots of clustering results.
 - **When NOT to use**: For supervised classification/regression metrics (use ds-utils-metrics), PCA explained variance (use ds-utils-preprocess), or using the 2D reduction coordinates as clustering input (they are for display only).
 
 ## Prerequisites
@@ -46,6 +47,7 @@ ds_utils.unsupervised provides diagnostics for centroid-based clustering (specif
 | Clustering Diagnostic Task | Function | Required Inputs | Output |
 |---|---|---|---|
 | Determine optimal cluster count ($k$) | `plot_loss_vs_cluster_number` | `X`, `k_min`, `k_max`, `distance_function` | Matplotlib Axes |
+| Validate separation and spot misassigned samples | `plot_silhouette_analysis` | `X`, `labels` | Matplotlib Axes |
 | Check balance / points per cluster | `plot_cluster_cardinality` | `labels_` | Matplotlib Axes |
 | Measure compactness per cluster | `plot_cluster_magnitude` | `X`, `labels_`, `cluster_centers_`, `distance_func` | Matplotlib Axes |
 | Identify anomalous or diffuse clusters | `plot_magnitude_vs_cardinality` | `X`, `labels_`, `cluster_centers_`, `distance_func` | Matplotlib Axes |
@@ -68,7 +70,8 @@ Follow this sequence to go from unscaled features to a validated clustering mode
                          │
                          ▼
         Sweep k and Evaluate Diagnostics
-          (plot_loss_vs_cluster_number & silhouette)
+          (plot_loss_vs_cluster_number,
+            plot_silhouette_analysis)
                          │
                          ▼
              Fit Final KMeans(n_clusters=k)
@@ -125,7 +128,7 @@ X_scaled = scaler.fit_transform(X)
 - **Action**: Standardize features with StandardScaler before distance-based clustering; confirm missing rows are removed or imputed so labels align with X.
 - **Caution**: Distance-based algorithms (like KMeans and Euclidean distance) are dominated by features with large scales if unscaled.
 
-#### Step 2: Sweep $k$ and Select Cluster Count (`plot_loss_vs_cluster_number`)
+#### Step 2: Sweep $k$ and Select Cluster Count (`plot_loss_vs_cluster_number` / `plot_silhouette_analysis`)
 Question: which cluster count $k$ balances compactness against model complexity?
 
 ```python
@@ -133,7 +136,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import euclidean
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from ds_utils.unsupervised import plot_loss_vs_cluster_number
+from ds_utils.unsupervised import plot_loss_vs_cluster_number, plot_silhouette_analysis
 
 # 1. Sweep loss across k range
 k_range = range(2, 7)
@@ -152,10 +155,16 @@ for k in k_range:
     km = KMeans(n_clusters=k, n_init=10, random_state=42).fit(X_scaled)
     sil_scores[k] = silhouette_score(X_scaled, km.labels_)
 print("Silhouette scores by k:", sil_scores)
+
+# 3. Per-cluster silhouette plot for the best-scoring k (repeat for the other candidates you are weighing)
+k_candidate = max(sil_scores, key=sil_scores.get)
+candidate_labels = KMeans(n_clusters=k_candidate, n_init=10, random_state=42).fit_predict(X_scaled)
+ax_sil = plot_silhouette_analysis(X_scaled, candidate_labels)
+plt.close()
 ```
-- **What to look for**: An elbow bend in the loss curve accompanied by a high silhouette score.
-- **Action**: Pick a $k$ that shows good separation and yields interpretable business segments.
-- **Caution**: The elbow is often ambiguous on real-world data without clear separation; combine loss curves with silhouette scores and domain interpretability.
+- **What to look for**: An elbow bend in the loss curve accompanied by a high average silhouette score. In the silhouette plot, every cluster band should extend past the dashed average line, have similar thickness, and contain few or no negative scores.
+- **Action**: Pick a $k$ that shows good separation and yields interpretable business segments; investigate clusters whose band lies mostly left of the average line, since they are weakly separated or contain misassigned points.
+- **Caution**: The elbow is often ambiguous on real-world data without clear separation; combine loss curves with silhouette plots and domain interpretability. Silhouette needs pairwise distances, so on large datasets compute it on a random subsample.
 
 #### Step 3: Fit Final Model and Inspect Cardinality (`plot_cluster_cardinality`)
 Question: are cluster point counts balanced, or do massive or tiny outlier clusters exist?
@@ -259,6 +268,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from ds_utils.unsupervised import (
     plot_loss_vs_cluster_number,
+    plot_silhouette_analysis,
     plot_cluster_cardinality,
     plot_cluster_magnitude,
     plot_magnitude_vs_cardinality,
@@ -281,7 +291,11 @@ plt.close()
 km = KMeans(n_clusters=3, n_init=10, random_state=42)
 labels = km.fit_predict(X_scaled)
 
-# 4. Evaluate cardinality & magnitude diagnostics
+# 4. Validate cluster separation with a silhouette plot
+ax_sil = plot_silhouette_analysis(X_scaled, labels)
+plt.close()
+
+# 5. Evaluate cardinality & magnitude diagnostics
 ax_card = plot_cluster_cardinality(labels)
 plt.close()
 
@@ -291,19 +305,20 @@ plt.close()
 ax_joint = plot_magnitude_vs_cardinality(X_scaled, labels, km.cluster_centers_, euclidean)
 plt.close()
 
-# 5. Visualize clusters in 2D (matplotlib and plotly variants)
+# 6. Visualize clusters in 2D (matplotlib and plotly variants)
 ax_clusters = plot_clusters(X_scaled, labels, km.cluster_centers_, reduction_method="pca", random_state=42)
 plt.close()
 
 fig_clusters = plot_clusters_plotly(X_scaled, labels, km.cluster_centers_, reduction_method="pca", random_state=42)
 
-# 6. Profile cluster means on unscaled features
+# 7. Profile cluster means on unscaled features
 profiles = X_raw.assign(cluster=labels).groupby("cluster").mean()
 ```
 
 ## Limitations
 
 - **Centroid-based algorithms only**: Diagnostic functions (`plot_cluster_magnitude`, `plot_magnitude_vs_cardinality`) expect centroid coordinates (`cluster_centers_`) and discrete partition labels. They do not support soft clustering or agglomerative clustering without centroids.
+- **Silhouette cost and labels only**: `plot_silhouette_analysis` needs only `X` and the labels, so it also works for DBSCAN or agglomerative clustering, but it computes pairwise distances: time and memory grow quadratically with the number of samples, so use a random subsample for large datasets. Every distinct label, including the DBSCAN noise label `-1`, is drawn as a cluster, and at least 2 clusters (and fewer clusters than samples) are required.
 - **Distance function callable**: Distance parameters must be callable functions, not strings.
 - **t-SNE draws no centroids**: t-SNE cannot transform new data points, so `cluster_centers` are silently skipped (with a warning) when `reduction_method='tsne'`.
 - **DBSCAN noise label counts as a cluster**: The DBSCAN noise label `-1` counts as a unique label in the centers check. Passing KMeans centers (computed for real clusters only) will raise `ValueError` because the number of centers does not match the number of unique labels including `-1`. Omit `cluster_centers` when using DBSCAN.
@@ -318,6 +333,10 @@ profiles = X_raw.assign(cluster=labels).groupby("cluster").mean()
 | `AttributeError: 'DBSCAN' object has no attribute 'cluster_centers_'` when preparing arguments for `plot_cluster_magnitude` / `plot_magnitude_vs_cardinality` | These functions need centroid coordinates, which DBSCAN does not provide | Compute centroids per label yourself (for example the mean of `X` per label) and pass them as `cluster_centers`, or use KMeans. `plot_cluster_cardinality` only needs labels and works with DBSCAN. |
 | Plot axes blank or not appearing | Using non-interactive backend without saving | Call `plt.show()` or `plt.savefig(output_path)` |
 | `ValueError: X must have at least 2 features for 2D scatter visualization.` | `X` has only 1 column/feature | Ensure `X` has at least 2 features before calling `plot_clusters` / `plot_clusters_plotly` |
+| `ValueError: X and labels must have the same length.` | `plot_silhouette_analysis` received a feature matrix and labels of different lengths, for example after rows were dropped from `X` | Compute the labels from the same `X` you pass to the plot |
+| `ValueError: Silhouette analysis requires at least 2 clusters.` | `labels` holds a single distinct value (one cluster, or only DBSCAN noise) | Re-fit with at least 2 clusters or adjust the algorithm parameters |
+| `ValueError: Silhouette analysis requires fewer clusters than samples.` | Every sample has its own label | Reduce the cluster count so that clusters group several samples |
+| `UserWarning: colors has 2 entries for 3 clusters; falling back to the default palette.` | `colors` has fewer entries than there are clusters | Pass one color per cluster, or omit `colors` to use the default palette |
 | `ValueError: X and cluster_labels must have the same length.` | Array length mismatch between data and labels | Verify `len(X) == len(cluster_labels)` |
 | `ValueError: Number of cluster centers must match the number of unique labels.` | Centers count does not equal unique labels count (common with DBSCAN noise label `-1`) | Omit `cluster_centers` for DBSCAN, or compute one center per unique label including noise |
 | `ValueError: Unknown reduction_method: '<name>'. Choose from 'pca', 'tsne', 'umap'.` | Unsupported reduction method string | Use `'pca'`, `'tsne'`, or `'umap'` |
