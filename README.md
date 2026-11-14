@@ -708,6 +708,28 @@ plt.show()
 
 ![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
 
+### Silhouette Score vs. Number of Clusters
+
+The average silhouette score summarises how well separated the clusters are in a single number, so computing it for a
+range of cluster numbers gives a quick shortlist of candidates for `k`. This method fits a clustering algorithm for every
+`k` in the range, plots the average score against `k`, marks the `k` with the highest score with a dashed line, and
+writes the score next to every point. K-Means is used by default; pass any other class that accepts `n_clusters` and
+implements `fit_predict()`, such as `AgglomerativeClustering`, as `algorithm`. Confirm a candidate afterwards with
+`plot_silhouette_analysis`.
+
+```python
+import pandas as pd
+from matplotlib import pyplot as plt
+from ds_utils.unsupervised import plot_silhouette_score_vs_cluster_number
+
+data = pd.read_csv(path / to / dataset)
+
+plot_silhouette_score_vs_cluster_number(data.values, range(2, 11))
+plt.show()
+```
+
+![Silhouette Score vs. Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_silhouette_score_vs_cluster_number.png)
+
 ### Silhouette Analysis
 
 The silhouette coefficient of a sample compares how close it is to its own cluster with how close it is to the nearest

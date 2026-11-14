@@ -41,6 +41,7 @@ SYMBOL_MODULES = {
     "SentenceEmbeddingTransformer": "ds_utils.transformers.sentence_embedding",
     "plot_loss_vs_cluster_number": "ds_utils.unsupervised",
     "plot_silhouette_analysis": "ds_utils.unsupervised",
+    "plot_silhouette_score_vs_cluster_number": "ds_utils.unsupervised",
     "plot_cluster_cardinality": "ds_utils.unsupervised",
     "plot_cluster_magnitude": "ds_utils.unsupervised",
     "plot_magnitude_vs_cardinality": "ds_utils.unsupervised",

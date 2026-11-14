@@ -11,6 +11,7 @@ from ds_utils.unsupervised import (
     plot_magnitude_vs_cardinality,
     plot_loss_vs_cluster_number,
     plot_silhouette_analysis,
+    plot_silhouette_score_vs_cluster_number,
     plot_clusters,
     plot_clusters_plotly,
 )
@@ -96,6 +97,68 @@ labels = AgglomerativeClustering(n_clusters=4).fit_predict(X)
 fig, ax = plt.subplots(figsize=(8, 5))
 plot_silhouette_analysis(X, labels, metric="manhattan", ax=ax)
 ax.set_title("Silhouette analysis")
+plt.show()
+```
+
+---
+
+## plot_silhouette_score_vs_cluster_number
+
+Fits a clustering algorithm for every $k$ in a range and plots the average silhouette score against $k$, marking the best one. Use it to shortlist candidate cluster counts, then inspect each candidate with `plot_silhouette_analysis`.
+
+### Signature
+```python
+plot_silhouette_score_vs_cluster_number(
+    X: numpy.ndarray,
+    k_range: Iterable[int] = range(2, 11),
+    *,
+    algorithm: Optional[Callable[..., Any]] = None,
+    algorithm_parameters: Optional[Dict[str, Any]] = None,
+    metric: str = 'euclidean',
+    show_best: bool = True,
+    annotate_scores: bool = True,
+    ax: Optional[matplotlib.axes._axes.Axes] = None,
+    **kwargs,
+) -> matplotlib.axes._axes.Axes
+```
+
+### Parameters
+- `X`: Feature matrix of shape `(n_samples, n_features)` (`numpy.ndarray` or DataFrame).
+- `k_range` (default `range(2, 11)`): Cluster numbers to evaluate, as any iterable of integers (list, `range`, array, set, generator). Values are sorted and de-duplicated. Every value must be at least 2 and smaller than `n_samples`.
+- `algorithm` (*keyword-only*, optional, default `None`): Clustering class that accepts `n_clusters` and implements `fit_predict()`. When `None`, `sklearn.cluster.KMeans` is used. Pass the class, not an instance.
+- `algorithm_parameters` (*keyword-only*, optional, default `None`): Keyword arguments for creating the algorithm at every k; an `n_clusters` entry is ignored. When `None`, K-Means gets `{"random_state": 42, "n_init": 10}` and any other algorithm gets no arguments. A dict you pass replaces these defaults instead of extending them.
+- `metric` (*keyword-only*, default `'euclidean'`): Distance metric name passed to `sklearn.metrics.silhouette_score`.
+- `show_best` (*keyword-only*, default `True`): Draw a dashed red vertical line at the k with the highest score and a legend entry `Best: k=<k> (<score>)`. The smallest k wins a tie.
+- `annotate_scores` (*keyword-only*, default `True`): Write the score with 3 decimals below every point; switch it off when `k_range` is long.
+- `ax` (*keyword-only*, optional, default `None`): Target matplotlib axes.
+- `**kwargs`: Forwarded to underlying plot function (`Axes.plot`), default `marker='o'` and `linewidth=2`.
+
+### Returns
+- `matplotlib.axes._axes.Axes`: the score line is `ax.lines[0]`, so `k_values, scores = ax.lines[0].get_data()` reads the plotted values back (`NaN` for a skipped k).
+
+### Raises
+- `ValueError`: `"k_range must contain at least one value."` — when `k_range` is empty.
+- `ValueError`: `"k_range must contain only integers of at least 2."` — for values below 2, floats, strings or booleans.
+- `ValueError`: `"k_range values must be smaller than the number of samples."` — when the largest k is not below `len(X)`.
+- `ValueError`: `"No silhouette score could be computed for any value in k_range."` — when every k is skipped.
+- `UserWarning`: `"The silhouette score is undefined for k=[...] ..."` — when the algorithm returned fewer than 2 clusters or one cluster per sample for some k; those values are left out of the plot.
+
+### Example
+```python
+import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
+from ds_utils.unsupervised import plot_silhouette_score_vs_cluster_number
+
+fig, ax = plt.subplots(figsize=(8, 5))
+plot_silhouette_score_vs_cluster_number(
+    X,
+    range(2, 9),
+    algorithm=AgglomerativeClustering,
+    algorithm_parameters={"linkage": "average"},
+    annotate_scores=False,
+    ax=ax,
+)
+k_values, scores = ax.lines[0].get_data()
 plt.show()
 ```
 
