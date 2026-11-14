@@ -2,8 +2,9 @@
 
 This script parses git diff output between a base commit and a head revision to identify:
 - Changed files and line ranges (new-side)
-- Changed skills under the skills directory
-- Skills eligible for intra-skill deduplication (dedup_skills)
+- Changed skills under the skills directory (added, modified or deleted files)
+- Skills eligible for intra-skill deduplication (dedup_skills): changed skills that still exist, or every skill
+  when the Tier 2 pipeline itself changed, so that the whole pipeline is exercised
 - Whether Tier 2 similarity (cross-skill) and dedup checks should run
 Outputs results as JSON and optionally appends key=value lines to GITHUB_OUTPUT.
 """
@@ -104,7 +105,7 @@ def compute_scope(
     skills_posix = skills_dir.replace("\\", "/").strip("/")
 
     changed_skills: set[str] = set()
-    skills_with_add_mod: set[str] = set()
+    deletion_skills: set[str] = set()
 
     skills_changed = False
     infra_changed = False
@@ -117,16 +118,26 @@ def compute_scope(
             if parts and parts[0]:
                 skill_name = parts[0]
                 changed_skills.add(skill_name)
-                if path not in deleted_files:
-                    skills_with_add_mod.add(skill_name)
+                if path in deleted_files:
+                    deletion_skills.add(skill_name)
         elif _is_infra_path(path):
             infra_changed = True
 
-    # dedup_skills: changed skills whose directory exists on disk, has at least one added/modified file,
-    # and whose name matches ^[A-Za-z0-9._-]+$. Invalid names are put in skipped_skills.
+    # dedup candidates: every changed skill (a deleted file can leave behind or remove a duplicate, so deletions
+    # count like edits); when the Tier 2 pipeline itself changed, every skill on disk, so the PR exercises the pipeline.
+    candidates: set[str] = set(changed_skills)
+    if infra_changed:
+        skills_root = root / skills_dir
+        if skills_root.is_dir():
+            candidates.update(
+                entry.name for entry in skills_root.iterdir() if entry.is_dir() and not entry.name.startswith(".")
+            )
+
+    # dedup_skills: candidates whose directory still exists and whose name matches ^[A-Za-z0-9._-]+$.
+    # Invalid names are put in skipped_skills.
     dedup_skills: list[str] = []
     skipped_skills: list[str] = []
-    for skill_name in sorted(skills_with_add_mod):
+    for skill_name in sorted(candidates):
         skill_path = root / skills_dir / skill_name
         if skill_path.is_dir():
             if _VALID_SKILL_NAME_RE.match(skill_name):
@@ -142,6 +153,8 @@ def compute_scope(
         "changed_files": sorted(touched_files),
         "changed_skills": sorted(changed_skills),
         "dedup_skills": dedup_skills,
+        "deletion_skills": sorted(s for s in deletion_skills if s in dedup_skills),
+        "infra_changed": infra_changed,
         "skipped_skills": sorted(skipped_skills),
         "run_similarity": run_similarity,
         "run_dedup": run_dedup,
