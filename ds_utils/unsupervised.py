@@ -322,12 +322,12 @@ def plot_silhouette_analysis(
 
 def _resolve_k_values(k_range: Iterable[int], n_samples: int) -> list:
     """Return the sorted, de-duplicated cluster numbers of `k_range` after validating them against `n_samples`."""
-    unique_values = set(k_range)
-    if not unique_values:
+    values = list(k_range)
+    if not values:
         raise ValueError("k_range must contain at least one value.")
-    if not all(isinstance(k, (int, np.integer)) and not isinstance(k, bool) and k >= 2 for k in unique_values):
+    if not all(isinstance(k, (int, np.integer)) and not isinstance(k, bool) and k >= 2 for k in values):
         raise ValueError("k_range must contain only integers of at least 2.")
-    k_values = sorted(int(k) for k in unique_values)
+    k_values = sorted({int(k) for k in values})
     if k_values[-1] >= n_samples:
         raise ValueError("k_range values must be smaller than the number of samples.")
     return k_values
@@ -369,7 +369,8 @@ def plot_silhouette_score_vs_cluster_number(
     :param annotate_scores: Whether to write the score next to every point. Turn it off for long `k_range` values.
     :param ax: Axes object to draw the plot onto; if None, a new Axes is created.
     :param kwargs: Additional keyword arguments passed to `matplotlib.axes.Axes.plot()`.
-    :return: The Axes object with the plot drawn onto it.
+    :return: The Axes object with the plot drawn onto it. The score line is the first line this call adds, that is
+             `ax.lines[0]` on a new or empty Axes.
     :raises ValueError: If `k_range` is empty, contains something other than integers of at least 2, contains a value
             that is not smaller than the number of samples, or if no silhouette score could be computed.
     """
@@ -406,7 +407,10 @@ def plot_silhouette_score_vs_cluster_number(
     if ax is None:
         _, ax = plt.subplots()
 
-    ax.plot(k_values, scores, **{"marker": "o", "linewidth": 2, **kwargs})
+    plot_kwargs = {"marker": "o", **kwargs}
+    if "linewidth" not in plot_kwargs and "lw" not in plot_kwargs:
+        plot_kwargs["linewidth"] = 2
+    ax.plot(k_values, scores, **plot_kwargs)
 
     if show_best:
         best_index = int(np.nanargmax(scores))

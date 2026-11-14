@@ -712,6 +712,24 @@ def test_plot_silhouette_score_vs_cluster_number_kwargs_forwarded(blobs_data):
     )
 
 
+def test_plot_silhouette_score_vs_cluster_number_line_width_alias_overrides_default(blobs_data):
+    """Test that the lw alias is accepted and replaces the default line width instead of clashing with it."""
+    X, _ = blobs_data
+    ax = plot_silhouette_score_vs_cluster_number(X, range(2, 5), lw=4)
+    assert ax.lines[0].get_linewidth() == 4
+
+
+def test_plot_silhouette_score_vs_cluster_number_score_line_is_first_line_added_to_existing_ax(blobs_data):
+    """Test that on an Axes that already holds lines the score line is the first one added by the call."""
+    X, _ = blobs_data
+    _, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1])
+    lines_before = len(ax.lines)
+
+    plot_silhouette_score_vs_cluster_number(X, range(2, 5), ax=ax)
+    assert list(ax.lines[lines_before].get_xdata()) == [2, 3, 4]
+
+
 def test_plot_silhouette_score_vs_cluster_number_metric_forwarded(mocker, blobs_data):
     """Test that metric is passed to silhouette_score."""
     X, _ = blobs_data
@@ -867,7 +885,21 @@ def test_plot_silhouette_score_vs_cluster_number_empty_k_range(blobs_data):
         plot_silhouette_score_vs_cluster_number(X, [])
 
 
-@pytest.mark.parametrize("k_range", [[1, 2, 3], [0, 2], [-3, 2], [2.5, 3], [2.0, 3.0], ["2", "3"], [True, 3]])
+@pytest.mark.parametrize(
+    "k_range",
+    [
+        [1, 2, 3],
+        [0, 2],
+        [-3, 2],
+        [2.5, 3],
+        [2.0, 3.0],
+        ["2", "3"],
+        [True, 3],
+        [2, 2.0, 3],
+        [3, 2, 2.0],
+        [2, 3, np.float64(3.0)],
+    ],
+)
 def test_plot_silhouette_score_vs_cluster_number_invalid_k_values(blobs_data, k_range):
     """Test that k values below 2 and non-integer k values raise ValueError."""
     X, _ = blobs_data

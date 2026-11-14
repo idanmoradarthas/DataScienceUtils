@@ -169,7 +169,8 @@ applied to K-Means only::
         annotate_scores=False,
     )
 
-    # Read the plotted scores back (NaN for a k without a defined score)
+    # Read the plotted scores back (NaN for a k without a defined score); the Axes was new,
+    # so the score line is the first one. On an Axes that already held n lines, use ax.lines[n].
     k_values, scores = ax.lines[0].get_data()
 
 The highest score is a starting point rather than a verdict: it often favors small values of k, so confirm the choice with

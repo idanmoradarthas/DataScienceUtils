@@ -134,7 +134,7 @@ plot_silhouette_score_vs_cluster_number(
 - `**kwargs`: Forwarded to underlying plot function (`Axes.plot`), default `marker='o'` and `linewidth=2`.
 
 ### Returns
-- `matplotlib.axes._axes.Axes`: the score line is `ax.lines[0]`, so `k_values, scores = ax.lines[0].get_data()` reads the plotted values back (`NaN` for a skipped k).
+- `matplotlib.axes._axes.Axes`: the score line is the first line this call adds. On a new or empty Axes, which includes every call without `ax`, that is `ax.lines[0]`, so `k_values, scores = ax.lines[0].get_data()` reads the plotted values back (`NaN` for a skipped k). When you pass an Axes that already holds lines, store `n_before = len(ax.lines)` before the call and read `ax.lines[n_before]` instead.
 
 ### Raises
 - `ValueError`: `"k_range must contain at least one value."` — when `k_range` is empty.
