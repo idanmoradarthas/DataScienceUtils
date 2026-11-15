@@ -5,16 +5,17 @@ Exhaustive parameter lists, function signatures, return specifications, and comm
 ## Import Paths
 
 ```python
-from ds_utils.unsupervised import (
+from ds_utils.unsupervised.cluster_diagnostics import (
     plot_cluster_cardinality,
     plot_cluster_magnitude,
     plot_magnitude_vs_cardinality,
-    plot_loss_vs_cluster_number,
-    plot_silhouette_analysis,
-    plot_silhouette_score_vs_cluster_number,
-    plot_clusters,
-    plot_clusters_plotly,
 )
+from ds_utils.unsupervised.cluster_number import (
+    plot_loss_vs_cluster_number,
+    plot_silhouette_score_vs_cluster_number,
+)
+from ds_utils.unsupervised.silhouette import plot_silhouette_analysis
+from ds_utils.unsupervised.cluster_projection import plot_clusters, plot_clusters_plotly
 ```
 
 ---
@@ -91,7 +92,7 @@ plot_silhouette_analysis(
 ```python
 import matplotlib.pyplot as plt
 from sklearn.cluster import AgglomerativeClustering
-from ds_utils.unsupervised import plot_silhouette_analysis
+from ds_utils.unsupervised.silhouette import plot_silhouette_analysis
 
 labels = AgglomerativeClustering(n_clusters=4).fit_predict(X)
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -147,7 +148,7 @@ plot_silhouette_score_vs_cluster_number(
 ```python
 import matplotlib.pyplot as plt
 from sklearn.cluster import AgglomerativeClustering
-from ds_utils.unsupervised import plot_silhouette_score_vs_cluster_number
+from ds_utils.unsupervised.cluster_number import plot_silhouette_score_vs_cluster_number
 
 fig, ax = plt.subplots(figsize=(8, 5))
 plot_silhouette_score_vs_cluster_number(
@@ -286,7 +287,7 @@ plot_clusters(
 ### Example
 ```python
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import plot_clusters
+from ds_utils.unsupervised.cluster_projection import plot_clusters
 import matplotlib.pyplot as plt
 
 kmeans = KMeans(n_clusters=4, random_state=42).fit(X)
@@ -334,7 +335,7 @@ Same exceptions and warning as `plot_clusters` (both share the input validation 
 ### Example
 ```python
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import plot_clusters_plotly
+from ds_utils.unsupervised.cluster_projection import plot_clusters_plotly
 
 kmeans = KMeans(n_clusters=4, random_state=42).fit(X)
 fig = plot_clusters_plotly(X, kmeans.labels_, kmeans.cluster_centers_)

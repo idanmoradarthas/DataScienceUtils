@@ -626,7 +626,7 @@ chart.
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import plot_cluster_cardinality
+from ds_utils.unsupervised.cluster_diagnostics import plot_cluster_cardinality
 
 data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
@@ -637,7 +637,7 @@ plot_cluster_cardinality(estimator.labels_)
 plt.show()
 ```
 
-![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_cardinality.png)
+![Cluster Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_diagnostics/test_cluster_cardinality.png)
 
 ### Plot Cluster Magnitude
 
@@ -649,7 +649,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
-from ds_utils.unsupervised import plot_cluster_magnitude
+from ds_utils.unsupervised.cluster_diagnostics import plot_cluster_magnitude
 
 data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
@@ -660,7 +660,7 @@ plot_cluster_magnitude(data, estimator.labels_, estimator.cluster_centers_, eucl
 plt.show()
 ```
 
-![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_cluster_magnitude.png)
+![Plot Cluster Magnitude](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_diagnostics/test_plot_cluster_magnitude.png)
 
 ### Magnitude vs. Cardinality
 
@@ -673,7 +673,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
-from ds_utils.unsupervised import plot_magnitude_vs_cardinality
+from ds_utils.unsupervised.cluster_diagnostics import plot_magnitude_vs_cardinality
 
 data = pd.read_csv(path / to / dataset)
 estimator = KMeans(n_clusters=8, random_state=42)
@@ -684,7 +684,7 @@ plot_magnitude_vs_cardinality(data, estimator.labels_, estimator.cluster_centers
 plt.show()
 ```
 
-![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_magnitude_vs_cardinality.png)
+![Magnitude vs. Cardinality](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_diagnostics/test_plot_magnitude_vs_cardinality.png)
 
 ### Optimum Number of Clusters
 
@@ -698,7 +698,7 @@ Note: Currently, this method only works with ``sklearn.cluster.KMeans``.
 import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
-from ds_utils.unsupervised import plot_loss_vs_cluster_number
+from ds_utils.unsupervised.cluster_number import plot_loss_vs_cluster_number
 
 data = pd.read_csv(path / to / dataset)
 
@@ -706,7 +706,7 @@ plot_loss_vs_cluster_number(data, 3, 20, euclidean)
 plt.show()
 ```
 
-![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_loss_vs_cluster_number.png)
+![Optimum Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_number/test_plot_loss_vs_cluster_number.png)
 
 ### Silhouette Score vs. Number of Clusters
 
@@ -720,7 +720,7 @@ implements `fit_predict()`, such as `AgglomerativeClustering`, as `algorithm`. C
 ```python
 import pandas as pd
 from matplotlib import pyplot as plt
-from ds_utils.unsupervised import plot_silhouette_score_vs_cluster_number
+from ds_utils.unsupervised.cluster_number import plot_silhouette_score_vs_cluster_number
 
 data = pd.read_csv(path / to / dataset)
 
@@ -728,7 +728,7 @@ plot_silhouette_score_vs_cluster_number(data.values, range(2, 11))
 plt.show()
 ```
 
-![Silhouette Score vs. Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_silhouette_score_vs_cluster_number.png)
+![Silhouette Score vs. Number of Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_number/test_plot_silhouette_score_vs_cluster_number.png)
 
 ### Silhouette Analysis
 
@@ -743,7 +743,7 @@ algorithm that produces labels.
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import plot_silhouette_analysis
+from ds_utils.unsupervised.silhouette import plot_silhouette_analysis
 
 data = pd.read_csv(path / to / dataset)
 
@@ -754,7 +754,7 @@ plot_silhouette_analysis(data.values, estimator.labels_)
 plt.show()
 ```
 
-![Silhouette Analysis](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_silhouette_analysis.png)
+![Silhouette Analysis](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_silhouette/test_plot_silhouette_analysis.png)
 
 ### Plot Clusters
 
@@ -769,7 +769,7 @@ Available in both matplotlib and Plotly backends.
 
 **Matplotlib:**
 ```python
-from ds_utils.unsupervised import plot_clusters
+from ds_utils.unsupervised.cluster_projection import plot_clusters
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 
@@ -782,13 +782,13 @@ plt.show()
 
 **Plotly (interactive):**
 ```python
-from ds_utils.unsupervised import plot_clusters_plotly
+from ds_utils.unsupervised.cluster_projection import plot_clusters_plotly
 
 fig = plot_clusters_plotly(data.values, estimator.labels_, estimator.cluster_centers_)
 fig.show()
 ```
 
-![Plot Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_plot_clusters_pca_with_centroids.png)
+![Plot Clusters](https://raw.githubusercontent.com/idanmoradarthas/DataScienceUtils/master/tests/baseline_images/test_unsupervised/test_cluster_projection/test_plot_clusters_pca_with_centroids.png)
 
 ## XAI (Explainable AI)
 

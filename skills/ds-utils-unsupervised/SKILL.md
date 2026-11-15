@@ -138,11 +138,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import euclidean
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import (
+from ds_utils.unsupervised.cluster_number import (
     plot_silhouette_score_vs_cluster_number,
     plot_loss_vs_cluster_number,
-    plot_silhouette_analysis,
 )
+from ds_utils.unsupervised.silhouette import plot_silhouette_analysis
 
 # 1. Sweep loss across k range
 ax_loss = plot_loss_vs_cluster_number(
@@ -174,7 +174,7 @@ plt.close()
 Question: are cluster point counts balanced, or do massive or tiny outlier clusters exist?
 
 ```python
-from ds_utils.unsupervised import plot_cluster_cardinality
+from ds_utils.unsupervised.cluster_diagnostics import plot_cluster_cardinality
 
 k_optimal = 3  # replace with the k you chose in Step 2
 kmeans = KMeans(n_clusters=k_optimal, n_init=10, random_state=42)
@@ -191,7 +191,7 @@ plt.close()
 Question: which clusters are tightly packed around their centroids, and which are loose or diffuse?
 
 ```python
-from ds_utils.unsupervised import plot_cluster_magnitude
+from ds_utils.unsupervised.cluster_diagnostics import plot_cluster_magnitude
 
 ax_mag = plot_cluster_magnitude(X_scaled, labels, kmeans.cluster_centers_, distance_function=euclidean)
 plt.close()
@@ -204,7 +204,7 @@ plt.close()
 Question: do all clusters exhibit consistent density, or do certain clusters have unusually high dispersion for their size?
 
 ```python
-from ds_utils.unsupervised import plot_magnitude_vs_cardinality
+from ds_utils.unsupervised.cluster_diagnostics import plot_magnitude_vs_cardinality
 
 ax_joint = plot_magnitude_vs_cardinality(X_scaled, labels, kmeans.cluster_centers_, distance_function=euclidean)
 plt.close()
@@ -218,7 +218,7 @@ Question: how do the clusters separate when projected into a 2D space?
 
 ```python
 import matplotlib.pyplot as plt
-from ds_utils.unsupervised import plot_clusters, plot_clusters_plotly
+from ds_utils.unsupervised.cluster_projection import plot_clusters, plot_clusters_plotly
 
 # Matplotlib static 2D projection
 ax_viz = plot_clusters(
@@ -270,16 +270,17 @@ from scipy.spatial.distance import euclidean
 from sklearn.datasets import load_wine
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-from ds_utils.unsupervised import (
-    plot_silhouette_score_vs_cluster_number,
-    plot_loss_vs_cluster_number,
-    plot_silhouette_analysis,
+from ds_utils.unsupervised.cluster_diagnostics import (
     plot_cluster_cardinality,
     plot_cluster_magnitude,
     plot_magnitude_vs_cardinality,
-    plot_clusters,
-    plot_clusters_plotly,
 )
+from ds_utils.unsupervised.cluster_number import (
+    plot_silhouette_score_vs_cluster_number,
+    plot_loss_vs_cluster_number,
+)
+from ds_utils.unsupervised.silhouette import plot_silhouette_analysis
+from ds_utils.unsupervised.cluster_projection import plot_clusters, plot_clusters_plotly
 
 # 1. Load bundled dataset and standardize
 wine = load_wine(as_frame=True)
