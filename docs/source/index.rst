@@ -16,7 +16,7 @@ visualizations for data science projects.
    preprocess/index
    strings
    transformers/index
-   unsupervised
+   unsupervised/index
    xai
    contributing
 
