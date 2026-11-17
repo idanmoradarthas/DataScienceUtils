@@ -29,7 +29,7 @@ def get_version():
     """Extract version from package.
 
     First tries to import the package directly (works when package is installed).
-    Falls back to parsing __init__.py file if import fails.
+    Falls back to parsing pyproject.toml if import fails.
 
     Returns:
         str: Version string or "unknown" if version cannot be determined
@@ -45,19 +45,15 @@ def get_version():
     except ImportError:
         pass
 
-    # Method 2: Fallback to parsing __init__.py file
+    # Method 2: Fallback to parsing pyproject.toml
     # This works during development when package isn't installed
-    init_file = Path(__file__).parents[2] / "ds_utils" / "__init__.py"
+    pyproject_file = Path(__file__).parents[2] / "pyproject.toml"
     try:
-        with init_file.open("r", encoding="utf-8") as f:
-            content = f.read()
-            # Match patterns like: __version__ = "1.2.3" or __version__ = '1.2.3'
-            import re
+        import tomllib
 
-            match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
-            if match:
-                return match.group(1)
-    except (FileNotFoundError, AttributeError, OSError):
+        with pyproject_file.open("rb") as f:
+            return tomllib.load(f)["project"]["version"]
+    except (FileNotFoundError, KeyError, OSError, ValueError):
         pass
 
     # Method 3: Final fallback if all else fails

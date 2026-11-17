@@ -25,7 +25,7 @@ cmd="$1"
 shift
 
 if [ "$cmd" = "--version" ]; then
-  echo "skillevaluator, version 0.7.2 (stub)"
+  echo "skillevaluator, version 0.9.0 (stub)"
   exit 0
 fi
 
