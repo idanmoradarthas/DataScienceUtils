@@ -2,7 +2,7 @@
 # SkillEvaluator is pinned to a PyPI release. The [tier2] extra installs the openai client that the Tier 2 checks need.
 # SkillSpector is not published on PyPI, so it stays pinned to a git tag.
 # Install standalone with:
-#   uv tool install --python 3.13 "skillevaluator[tier2]==0.7.2"
-#   uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
-skillevaluator[tier2]==0.7.2
-skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
+#   uv tool install --python 3.13 "skillevaluator[tier2]==0.9.0"
+#   uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.13.4
+skillevaluator[tier2]==0.9.0
+skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@v2.13.4

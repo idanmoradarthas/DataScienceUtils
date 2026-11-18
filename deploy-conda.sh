@@ -2,8 +2,12 @@
 
 set -e
 
-# Extract version from __init__.py
-version=$(grep -E "__version__[^=]*=" ds_utils/__init__.py | cut -d'"' -f2)
+# Python versions to build for. Keep in sync with the classifiers in pyproject.toml
+# (tests/test_packaging_config.py fails when they drift apart).
+PYTHON_VERSIONS="3.11 3.12 3.13 3.14"
+
+# Extract version from pyproject.toml
+version=$(grep -E '^version = ' pyproject.toml | head -n 1 | cut -d'"' -f2)
 
 # Get numpy version - use environment variable if set, otherwise detect from container
 if [ -n "$NUMPY_VERSION" ]; then
@@ -20,7 +24,7 @@ echo "Building with numpy version: $numpy_version"
 mkdir -p ./outputdir
 
 # Build for different Python versions
-for pyver in 3.10 3.11 3.12 3.13; do
+for pyver in $PYTHON_VERSIONS; do
     conda build --python $pyver data-science-utils --numpy $numpy_version --output-folder outputdir/ --package-format 1
 done
 conda build purge
@@ -44,8 +48,9 @@ else
 fi
 
 # Convert packages for all Python versions and platforms
-for pyver in 310 311 312 313; do
-    conda convert -f --platform all "outputdir/${BUILD_PLATFORM}/data-science-utils-${version}-py${pyver}_0.tar.bz2" -o outputdir/
+for pyver in $PYTHON_VERSIONS; do
+    pytag="${pyver/./}"
+    conda convert -f --platform all "outputdir/${BUILD_PLATFORM}/data-science-utils-${version}-py${pytag}_0.tar.bz2" -o outputdir/
 done
 
 # Check if upload should be skipped
@@ -62,10 +67,11 @@ platforms=$(conda convert --help | grep -E "(-p|--platform)" | grep -o "{.*}" | 
 anaconda login --username IdanMorad
 
 # Upload packages for all Python versions and platforms
-for pyver in 310 311 312 313; do
+for pyver in $PYTHON_VERSIONS; do
+    pytag="${pyver/./}"
     for platform in $platforms; do
         if [ "$platform" != "all" ]; then
-            anaconda upload "outputdir/${platform}/data-science-utils-${version}-py${pyver}_0.tar.bz2"
+            anaconda upload "outputdir/${platform}/data-science-utils-${version}-py${pytag}_0.tar.bz2"
         fi
     done
 done

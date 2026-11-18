@@ -1,3 +1,8 @@
 """Data Science Utilities package."""
 
-__version__ = "1.10.0rc17"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("data_science_utils")
+except PackageNotFoundError:  # pragma: no cover - source tree that is not installed
+    __version__ = "unknown"

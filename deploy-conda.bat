@@ -6,8 +6,13 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Extract version from __init__.py
-for /F "tokens=2 delims== " %%i in ('findstr /R "__version__[^=]*=" ds_utils\__init__.py') do (
+:: Python versions to build for. Keep in sync with the classifiers in pyproject.toml
+:: (tests/test_packaging_config.py fails when they drift apart).
+set "PYTHON_VERSIONS=3.11 3.12 3.13 3.14"
+set "PYTHON_TAGS=311 312 313 314"
+
+:: Extract version from pyproject.toml
+for /F "tokens=2 delims== " %%i in ('findstr /B /C:"version = " pyproject.toml') do (
     set version=%%i
 )
 
@@ -30,13 +35,13 @@ echo Building with numpy version: %numpy_version%
 if not exist .\outputdir mkdir .\outputdir
 
 :: Build for different Python versions
-for %%v in (3.10 3.11 3.12 3.13) do (
+for %%v in (%PYTHON_VERSIONS%) do (
     call conda build --python %%v data-science-utils --numpy %numpy_version% --output-folder outputdir\ --package-format 1
 )
 call conda build purge
 
 :: Convert packages for all Python versions and platforms
-for %%v in (310 311 312 313) do (
+for %%v in (%PYTHON_TAGS%) do (
     call conda convert -f --platform all outputdir\win-64\data-science-utils-%version%-py%%v_0.tar.bz2 -o outputdir\
 )
 
@@ -62,7 +67,7 @@ for /f "tokens=1 delims=}" %%a in ("%platforms_str%") do (
 anaconda login --username IdanMorad
 
 :: Upload packages for all Python versions and platforms
-for %%v in (310 311 312 313) do (
+for %%v in (%PYTHON_TAGS%) do (
     for %%p in (%platforms_str%) do (
         if not "%%p"=="all" (
             call anaconda upload outputdir/%%p/data-science-utils-%version%-py%%v_0.tar.bz2

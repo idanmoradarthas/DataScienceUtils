@@ -597,8 +597,8 @@ Install the pinned versions of SkillEvaluator (a PyPI release) and SkillSpector 
 
 .. code-block:: bash
 
-    uv tool install --python 3.13 "skillevaluator[tier2]==0.7.2"
-    uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.12.0
+    uv tool install --python 3.13 "skillevaluator[tier2]==0.9.0"
+    uv tool install git+https://github.com/NVIDIA/SkillSpector.git@v2.13.4
 
 External security scanners provide static security coverage: Gitleaks is required for secret detection (Tier 1 reports ``INCOMPLETE`` without it, together with ``skillspector``). Bandit and Semgrep are only invoked for skills that bundle code files. The current skills are Markdown-only, so they are not needed here. If you add code files to a skill, install both, otherwise Tier 1 reports ``INCOMPLETE`` and exits 1:
 
@@ -666,7 +666,7 @@ You can run the Tier 2 evaluation runner script ``eval-skills-tier2.sh`` locally
 
 .. code-block:: bash
 
-    uv tool install --python 3.13 --force "skillevaluator[tier2]==0.7.2"
+    uv tool install --python 3.13 --force "skillevaluator[tier2]==0.9.0"
 
 The ``[tier2]`` extra installs the OpenAI client used by the Tier 2 checks, so no extra ``--with`` flag is needed.
 

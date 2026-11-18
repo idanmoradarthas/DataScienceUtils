@@ -298,7 +298,7 @@ def test_deprecated_api_not_in_sphinx_docs():
     assert not violations, "Deprecated API or directive found in Sphinx documentation:\n" + "\n".join(violations)
 
 
-# Regex patterns copied from skillspector 2.12.0 references.py:
+# Regex patterns copied from skillspector 2.13.4 references.py:
 # _QUOTED_OR_CODE_PATH and _PLAIN_RELATIVE_PATH
 QUOTED_OR_CODE_PATH = re.compile(
     r"(?:`|'|\")((?:\./)?(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,12})(?:`|'|\")"
