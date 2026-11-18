@@ -4,6 +4,7 @@ pyproject.toml is the single source of truth for the version, the supported Pyth
 dependencies. These tests fail when the conda recipe or the deploy scripts drift away from it.
 """
 
+import importlib.util
 import re
 import shutil
 import subprocess
@@ -88,22 +89,57 @@ def test_requires_python_matches_the_oldest_classifier():
     assert PYPROJECT["project"]["requires-python"] == f">={versions[0]}"
 
 
-def test_conda_recipe_python_constraint_matches_requires_python():
-    """The conda recipe must not build or allow Python versions that pyproject.toml excludes."""
+def test_conda_recipe_run_python_constraint_matches_requires_python():
+    """The installed package must not allow Python versions that pyproject.toml excludes."""
     expected = _normalize("python" + PYPROJECT["project"]["requires-python"])
-    for section in ("host", "run"):
-        assert expected in _meta_requirements(section), f"meta.yaml requirements/{section} must contain '{expected}'"
+    assert expected in _meta_requirements("run"), f"meta.yaml requirements/run must contain '{expected}'"
+
+
+def test_conda_recipe_host_python_is_unconstrained_so_conda_build_inserts_the_variant():
+    """conda-build only inserts the --python variant (deploy-conda.sh) for a bare 'python' host requirement.
+
+    A constraint such as 'python >=3.11' disables that substitution, so a '--python 3.11' build would be
+    solved against the newest Python and produce a package that does not match its py311 build string.
+    """
+    assert "python" in _meta_requirements("host")
+
+
+def _conda_name(requirement: str) -> str:
+    """Convert a PyPI requirement such as 'uv_build>=0.13.8,<0.14' to its conda spelling 'uv-build>=0.13.8,<0.14'."""
+    name, rest = re.match(r"([A-Za-z0-9_.-]+)(.*)", _normalize(requirement)).groups()
+    return name.replace("_", "-").lower() + rest
+
+
+def test_conda_recipe_host_contains_the_build_backend_of_pyproject():
+    """conda-build disables pip's build isolation and PyPI access, so the backend must come from the host env."""
+    expected = {_conda_name(req) for req in PYPROJECT["build-system"]["requires"]}
+    assert expected <= {_normalize(entry) for entry in _meta_requirements("host")}
 
 
 @pytest.mark.parametrize("section", ["host", "run"])
 def test_conda_recipe_dependencies_match_pyproject(section):
     """Every runtime dependency of pyproject.toml appears, with the same specifier, in the conda recipe."""
     expected = {_normalize(dep) for dep in PYPROJECT["project"]["dependencies"]}
-    actual = {entry for entry in _meta_requirements(section) if not entry.startswith(("python", "pip"))}
+    build_requirements = {_conda_name(req) for req in PYPROJECT["build-system"]["requires"]}
+    actual = {
+        entry
+        for entry in _meta_requirements(section)
+        if not entry.startswith(("python", "pip")) and entry not in build_requirements
+    }
     assert actual == expected, (
         f"meta.yaml requirements/{section} differs from pyproject.toml dependencies; "
         f"missing: {sorted(expected - actual)}, unexpected: {sorted(actual - expected)}"
     )
+
+
+def test_docs_version_falls_back_to_pyproject_when_the_package_is_not_installed(monkeypatch):
+    """docs/source/conf.py must not publish 'unknown' when ds_utils is importable but not installed."""
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(ds_utils, "__version__", "unknown")
+    spec = importlib.util.spec_from_file_location("docs_conf_under_test", REPO_ROOT / "docs" / "source" / "conf.py")
+    conf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(conf)
+    assert conf.get_version() == PYPROJECT["project"]["version"]
 
 
 def test_deploy_scripts_build_for_the_classifier_python_versions():

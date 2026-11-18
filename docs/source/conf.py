@@ -40,8 +40,9 @@ def get_version():
     try:
         import ds_utils
 
-        if hasattr(ds_utils, "__version__"):
-            return ds_utils.__version__
+        package_version = getattr(ds_utils, "__version__", None)
+        if package_version and package_version != "unknown":
+            return package_version
     except ImportError:
         pass
 

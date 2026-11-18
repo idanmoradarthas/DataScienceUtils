@@ -11,8 +11,9 @@ build:
 
 requirements:
   host:
-    - python >=3.11
+    - python
     - pip
+    - uv-build >=0.13.8,<0.14
     - numpy>=1.26.3
     - scipy>=1.11.4
     - pandas>=3.0.0
