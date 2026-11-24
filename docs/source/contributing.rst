@@ -23,6 +23,7 @@ How to Contribute
 5. **Test your changes**: Ensure your code works as expected and doesn't introduce new issues.
 
 6. **Submit a pull request**: Open a PR with a clear title and description of your changes.
+   Every pull request is also reviewed automatically by CodeRabbit |coderabbit|.
 
 Coding Guidelines
 =================
@@ -51,3 +52,7 @@ Remember, no contribution is too small. Whether it's fixing a typo in documentat
 contributions are valued and appreciated.
 
 Thank you for helping make Data Science Utils better for everyone!
+
+.. |coderabbit| image:: https://img.shields.io/coderabbit/prs/github/idanmoradarthas/DataScienceUtils
+   :target: https://coderabbit.ai
+   :alt: CodeRabbit Pull Request Reviews
