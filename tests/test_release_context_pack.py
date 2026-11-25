@@ -419,6 +419,9 @@ def test_clean_body_drops_noise_and_caps_length():
         ("def f(a, b): ...", "def f(a): ...", {"removed": ["b"]}),
         ("def f(a, *, b=1): ...", "def f(a, *, b=1, c=None): ...", {"added": ["c = None"]}),
         ("def f(a, c=None): ...", "def f(a, b=0, c=None): ...", {"positional_shift": ["b inserted before c"]}),
+        ("def f(a, b=1): ...", "def f(a, *, b=1): ...", {"kind_changed": ["b: positional-or-keyword -> keyword-only"]}),
+        ("def f(a, b): ...", "def f(a, /, b): ...", {"kind_changed": ["a: positional-or-keyword -> positional-only"]}),
+        ("def f(*, a): ...", "def f(a): ...", {"kind_changed": ["a: keyword-only -> positional-or-keyword"]}),
     ],
 )
 def test_diff_params_cases(old: str, new: str, expected: dict[str, list[str]]):
@@ -432,6 +435,46 @@ def test_diff_params_cases(old: str, new: str, expected: dict[str, list[str]]):
         assert getattr(diff, key) == value
     assert not diff.empty()
     assert cp.diff_params(before, before).empty()
+
+
+def test_a_parameter_that_became_keyword_only_is_reported_in_the_pack(tmp_path: Path):
+    """Callers that passed the parameter by position break; the pack says so next to the other signature changes."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial", {"pkg/__init__.py": "", "pkg/m.py": "def f(a, b=1):\n    return a\n"})
+    _git(repo, "tag", "1.0.0")
+    _commit(repo, "Make b keyword-only (#2)", {"pkg/m.py": "def f(a, *, b=1):\n    return a\n"})
+    analysis = cp.analyze(repo, "1.0.0", "HEAD", "pkg")
+    pack, _ = cp.build_pack(analysis, 4000)
+    assert "pkg.m.f: parameter kind changed: b: positional-or-keyword -> keyword-only" in pack
+
+
+def test_a_docstring_change_after_the_first_paragraph_is_an_implementation_change(tmp_path: Path):
+    """Only the parameter list of a docstring changed (the summary line did not): it must not be missed."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    doc = '"""Summary line.\n\n    :param x: {}\n    """'
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial", {"pkg/__init__.py": "", "pkg/m.py": f"def f(x):\n    {doc.format('old')}\n    return x\n"})
+    _git(repo, "tag", "1.0.0")
+    _commit(repo, "Reword the docs (#2)", {"pkg/m.py": f"def f(x):\n    {doc.format('new')}\n    return x\n"})
+    changes = cp.analyze(repo, "1.0.0", "HEAD", "pkg").api_diff.implementation_changes
+    assert [(item.new, item.code_changed, item.doc_changed) for item in changes] == [("pkg.m.f", False, True)]
+
+
+def test_new_top_level_folders_are_taken_from_the_release_not_from_the_checkout(tmp_path: Path):
+    """The range can be compared while another commit is checked out; a folder is recognized by its files' paths."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial", {"pkg/__init__.py": ""})
+    _git(repo, "tag", "1.0.0")
+    _git(repo, "checkout", "-q", "-b", "release")
+    _commit(repo, "Add things (#2)", {"newdir/one.py": "", "notes.txt": "", "many/a.py": "", "many/b.py": ""})
+    _git(repo, "checkout", "-q", "1.0.0")  # the folder does not exist in this checkout
+    assert not (repo / "newdir").exists()
+    assert cp.new_top_level_paths(repo, "1.0.0", "release") == ["many/ (2 files)", "newdir/ (1 files)", "notes.txt"]
 
 
 def test_resolve_import_follows_star_imports_and_flags_dynamic_modules():
@@ -506,6 +549,17 @@ def test_cli_writes_pack_facts_and_info(release_repo: Path, tmp_path: Path, caps
     assert json.loads((out_dir / "facts.json").read_text(encoding="utf-8"))["base"] == "1.0.0"
     assert json.loads((out_dir / "pack_info.json").read_text(encoding="utf-8"))["fits"] is True
     assert "context pack: ~" in capsys.readouterr().out
+
+
+def test_cli_in_a_folder_that_is_not_a_repository_exits_with_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """Looking for the newest tag runs git; when git fails the tool prints the reason and exits with code 2."""
+    folder = tmp_path / "plain"
+    folder.mkdir()
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))  # never find a repository above the temp folder
+    assert cp.main(["--repo", str(folder)]) == 2
+    assert "error: git tag --list failed" in capsys.readouterr().err
 
 
 def test_cli_without_a_release_tag_exits_with_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]):

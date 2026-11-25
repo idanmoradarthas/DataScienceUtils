@@ -122,6 +122,7 @@ class FakeOllama:
 
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        self._started = False
 
     @property
     def host(self) -> str:
@@ -131,13 +132,16 @@ class FakeOllama:
     def start(self) -> FakeOllama:
         """Start serving."""
         self._thread.start()
+        self._started = True
         return self
 
     def stop(self) -> None:
-        """Stop serving and release the port."""
-        self._server.shutdown()
+        """Stop serving and release the port; safe to call when the server was never started, or twice."""
+        if self._started:  # ``shutdown`` waits for ``serve_forever``: it blocks forever on a server never started
+            self._started = False
+            self._server.shutdown()
+            self._thread.join(timeout=5)
         self._server.server_close()
-        self._thread.join(timeout=5)
 
     def __enter__(self) -> FakeOllama:
         """Start the server for a ``with`` block."""

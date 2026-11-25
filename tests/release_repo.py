@@ -36,6 +36,8 @@ def _git(repo: Path, *args: str) -> None:
             "user.email=release-tests@example.com",
             "-c",
             "commit.gpgsign=false",
+            "-c",
+            "tag.gpgsign=false",
             *args,
         ],
         check=True,

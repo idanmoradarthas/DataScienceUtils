@@ -106,6 +106,15 @@ def latest_release_tag(repo: Path, exclude: str | None = None) -> str | None:
 # ----------------------------------------------------------------------------------------------------------------
 
 
+KIND_NAMES = {
+    "posonly": "positional-only",
+    "pos": "positional-or-keyword",
+    "var": "*args",
+    "kwonly": "keyword-only",
+    "varkw": "**kwargs",
+}
+
+
 @dataclass
 class Param:
     """One parameter of a public callable."""
@@ -337,6 +346,7 @@ class ParamDiff:
     possible_renames: list[str] = field(default_factory=list)  # "old -> new"
     positional_shift: list[str] = field(default_factory=list)  # "sparse inserted before tokenizer"
     became_required: list[str] = field(default_factory=list)
+    kind_changed: list[str] = field(default_factory=list)  # "sparse: positional-or-keyword -> keyword-only"
 
     def empty(self) -> bool:
         """Return True when nothing differs."""
@@ -344,7 +354,7 @@ class ParamDiff:
 
 
 def diff_params(old: list[Param], new: list[Param]) -> ParamDiff:
-    """Compare two parameter lists: removals, additions, default changes, renames and positional shifts."""
+    """Compare two parameter lists: removals, additions, default and kind changes, renames and positional shifts."""
     diff = ParamDiff()
     old_by_name = {param.name: param for param in old}
     new_by_name = {param.name: param for param in new}
@@ -361,6 +371,8 @@ def diff_params(old: list[Param], new: list[Param]) -> ParamDiff:
                 diff.became_required.append(param.name)
             else:
                 diff.default_changed.append(f"{param.name}: {param.default} -> {other.default}")
+        if param.kind != other.kind:  # for example a parameter that callers could pass by position became keyword-only
+            diff.kind_changed.append(f"{param.name}: {KIND_NAMES[param.kind]} -> {KIND_NAMES[other.kind]}")
     old_index = {param.name: index for index, param in enumerate(old)}
     new_index = {param.name: index for index, param in enumerate(new)}
     for gone in removed:
@@ -492,7 +504,7 @@ def diff_api(old: Api, new: Api, *, diff_limit: int = 60) -> ApiDiff:
         params = diff_params(before.params, after.params)
         if not params.empty():
             signature_changes.append(SignatureChange(old_name, new_name, params))
-        code_changed, doc_changed = before.body_hash != after.body_hash, before.doc != after.doc
+        code_changed, doc_changed = before.body_hash != after.body_hash, before.doc_full != after.doc_full
         if code_changed or doc_changed:
             implementation.append(
                 ImplementationChange(
@@ -669,15 +681,15 @@ def new_top_level_paths(repo: Path, base: str, head: str) -> list[str]:
     """List top-level files and directories that did not exist at ``base``, with file counts."""
     existing = set(git(repo, "ls-tree", "--name-only", base).splitlines())
     counts: Counter[str] = Counter()
+    folders: set[str] = set()  # a path with a slash in it lives in a folder, as the new tree says (not the checkout)
     for line in git(repo, "diff", "--name-status", "--no-renames", base, head).splitlines():
         status, _, path = line.partition("\t")
         top = path.split("/")[0]
         if status == "A" and top not in existing:
             counts[top] += 1
-    return [
-        f"{top}/ ({count} files)" if (repo / top).is_dir() or count > 1 else top
-        for top, count in sorted(counts.items())
-    ]
+            if "/" in path:
+                folders.add(top)
+    return [f"{top}/ ({count} files)" if top in folders else top for top, count in sorted(counts.items())]
 
 
 def previous_changelog_section(repo: Path, head: str, limit: int = 3500) -> str:
@@ -932,6 +944,8 @@ def _param_diff_text(diff: ParamDiff) -> str:
         parts.append("added: " + ", ".join(added))
     if diff.positional_shift:
         parts.append("positional order changed: " + ", ".join(diff.positional_shift))
+    if diff.kind_changed:
+        parts.append("parameter kind changed: " + ", ".join(diff.kind_changed))
     if diff.default_changed:
         parts.append("default changed: " + ", ".join(diff.default_changed))
     if diff.became_required:
@@ -1123,11 +1137,11 @@ def main(argv: list[str] | None = None) -> int:
     """Write ``context_pack.md`` and ``facts.json``; return a process exit code."""
     args = build_parser().parse_args(argv)
     repo = args.repo.resolve()
-    base = args.base or latest_release_tag(repo)
-    if not base:
-        print("error: no release tag found, pass --base", file=sys.stderr)
-        return 2
     try:
+        base = args.base or latest_release_tag(repo)
+        if not base:
+            print("error: no release tag found, pass --base", file=sys.stderr)
+            return 2
         analysis = analyze(repo, base, args.head, args.package)
     except RuntimeError as error:
         print(f"error: {error}", file=sys.stderr)

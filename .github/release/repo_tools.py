@@ -32,9 +32,12 @@ MAX_LIST_ROWS = 120
 MAX_SEARCH_RESULTS = 30
 MAX_LOG_ROWS = 40
 MAX_SYMBOL_MATCHES = 8
+SHORT_HASH = 8  # length of the commit hashes shown to the model; any prefix of 4 or more characters is accepted
+FOOTER_CHARS = 100  # room kept in a page for the line that says how to continue
 VERSIONS = ("base", "head")
 COMMIT_ID = re.compile(r"^(?:#?(\d{1,6})|([0-9a-fA-F]{4,40}))$")
 DRIVE_LETTER = re.compile(r"^[A-Za-z]:")
+ELLIPSIS = "..."
 
 
 def _function(name: str, description: str, properties: dict[str, dict[str, Any]], required: list[str]) -> dict:
@@ -159,17 +162,31 @@ def _version(value: Any) -> str:
     return text
 
 
-def _page(lines: list[str], start: int, count: int, *, numbered: bool) -> str:
-    """Return ``count`` lines from ``start`` (1-based) with a footer that says how to continue."""
+def _page(lines: list[str], start: int, count: int, *, numbered: bool, limit: int) -> str:
+    """Return up to ``count`` lines from ``start`` (1-based), at most ``limit`` characters, with a footer.
+
+    The footer names the lines that are really shown and the line to continue from, so the model can page through a
+    file without a gap even when the character limit ends a page early.
+    """
     total = len(lines)
     if total == 0:
         return "(empty)"
     if start > total:
         return f"(no more lines; the text has {total} lines)"
-    chunk = lines[start - 1 : start - 1 + count]
-    width = len(str(start - 1 + len(chunk)))
-    body = [f"{start + index:>{width}}  {line}" if numbered else line for index, line in enumerate(chunk)]
-    end = start - 1 + len(chunk)
+    last = min(start - 1 + count, total)
+    width = len(str(last))
+    budget = max(limit - FOOTER_CHARS, limit // 2)
+    body: list[str] = []
+    size = 0
+    for number in range(start, last + 1):
+        text = f"{number:>{width}}  {lines[number - 1]}" if numbered else lines[number - 1]
+        if body and size + len(text) + 1 > budget:
+            break
+        if len(text) > budget:  # one very long line (minified or generated text) still has to fit
+            text = text[: budget - len(ELLIPSIS)] + ELLIPSIS
+        body.append(text)
+        size += len(text) + 1
+    end = start - 1 + len(body)
     footer = f"[lines {start}-{end} of {total}]"
     if end < total:
         footer = f"[lines {start}-{end} of {total}; call again with start_line={end + 1} for more]"
@@ -177,11 +194,19 @@ def _page(lines: list[str], start: int, count: int, *, numbered: bool) -> str:
 
 
 def _cap(text: str, limit: int) -> str:
-    """Cut ``text`` at a line boundary below ``limit`` characters and say so."""
+    """Return ``text`` unchanged when it fits, else cut it (at a line end when one is near) and say so.
+
+    The result, including the note, is never longer than ``limit`` characters.
+    """
     if len(text) <= limit:
         return text
-    cut = text[:limit].rsplit("\n", 1)[0]
-    return f"{cut}\n[output cut at {limit} characters; ask for a smaller part]"
+    note = f"\n[output cut at {limit} characters; ask for a smaller part]"
+    room = max(limit - len(note), 0)
+    head = text[:room]
+    line_end = head.rfind("\n")
+    if line_end >= room // 2:
+        head = head[:line_end]
+    return (head + note)[:limit]
 
 
 def _parse_name_status(raw: str) -> dict[str, tuple[str, str]]:
@@ -248,17 +273,22 @@ class RepoTools:
         return TOOL_DEFINITIONS
 
     def call(self, name: str, arguments: dict[str, Any]) -> str:
-        """Run one tool and return its text. Never raises: a problem is returned as ``error: ...`` text."""
+        """Run one tool and return its text, never longer than ``max_output_chars``.
+
+        Never raises: a problem is returned as ``error: ...`` text, and that text is capped like any other answer
+        because it can repeat what the model sent (a very long path, for example).
+        """
         self.calls += 1
         handler = self._handlers.get(name)
-        if handler is None:
-            return f"error: unknown tool '{name}'. Available tools: {', '.join(self._handlers)}."
         try:
-            text = _cap(handler(arguments or {}), self.max_output_chars)
+            if handler is None:
+                raise ToolError(f"unknown tool '{name}'. Available tools: {', '.join(self._handlers)}.")
+            text = handler(arguments or {})
         except ToolError as error:
             text = f"error: {error}"
         except RuntimeError as error:
             text = f"error: git could not answer ({str(error)[:160]})"
+        text = _cap(text, self.max_output_chars)
         self.output_chars += len(text)
         self.observed.append(text)
         return text
@@ -299,7 +329,7 @@ class RepoTools:
         if not text.strip():
             return f"(no differences for '{path}'; if the file moved, diff the new path or use changed_files)"
         lines = [line for line in text.splitlines() if not line.startswith(("index ", "--- ", "+++ "))]
-        return _page(lines, start, PAGE_LINES, numbered=False)
+        return _page(lines, start, PAGE_LINES, numbered=False, limit=self.max_output_chars)
 
     def _read_file(self, arguments: dict[str, Any]) -> str:
         path = safe_path(arguments.get("path"))
@@ -313,12 +343,12 @@ class RepoTools:
         text = cp.git_show(self.repo, self.shas[version], path) or ""
         if "\0" in text[:8000]:
             return f"(file '{path}' is binary)"
-        return _page(text.splitlines(), start, PAGE_LINES, numbered=True)
+        return _page(text.splitlines(), start, PAGE_LINES, numbered=True, limit=self.max_output_chars)
 
     def _exists(self, version: str, path: str) -> bool:
         """Return True when ``path`` is a file at the given version."""
-        listing = self._git("ls-tree", "--name-only", self.shas[version], "--", path)
-        return path in listing.splitlines()
+        listing = self._git("ls-tree", "-z", "--name-only", self.shas[version], "--", path)  # -z: names are not quoted
+        return path in listing.split("\0")
 
     def _search(self, arguments: dict[str, Any]) -> str:
         text = str(arguments.get("text") or "").strip()
@@ -354,9 +384,9 @@ class RepoTools:
         return f"{len(rows)} matches at {version}\n" + "\n".join(shown)
 
     def _range_commits(self, spec: list[str]) -> list[tuple[str, str]]:
-        """Return ``(short hash, subject)`` of the first-parent commits of the range, newest first."""
+        """Return ``(full hash, subject)`` of the first-parent commits of the range, newest first."""
         raw = self._git(
-            "log", "--first-parent", "--format=%h%x1f%s", f"{self.shas['base']}..{self.shas['head']}", *spec
+            "log", "--first-parent", "--format=%H%x1f%s", f"{self.shas['base']}..{self.shas['head']}", *spec
         )
         return [tuple(line.split("\x1f", 1)) for line in raw.splitlines() if "\x1f" in line]  # type: ignore[misc]
 
@@ -364,7 +394,7 @@ class RepoTools:
         rows = self._range_commits(self._pathspec(arguments.get("path_prefix")))
         if not rows:
             return "(no pull requests touched that path)"
-        shown = [f"{sha}  {subject}" for sha, subject in rows[:MAX_LOG_ROWS]]
+        shown = [f"{sha[:SHORT_HASH]}  {subject}" for sha, subject in rows[:MAX_LOG_ROWS]]
         if len(rows) > len(shown):
             shown.append(f"[{len(rows) - len(shown)} more; pass path_prefix to narrow the list]")
         return f"{len(rows)} pull requests\n" + "\n".join(shown)
@@ -375,10 +405,11 @@ class RepoTools:
         if not match:
             raise ToolError("number must be a pull request number such as 162 or a commit hash")
         commits = self._range_commits([])
+        prefix = (match.group(2) or "").lower()
         found = None
         for sha, subject in commits:
             numbers = cp.PR_SUFFIX.findall(subject)
-            if (match.group(1) and match.group(1) in numbers) or (match.group(2) and sha.startswith(match.group(2))):
+            if (match.group(1) and match.group(1) in numbers) or (prefix and sha.startswith(prefix)):
                 found = sha
                 break
         if found is None:
@@ -411,7 +442,15 @@ class RepoTools:
         added = set(diff.added)
         matches = [s for s in head.symbols.values() if s.name == name]
         if not matches:
+            # An exact name that only the previous release has is a removal; a partial match must not hide that.
             matches = [s for s in head.symbols.values() if name.lower() in s.name.lower()]
+            earlier = [s.qualname for s in base.symbols.values() if s.name == name]
+            if earlier:
+                answer = f"'{name}' is not public any more; the previous release had {', '.join(earlier)}"
+                if matches:
+                    similar = sorted(s.qualname for s in matches)[:MAX_SYMBOL_MATCHES]
+                    answer += f"\nsimilar names at head: {', '.join(similar)}"
+                return answer
         rows = []
         for symbol in sorted(matches, key=lambda item: item.qualname)[:MAX_SYMBOL_MATCHES]:
             if symbol.qualname in moved:
@@ -425,9 +464,4 @@ class RepoTools:
             flags = f"{symbol.kind}; {status}" + ("; deprecated" if symbol.deprecated else "")
             doc = f"\n    {symbol.doc[:200]}" if symbol.doc else ""
             rows.append(f"{symbol.qualname}{symbol.signature()}  [{flags}]{doc}")
-        if rows:
-            return "\n".join(rows)
-        earlier = [s.qualname for s in base.symbols.values() if s.name == name]
-        if earlier:
-            return f"'{name}' is not public any more; the previous release had {', '.join(earlier)}"
-        return f"(no public function or class named '{name}' in either release)"
+        return "\n".join(rows) if rows else f"(no public function or class named '{name}' in either release)"

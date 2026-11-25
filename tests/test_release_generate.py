@@ -96,6 +96,21 @@ def test_render_orders_sections_and_leaves_empty_ones_out():
     )
 
 
+def test_line_breaks_in_a_title_cannot_start_a_heading_or_a_bullet():
+    """A title is one line: a line break written by the model would otherwise open a new heading in the CHANGELOG."""
+    notes = {
+        "release_title": "T",
+        "breaking_changes": [],
+        "added": [{"title": "Zebra\n\n## [9.9.9] - 2030-01-01\n- **Fake**", "text": "Text."}],
+        "changed": [],
+        "fixed": [],
+    }
+    lines = nc.render_changelog(notes, "1.2.3", "2026-11-21").splitlines()
+    assert [line for line in lines if line.startswith("#")] == ["## [1.2.3] - 2026-11-21", "### Added"]
+    assert sum(line.startswith("- ") for line in lines) == 1
+    assert nc.one_line("  a\n b\t c  ") == "a b c"
+
+
 # ---------------------------------------------------------------- notes checks
 
 FACTS = {
@@ -363,6 +378,27 @@ def test_a_server_that_rejects_tools_after_declaring_them_also_falls_back(
     assert "tools" not in server.requests[-1]
 
 
+def test_the_saved_context_pack_is_the_one_the_model_read_after_a_fallback(
+    release_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """The fallback to mode pack builds a bigger pack; the file in the artifact must hold that one."""
+    real_build_pack = gc.cp.build_pack
+
+    def tagged(analysis, budget):
+        text, info = real_build_pack(analysis, budget)
+        return f"<!-- pack budget {budget} -->\n{text}", info
+
+    monkeypatch.setattr(gc.cp, "build_pack", tagged)
+    with fo.FakeOllama(fo.ScriptedModel(notes=GOOD_NOTES, supports_tools=False)) as server:
+        assert _generate(release_repo, tmp_path / "out", "--mode", "agent", host=server.host) == 0
+    report = json.loads((tmp_path / "out" / "run_report.json").read_text(encoding="utf-8"))
+    saved = (tmp_path / "out" / "context_pack.md").read_text(encoding="utf-8")
+    assert report["mode"] == "pack"
+    assert saved.startswith(f"<!-- pack budget {report['pack']['budget']} -->")
+    sent = next(request for request in reversed(server.requests) if "format" in request)
+    assert saved in sent["messages"][1]["content"]
+
+
 def test_invented_names_warn_and_strict_turns_the_warning_into_an_exit_code(
     release_repo: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
@@ -400,6 +436,17 @@ def test_setup_errors_return_exit_code_2(release_repo: Path, tmp_path: Path, cap
         assert "not available" in capsys.readouterr().err
     assert _generate(release_repo, tmp_path / "d", host=server.host) == 2
     assert "Cannot reach Ollama" in capsys.readouterr().err
+
+
+def test_a_folder_that_is_not_a_repository_is_a_setup_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """Looking for the newest tag runs git; its failure is an error message and exit code 2, not a traceback."""
+    folder = tmp_path / "plain"
+    folder.mkdir()
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))  # never find a repository above the temp folder
+    assert gc.main(["--repo", str(folder), "--model", "fake:1b", "--out-dir", str(tmp_path / "out")]) == 2
+    assert "error: git tag --list failed" in capsys.readouterr().err
 
 
 def test_a_model_that_never_returns_valid_json_gives_exit_code_1(

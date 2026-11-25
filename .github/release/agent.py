@@ -22,16 +22,17 @@ import sys
 import time
 from typing import Any, Callable
 
-from llm_client import ChatResult, LLMError, OllamaClient
+from llm_client import ChatResult, LLMError, OllamaClient, estimate_tokens
 from repo_tools import RepoTools
 
-CHARS_PER_TOKEN = 3.5
 FINAL_INSTRUCTION = (
     "Exploration is over. Using only what the tools and the context showed you, write the final answer now as JSON "
     "that follows the required schema. Do not call tools."
 )
 REPEAT_NOTICE = "(you already made this exact call; use the earlier result or try something different)"
+NO_ROOM_NOTICE = "error: not run, the context window has no room left for more tool answers; write the answer now"
 MAX_REPEATS_IN_A_ROW = 3
+MESSAGE_OVERHEAD_TOKENS = 8
 
 
 @dataclass
@@ -65,9 +66,11 @@ def tools_unsupported(error: LLMError) -> bool:
     return error.status == 400 and "tool" in error.body.lower()
 
 
-def estimate_tokens(text: str) -> int:
-    """Rough token count of a text (the server-reported counts are preferred whenever they exist)."""
-    return int(len(text) / CHARS_PER_TOKEN) + 1
+def _message_tokens(message: dict[str, Any]) -> int:
+    """Estimate the size of one chat message, including the tool calls it carries."""
+    return estimate_tokens(str(message.get("content") or "") + json.dumps(message.get("tool_calls") or [])) + (
+        MESSAGE_OVERHEAD_TOKENS
+    )
 
 
 def _stderr(message: str) -> None:
@@ -94,17 +97,26 @@ def run_agent(
     """Explore with tools, then return the answer as JSON that satisfies ``schema``.
 
     ``max_rounds`` limits the number of model calls in the exploration phase. Raises :class:`LLMError` when the server
-    fails or the final answer never validates; a model without tool support raises the server's 400 error unchanged
-    (see :func:`tools_unsupported`).
+    fails, when the prompt and the answer limit cannot fit in the context window at all, or when the final answer never
+    validates; a model without tool support raises the server's 400 error unchanged (see :func:`tools_unsupported`).
     """
     run = AgentRun()
     messages: list[dict[str, Any]] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     reserve = int(client.options["num_predict"]) + estimate_tokens(FINAL_INSTRUCTION) + 200
     tool_budget_tokens = estimate_tokens("x" * tools.max_output_chars)
+    initial_tokens = sum(_message_tokens(message) for message in messages)
+    if initial_tokens + reserve > client.num_ctx:
+        raise LLMError(
+            f"The prompt (~{initial_tokens} tokens) and the answer limit ({client.options['num_predict']} tokens) do "
+            f"not fit in the context window of {client.num_ctx} tokens; Ollama would drop the start of the prompt."
+        )
     seen: set[str] = set()
     repeats = 0
     run.stop_reason = "max_rounds"
-    for round_number in range(1, max_rounds + 1):
+    rounds = max_rounds
+    if initial_tokens + tool_budget_tokens + reserve > client.num_ctx:  # room for the answer, but not for a tool result
+        run.stop_reason, rounds = "context_budget", 0
+    for round_number in range(1, rounds + 1):
         result = client.chat(messages, tools=tools.schemas())
         run.rounds = round_number
         run.peak_prompt_tokens = max(run.peak_prompt_tokens, result.prompt_tokens)
@@ -113,7 +125,14 @@ def run_agent(
             run.exploration_note = result.content
             run.stop_reason = "explored"
             break
-        tool_chars = 0
+        # Tokens in the conversation so far; the results of this batch are added one by one, and a result that could
+        # push the prompt past the window (with the answer still to come) is not fetched at all.
+        used = (
+            result.prompt_tokens + result.output_tokens
+            if result.prompt_tokens
+            else sum(_message_tokens(message) for message in messages)
+        )
+        out_of_room = False
         for call in result.tool_calls:
             key = json.dumps([call.name, call.arguments], sort_keys=True)
             repeated = key in seen
@@ -124,13 +143,15 @@ def run_agent(
                 output, failed = f"error: {call.error}", True
             elif repeated:
                 output, failed = REPEAT_NOTICE, False
+            elif used + tool_budget_tokens + reserve > client.num_ctx:
+                output, failed, out_of_room = NO_ROOM_NOTICE, True, True
             else:
-                before = tools.output_chars
                 output = tools.call(call.name, call.arguments)
                 failed = output.startswith("error:")
-                tool_chars += tools.output_chars - before
             repeats = repeats + 1 if repeated else 0
-            messages.append({"role": "tool", "tool_name": call.name, "content": output})
+            message = {"role": "tool", "tool_name": call.name, "content": output}
+            messages.append(message)
+            used += _message_tokens(message)
             seconds = time.monotonic() - started
             run.steps.append(
                 Step(index, call.name, call.arguments, len(output), seconds, repeated=repeated, failed=failed)
@@ -143,9 +164,7 @@ def run_agent(
         if repeats >= MAX_REPEATS_IN_A_ROW:
             run.stop_reason = "stuck_repeating"
             break
-        prompt_so_far = result.prompt_tokens or sum(estimate_tokens(str(m.get("content", ""))) for m in messages)
-        next_prompt = prompt_so_far + result.output_tokens + estimate_tokens("x" * tool_chars)
-        if next_prompt + tool_budget_tokens + reserve > client.num_ctx:
+        if out_of_room or used + tool_budget_tokens + reserve > client.num_ctx:
             run.stop_reason = "context_budget"
             break
     log(f"[agent] exploration stopped: {run.stop_reason} after {run.rounds} round(s), {len(run.steps)} tool call(s)")

@@ -18,6 +18,7 @@ sent explicitly with every request.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import http.client
 import json
 import os
 import re
@@ -28,6 +29,12 @@ import urllib.request
 
 DEFAULT_OLLAMA_HOST = "127.0.0.1:11434"
 NANOSECONDS = 1e9
+CHARS_PER_TOKEN = 3.5
+
+
+def estimate_tokens(text: str) -> int:
+    """Rough token count of a text (the server-reported counts are preferred whenever they exist)."""
+    return int(len(text) / CHARS_PER_TOKEN) + 1
 
 
 class LLMError(RuntimeError):
@@ -216,16 +223,22 @@ class OllamaClient:
         )
         try:
             with urllib.request.urlopen(request, timeout=timeout or self.timeout) as response:
-                return json.loads(response.read().decode("utf-8"))
+                data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", errors="replace")
+            try:
+                body = error.read().decode("utf-8", errors="replace")
+            except (OSError, http.client.HTTPException):  # the connection broke while the error text was read
+                body = ""
             raise LLMError(
                 f"Ollama returned HTTP {error.code} for {path} (model '{self.model}'): {body[:300]}",
                 status=error.code,
                 body=body,
             ) from error
-        except (urllib.error.URLError, TimeoutError, ConnectionError, ValueError) as error:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, ValueError, http.client.HTTPException) as error:
             raise LLMError(f"Cannot reach Ollama at {self.base_url}: {error}") from error
+        if not isinstance(data, dict):
+            raise LLMError(f"Ollama answered {path} with JSON of type {type(data).__name__}, expected an object")
+        return data
 
     def version(self) -> str:
         """Return the server version string."""
@@ -308,10 +321,17 @@ class OllamaClient:
         response = self._post_chat(payload)
         message = dict(response.get("message") or {})
         message.setdefault("role", "assistant")
+        calls = _tool_calls(message)
+        if calls:
+            # The message goes back to the server in the next request, which wants arguments as an object, not text.
+            message["tool_calls"] = [
+                {**entry, "function": {**(entry.get("function") or {}), "arguments": call.arguments}}
+                for entry, call in zip(message["tool_calls"], calls)
+            ]
         result = ChatResult(
             content=str(message.get("content") or ""),
             thinking=str(message.get("thinking") or ""),
-            tool_calls=_tool_calls(message),
+            tool_calls=calls,
             message=message,
             done_reason=str(response.get("done_reason") or ""),
             prompt_tokens=int(response.get("prompt_eval_count") or 0),
@@ -346,8 +366,11 @@ class OllamaClient:
         """
         history = list(messages)
         problems: list[str] = []
+        no_room = ""
+        made = 0
         for attempt in range(attempts):
             result = self.chat(history, schema=schema)
+            made += 1
             self.usage.retries += 1 if attempt else 0
             try:
                 parsed = parse_json(result.content)
@@ -359,17 +382,36 @@ class OllamaClient:
                 problems = validate_schema(schema, parsed)
                 if not problems:
                     return parsed, result
-            history = [
-                *messages,
-                {"role": "assistant", "content": result.content},
-                {
-                    "role": "user",
-                    "content": "Your previous answer was rejected: "
-                    + "; ".join(problems[:6])
-                    + ". Reply again with only the corrected JSON.",
-                },
-            ]
+            if attempt + 1 == attempts:
+                break
+            retry = self._retry_history(messages, history, result, problems)
+            if retry is None:
+                no_room = "; no room left in the context window for another attempt"
+                break
+            history = retry
         self.usage.failures += 1
         raise LLMError(
-            f"Model '{self.model}' gave no valid JSON after {attempts} attempt(s): {'; '.join(problems[:3])}"
+            f"Model '{self.model}' gave no valid JSON after {made} attempt(s): {'; '.join(problems[:3])}{no_room}"
         )
+
+    def _retry_history(
+        self, messages: list[dict[str, Any]], sent: list[dict[str, Any]], result: ChatResult, problems: list[str]
+    ) -> list[dict[str, Any]] | None:
+        """Return the conversation for a corrective attempt, or None when it cannot fit in the context window.
+
+        The rejected answer is repeated to the model when there is room for it; otherwise only the list of problems is
+        added. Ollama drops the *start* of a prompt that is too long (the instructions), so a prompt that does not fit
+        is never sent.
+        """
+        correction = {
+            "role": "user",
+            "content": "Your previous answer was rejected: "
+            + "; ".join(problems[:6])
+            + ". Reply again with only the corrected JSON.",
+        }
+        used = result.prompt_tokens or sum(estimate_tokens(str(message.get("content") or "")) for message in sent)
+        extra = estimate_tokens(correction["content"])
+        room = self.num_ctx - int(self.options["num_predict"])
+        if used + result.output_tokens + extra <= room:
+            return [*messages, {"role": "assistant", "content": result.content}, correction]
+        return [*messages, correction] if used + extra <= room else None

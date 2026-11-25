@@ -19,6 +19,11 @@ PR_REFERENCE = re.compile(r"(?<!\w)#\d{1,6}\b")
 LINK = re.compile(r"https?://|\]\(")
 
 
+def one_line(text: str) -> str:
+    """Return ``text`` on one line: a line break written by the model must not start a heading or a bullet."""
+    return " ".join(text.split())
+
+
 def render_changelog(notes: dict[str, Any], version: str, date: str) -> str:
     """Return the CHANGELOG section for ``version``; empty sections are left out."""
     lines = [f"## [{version}] - {date}"]
@@ -27,7 +32,7 @@ def render_changelog(notes: dict[str, Any], version: str, date: str) -> str:
         if not items:
             continue
         lines += ["", f"### {heading}", ""]
-        lines += [f"- **{item['title'].strip()}**: {' '.join(item['text'].split())}" for item in items]
+        lines += [f"- **{one_line(item['title'])}**: {one_line(item['text'])}" for item in items]
     return "\n".join(lines) + "\n"
 
 

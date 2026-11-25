@@ -8,8 +8,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
+import socket
 import subprocess
 import sys
+import threading
 
 import pytest
 
@@ -226,7 +229,8 @@ def test_tool_calls_accept_object_and_json_string_arguments():
     assert "not valid JSON" in by_name["c"].error
     assert "not an object" in by_name["d"].error
     assert result.message["role"] == "assistant"
-    assert result.message["tool_calls"]
+    sent_back = {entry["function"]["name"]: entry["function"]["arguments"] for entry in result.message["tool_calls"]}
+    assert sent_back == {"a": {"x": 1}, "b": {"y": 2}, "c": {}, "d": {}}
 
 
 def test_http_errors_carry_status_and_body():
@@ -240,6 +244,55 @@ def test_http_errors_carry_status_and_body():
             lc.OllamaClient("fake:1b", host=server.host).chat([{"role": "user", "content": "hi"}])
     assert caught.value.status == 500
     assert "model crashed" in caught.value.body
+
+
+def test_a_reply_that_is_not_a_json_object_is_an_llm_error():
+    """Callers only expect LLMError from the client, so a list or a number is reported the same way."""
+    with _plain_server(lambda payload, server: [1, 2]) as server:
+        with pytest.raises(lc.LLMError, match="expected an object"):
+            lc.OllamaClient("fake:1b", host=server.host).chat([{"role": "user", "content": "hi"}])
+
+
+def test_an_error_body_that_cannot_be_read_still_gives_an_llm_error_with_the_status():
+    """The connection breaks while the server's error text is read: the status is kept, the body is empty."""
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+
+    def serve() -> None:
+        connection, _ = listener.accept()
+        with connection:
+            request = b""
+            while b"\r\n\r\n" not in request:
+                request += connection.recv(4096)
+            head, _, body = request.partition(b"\r\n\r\n")
+            length = int(re.search(rb"content-length:\s*(\d+)", head, re.IGNORECASE).group(1))
+            while len(body) < length:
+                body += connection.recv(4096)
+            connection.sendall(
+                b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 100\r\nConnection: close\r\n\r\ncut"
+            )
+
+    worker = threading.Thread(target=serve, daemon=True)
+    worker.start()
+    try:
+        client = lc.OllamaClient("fake:1b", host=f"127.0.0.1:{listener.getsockname()[1]}", timeout=5)
+        with pytest.raises(lc.LLMError) as caught:
+            client.chat([{"role": "user", "content": "hi"}])
+    finally:
+        listener.close()
+        worker.join(timeout=5)
+    assert (caught.value.status, caught.value.body) == (500, "")
+
+
+def test_a_fake_server_that_was_never_started_can_be_stopped():
+    """``shutdown`` waits for a serving loop; stopping a server that never served must not wait forever."""
+    server = fo.FakeOllama(lambda payload, server: fo.reply("ok"))
+    worker = threading.Thread(target=server.stop, daemon=True)
+    worker.start()
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    server.stop()  # a second stop is harmless
 
 
 def test_the_think_flag_is_dropped_when_the_server_rejects_it():
@@ -280,6 +333,37 @@ def test_chat_json_fails_after_the_attempts_and_hints_at_cut_off_output():
             client.chat_json("system", "user", schema)
         assert "cut off" in server.requests[1]["messages"][-1]["content"]
         assert client.usage.failures == 1
+
+
+ANSWER_SCHEMA = {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}
+
+
+def _retry_after_a_bad_answer(prompt_tokens: int, output_tokens: int):
+    """Ask for JSON in a 8192-token window with room for 1024 answer tokens; the first answer is never valid."""
+    with _plain_server(
+        lambda payload, server: fo.reply("oops", prompt_tokens=prompt_tokens, output_tokens=output_tokens)
+    ) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=8192, num_predict=1024)
+        with pytest.raises(lc.LLMError) as caught:
+            client.chat_json_messages([{"role": "user", "content": "question"}], ANSWER_SCHEMA)
+    return server.requests, str(caught.value)
+
+
+def test_the_retry_repeats_the_rejected_answer_only_when_it_fits_the_window():
+    """Ollama drops the start of a prompt that is too long, so the corrective retry is sized before it is sent."""
+    requests, _ = _retry_after_a_bad_answer(prompt_tokens=2000, output_tokens=800)
+    assert [message["role"] for message in requests[1]["messages"]] == ["user", "assistant", "user"]
+    requests, _ = _retry_after_a_bad_answer(prompt_tokens=6500, output_tokens=800)  # the answer would not fit
+    assert [message["role"] for message in requests[1]["messages"]] == ["user", "user"]
+    assert requests[1]["messages"][-1]["content"].startswith("Your previous answer was rejected")
+
+
+def test_no_retry_is_sent_when_not_even_the_correction_fits_the_window():
+    """A prompt that is already at the limit cannot take another message: stop with a clear reason."""
+    requests, message = _retry_after_a_bad_answer(prompt_tokens=7150, output_tokens=800)
+    assert len(requests) == 1
+    assert "after 1 attempt(s)" in message
+    assert "no room left in the context window" in message
 
 
 def test_json_inside_a_code_fence_is_accepted():
@@ -438,9 +522,100 @@ def test_output_is_capped_and_observed_text_is_kept(tool_repo: Path):
     small = rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg", max_output_chars=120)
     text = small.call("changed_files", {})
     assert "[output cut at 120 characters" in text
+    assert len(text) <= 120
     assert small.calls == 1
     assert small.observed == [text]
     assert small.output_chars == len(text)
+
+
+def test_the_cap_holds_for_text_without_line_breaks_and_for_error_messages(tool_repo: Path):
+    """Error texts repeat what the model sent, so a long argument must not make a long answer."""
+    tools = rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg", max_output_chars=300)
+    replies = [
+        tools.call("read_file", {"path": "../" + "a" * 5000}),
+        tools.call("x" * 5000, {}),
+        tools.call("search", {"text": "z" * 5000}),
+    ]
+    assert [len(reply) <= 300 for reply in replies] == [True, True, True]
+    assert replies[0].startswith("error: '../aaa")
+    assert replies[1].startswith("error: unknown tool 'xxx")
+    assert tools.output_chars == sum(len(reply) for reply in replies)
+    assert tools.observed == replies
+    assert rt._cap("x" * 1000, 120).endswith("a smaller part]")
+    assert len(rt._cap("x" * 1000, 120)) <= 120
+
+
+def test_a_page_ends_where_the_limit_ends_it_and_says_where_to_continue(tool_repo: Path):
+    """The footer names the lines really shown, so paging never skips a line (it used to be cut off with the text)."""
+    small = rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg", max_output_chars=600)
+    first = small.call("read_file", {"path": "docs/manual.md"}).splitlines()
+    last = int(first[-2].split()[0])
+    assert 1 < last < 120
+    assert first[-1] == f"[lines 1-{last} of 300; call again with start_line={last + 1} for more]"
+    assert "output cut" not in "\n".join(first)
+    second = small.call("read_file", {"path": "docs/manual.md", "start_line": last + 1}).splitlines()
+    assert int(second[0].split()[0]) == last + 1
+    assert all(len(reply) <= 600 for reply in small.observed)
+
+
+@pytest.fixture
+def edge_repo(tmp_path: Path) -> Path:
+    """Create a repository with a removed name inside a longer one, and a file whose first line is huge."""
+    repo = tmp_path / "edge"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial release", {"pkg/__init__.py": "", "pkg/plots.py": "def plot(values):\n    return values\n"})
+    _git(repo, "tag", "1.0.0")
+    _commit(
+        repo,
+        "Rename plot (#5)",
+        {"pkg/plots.py": "def plot_more(values):\n    return values\n", "docs/long.txt": "x" * 5000 + "\nsecond\n"},
+    )
+    return repo
+
+
+def test_one_huge_line_is_clipped_and_the_page_still_continues(edge_repo: Path):
+    """Minified or generated files have lines longer than the whole limit."""
+    small = rt.RepoTools(edge_repo, "1.0.0", "HEAD", "pkg", max_output_chars=600)
+    page = small.call("read_file", {"path": "docs/long.txt"}).splitlines()
+    assert len(page) == 2
+    assert page[0].endswith("...")
+    assert page[1] == "[lines 1-1 of 2; call again with start_line=2 for more]"
+    assert small.call("read_file", {"path": "docs/long.txt", "start_line": 2}).splitlines()[0].endswith("second")
+
+
+def test_a_name_that_was_removed_is_reported_even_when_a_longer_name_contains_it(edge_repo: Path):
+    """``plot`` is gone and ``plot_more`` is new: the answer must not present the partial match as the symbol."""
+    tools = rt.RepoTools(edge_repo, "1.0.0", "HEAD", "pkg")
+    answer = tools.call("find_symbol", {"name": "plot"})
+    assert "'plot' is not public any more; the previous release had pkg.plots.plot" in answer
+    assert "similar names at head: pkg.plots.plot_more" in answer
+    assert "NEW" not in answer
+    assert "NEW in this release" in tools.call("find_symbol", {"name": "plot_more"})
+    assert "plot_more" in tools.call("find_symbol", {"name": "more"})  # still a partial match when nothing was removed
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the file name is written with git plumbing and needs a quote sign")
+def test_files_with_names_that_git_quotes_can_be_read(edge_repo: Path):
+    """``git ls-tree`` prints a name with a quote sign in quotes unless it is asked for NUL-separated names."""
+    blob = subprocess.run(
+        ["git", "-C", str(edge_repo), "hash-object", "-w", "--stdin"], input=b"hello\n", capture_output=True, check=True
+    ).stdout.decode()
+    name = 'docs/say "hi".txt'
+    _git(edge_repo, "update-index", "--add", "--cacheinfo", f"100644,{blob.strip()},{name}")
+    _git(edge_repo, "commit", "-q", "-m", "A name with quotes (#6)")
+    tools = rt.RepoTools(edge_repo, "1.0.0", "HEAD", "pkg")
+    assert "hello" in tools.call("read_file", {"path": name})
+
+
+def test_a_pull_request_is_found_by_number_full_hash_or_a_prefix_of_it(tool_repo: Path, tools: rt.RepoTools):
+    """The log shows 8 characters of a hash; the full hash and any longer prefix work too, in any letter case."""
+    full = subprocess.run(
+        ["git", "-C", str(tool_repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert f"{full[:8]}  Move the helper (#24)" in tools.call("commit_log", {})
+    for value in ("#24", "24", full, full[:8], full[:8].upper(), full[:12]):
+        assert tools.call("show_pull_request", {"number": value}).startswith("Move the helper (#24)"), value
 
 
 def test_refs_are_resolved_once_to_commit_hashes(tool_repo: Path):
@@ -467,14 +642,16 @@ def release_repo(tmp_path: Path) -> Path:
     return tmp_path / "repo"
 
 
-def _run(model: fo.ScriptedModel, repo: Path, *, max_rounds: int = 6, num_ctx: int = 8192, **kwargs):
+def _run(
+    model: fo.ScriptedModel, repo: Path, *, max_rounds: int = 6, num_ctx: int = 8192, system: str = "system", **kwargs
+):
     logs: list[str] = []
     with fo.FakeOllama(model) as server:
         client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=num_ctx)
         result = agent.run_agent(
             client,
             rt.RepoTools(repo, "1.0.0", "HEAD", "pkg"),
-            "system",
+            system,
             "user question",
             SCHEMA,
             max_rounds=max_rounds,
@@ -568,3 +745,77 @@ def test_a_model_without_tool_support_raises_the_servers_error(release_repo: Pat
     assert agent.tools_unsupported(caught.value)
     assert not agent.tools_unsupported(lc.LLMError("boom", status=500, body="tool failure"))
     assert not agent.tools_unsupported(lc.LLMError("boom", status=400, body="bad json"))
+
+
+def test_tool_calls_go_back_to_the_server_with_arguments_as_an_object(release_repo: Path):
+    """A model may send the arguments as JSON text; the history sent to the server always holds an object."""
+
+    def responder(payload, server):
+        if payload.get("format"):
+            return fo.reply(json.dumps({"function": "f", "first_parameter": "p"}))
+        if not any(message["role"] == "tool" for message in payload["messages"]):
+            return fo.reply(tool_calls=[("changed_files", '{"path_prefix": "pkg"}')])
+        return fo.reply("done")
+
+    with fo.FakeOllama(responder) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host)
+        agent.run_agent(
+            client, rt.RepoTools(release_repo, "1.0.0", "HEAD", "pkg"), "s", "u", SCHEMA, log=lambda _m: None
+        )
+    assistant = next(message for message in server.requests[-1]["messages"] if message.get("tool_calls"))
+    assert assistant["tool_calls"][0]["function"]["arguments"] == {"path_prefix": "pkg"}
+
+
+def test_agent_refuses_a_prompt_that_cannot_fit_the_window_with_the_answer(release_repo: Path):
+    """Ollama would drop the start of the prompt (the instructions): no request is sent at all."""
+    with fo.FakeOllama(fo.ScriptedModel()) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=4096)
+        with pytest.raises(lc.LLMError, match="do not fit in the context window of 4096"):
+            agent.run_agent(
+                client,
+                rt.RepoTools(release_repo, "1.0.0", "HEAD", "pkg"),
+                "s" * 20000,
+                "u",
+                SCHEMA,
+                log=lambda _m: None,
+            )
+    assert server.requests == []
+
+
+def test_agent_skips_the_exploration_when_only_the_answer_fits_the_window(release_repo: Path):
+    """The first prompt leaves room for the answer but not for one tool result: go straight to the answer."""
+    run, requests, _ = _run(
+        fo.ScriptedModel(tool_script=[("changed_files", {})]), release_repo, num_ctx=8192, system="s" * 16000
+    )
+    assert (run.stop_reason, run.rounds, run.steps) == ("context_budget", 0, [])
+    assert len(requests) == 1
+    assert "format" in requests[0]
+    assert "tools" not in requests[0]
+
+
+def test_agent_does_not_fetch_more_results_of_one_batch_than_the_window_can_hold(tool_repo: Path):
+    """Ten tool calls in one model message: the ones that would overflow the window are not run."""
+    batch = [("read_file", {"path": "docs/manual.md", "start_line": number}) for number in range(1, 11)]
+
+    def responder(payload, server):
+        if payload.get("format"):
+            return fo.reply(json.dumps({"function": "f", "first_parameter": "p"}))
+        if not any(message["role"] == "tool" for message in payload["messages"]):
+            return fo.reply(tool_calls=batch, prompt_tokens=1500, output_tokens=20)
+        return fo.reply("done")
+
+    with fo.FakeOllama(responder) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=8192)
+        run = agent.run_agent(
+            client, rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg"), "s", "u", SCHEMA, log=lambda _m: None
+        )
+    final = server.requests[-1]["messages"]
+    tool_messages = [message for message in final if message["role"] == "tool"]
+    executed = [step for step in run.steps if not step.failed]
+    assert run.stop_reason == "context_budget"
+    assert 0 < len(executed) < 10
+    assert [message["content"] for message in tool_messages[len(executed) :]] == [agent.NO_ROOM_NOTICE] * (
+        10 - len(executed)
+    )
+    tokens = 1500 + 20 + sum(agent._message_tokens(message) for message in tool_messages)
+    assert tokens + agent.estimate_tokens(agent.FINAL_INSTRUCTION) + client.options["num_predict"] <= client.num_ctx

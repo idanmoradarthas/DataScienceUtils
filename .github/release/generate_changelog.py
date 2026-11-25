@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import context_pack as cp  # noqa: E402
 from agent import AgentRun, estimate_tokens, run_agent, tools_unsupported  # noqa: E402
 from llm_client import LLMError, OllamaClient  # noqa: E402
-from notes_checks import render_changelog, verify_notes  # noqa: E402
+from notes_checks import one_line, render_changelog, verify_notes  # noqa: E402
 from prompts import NOTES_SCHEMA, system_prompt, user_message  # noqa: E402
 from repo_tools import RepoTools  # noqa: E402
 
@@ -149,7 +149,11 @@ def main(argv: list[str] | None = None) -> int:
         log("error: --model is required (or use --dry-run)")
         return 2
     repo = args.repo.resolve()
-    base = args.base or cp.latest_release_tag(repo)
+    try:
+        base = args.base or cp.latest_release_tag(repo)
+    except RuntimeError as error:  # git failed, for example because --repo is not a repository
+        log(f"error: {error}")
+        return 2
     if not base:
         log("error: no release tag found, pass --base")
         return 2
@@ -205,7 +209,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{args.num_ctx} (pack ~{pack_info['tokens']}, budget {pack_info['budget']}, fits={pack_info['fits']})"
     )
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    (args.out_dir / "context_pack.md").write_text(pack_info["pack_text"], encoding="utf-8")
+    pack_file = args.out_dir / "context_pack.md"
+    pack_file.write_text(pack_info["pack_text"], encoding="utf-8")
     (args.out_dir / "facts.json").write_text(json.dumps(facts, indent=2), encoding="utf-8")
     if args.dry_run:
         print(f"dry run: prompt ~{prompt_tokens} tokens (context window {args.num_ctx}); files in {args.out_dir}")
@@ -224,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
                 log(f"warning: {args.model} rejected tools ({error.body[:120]}); using mode pack")
                 effective, use_tools, run = "pack", False, None
                 system, user, pack_info = prepare(effective, use_tools)
+                pack_file.write_text(pack_info["pack_text"], encoding="utf-8")  # the file shows what the model read
         if not use_tools:
             notes, last_result = client.chat_json_messages(
                 [{"role": "system", "content": system}, {"role": "user", "content": user}], NOTES_SCHEMA
@@ -238,6 +244,7 @@ def main(argv: list[str] | None = None) -> int:
         server["loaded_context"] = f"unavailable ({str(error)[:80]})"
     checks = verify_notes(notes, facts, pack_info["pack_text"], tools.observed)
     changelog = render_changelog(notes, version, date)
+    release_title = one_line(notes["release_title"])
     peak = max(run.peak_prompt_tokens if run else 0, last_result.prompt_tokens if last_result else 0)
     usage = client.usage
     report = {
@@ -258,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
         "agent": _agent_report(run),
         "checks": [{"ok": check.ok, "text": check.text} for check in checks],
         "seconds": round(time.monotonic() - started, 1),
-        "release_title": notes["release_title"],
+        "release_title": release_title,
     }
     (args.out_dir / "changelog.md").write_text(changelog, encoding="utf-8")
     (args.out_dir / "notes.json").write_text(json.dumps(notes, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -284,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     out = [
         "===== RELEASE (copy from here) =====",
         f"Tag: v{version}",
-        f"Release title: {notes['release_title']}",
+        f"Release title: {release_title}",
         "",
         changelog.rstrip(),
         "===== CHECKS =====",
@@ -298,7 +305,7 @@ def main(argv: list[str] | None = None) -> int:
         "\n".join(
             [
                 f"### Release notes draft for v{version} ({args.model}, mode {effective})",
-                f"**Release title:** {notes['release_title']}",
+                f"**Release title:** {release_title}",
                 "",
                 "```markdown",
                 changelog.rstrip(),
