@@ -30,11 +30,19 @@ import urllib.request
 DEFAULT_OLLAMA_HOST = "127.0.0.1:11434"
 NANOSECONDS = 1e9
 CHARS_PER_TOKEN = 3.5
+MESSAGE_OVERHEAD_TOKENS = 8  # role markers and separators that a chat template adds around every message
 
 
 def estimate_tokens(text: str) -> int:
     """Rough token count of a text (the server-reported counts are preferred whenever they exist)."""
     return int(len(text) / CHARS_PER_TOKEN) + 1
+
+
+def estimate_message_tokens(message: dict[str, Any]) -> int:
+    """Rough token count of one chat message, including the tool calls it carries."""
+    return estimate_tokens(str(message.get("content") or "") + json.dumps(message.get("tool_calls") or [])) + (
+        MESSAGE_OVERHEAD_TOKENS
+    )
 
 
 class LLMError(RuntimeError):
@@ -155,10 +163,19 @@ class Usage:
 
 
 def _tool_calls(message: dict[str, Any]) -> list[ToolCall]:
-    """Read ``message.tool_calls``; arguments may arrive as an object or as a JSON string."""
+    """Read ``message.tool_calls``; arguments may arrive as an object or as a JSON string.
+
+    Raises :class:`LLMError` when the server sent a tool call that is not an object with a ``function`` object: that
+    is a broken reply, not a mistake of the model, so there is nothing to tell the model about it.
+    """
+    entries = message.get("tool_calls") or []
+    if not isinstance(entries, list):
+        raise LLMError("The server sent tool_calls that are not a list")
     calls: list[ToolCall] = []
-    for entry in message.get("tool_calls") or []:
-        function = entry.get("function") or {}
+    for entry in entries:
+        function = (entry.get("function") or {}) if isinstance(entry, dict) else None
+        if not isinstance(function, dict):
+            raise LLMError("The server sent a tool call that is not an object with a 'function' object")
         raw = function.get("arguments") or {}
         error = ""
         if isinstance(raw, str):
@@ -319,7 +336,10 @@ class OllamaClient:
             payload["think"] = self.think
         started = time.monotonic()
         response = self._post_chat(payload)
-        message = dict(response.get("message") or {})
+        reply = response.get("message") or {}
+        if not isinstance(reply, dict):
+            raise LLMError("The server sent a message that is not an object")
+        message = dict(reply)
         message.setdefault("role", "assistant")
         calls = _tool_calls(message)
         if calls:
@@ -368,10 +388,13 @@ class OllamaClient:
         problems: list[str] = []
         no_room = ""
         made = 0
+        original_tokens = 0  # size of ``messages``: every corrective request is rebuilt from them, not from ``history``
         for attempt in range(attempts):
             result = self.chat(history, schema=schema)
             made += 1
             self.usage.retries += 1 if attempt else 0
+            if not attempt:
+                original_tokens = result.prompt_tokens or sum(estimate_message_tokens(message) for message in messages)
             try:
                 parsed = parse_json(result.content)
             except json.JSONDecodeError as error:
@@ -384,7 +407,7 @@ class OllamaClient:
                     return parsed, result
             if attempt + 1 == attempts:
                 break
-            retry = self._retry_history(messages, history, result, problems)
+            retry = self._retry_history(messages, original_tokens, result, problems)
             if retry is None:
                 no_room = "; no room left in the context window for another attempt"
                 break
@@ -395,13 +418,13 @@ class OllamaClient:
         )
 
     def _retry_history(
-        self, messages: list[dict[str, Any]], sent: list[dict[str, Any]], result: ChatResult, problems: list[str]
+        self, messages: list[dict[str, Any]], original_tokens: int, result: ChatResult, problems: list[str]
     ) -> list[dict[str, Any]] | None:
         """Return the conversation for a corrective attempt, or None when it cannot fit in the context window.
 
-        The rejected answer is repeated to the model when there is room for it; otherwise only the list of problems is
-        added. Ollama drops the *start* of a prompt that is too long (the instructions), so a prompt that does not fit
-        is never sent.
+        The request is ``messages`` (``original_tokens`` long) plus, when there is room for it, the rejected answer,
+        plus the list of problems. Ollama drops the *start* of a prompt that is too long (the instructions), so a
+        prompt that does not fit is never sent.
         """
         correction = {
             "role": "user",
@@ -409,9 +432,9 @@ class OllamaClient:
             + "; ".join(problems[:6])
             + ". Reply again with only the corrected JSON.",
         }
-        used = result.prompt_tokens or sum(estimate_tokens(str(message.get("content") or "")) for message in sent)
-        extra = estimate_tokens(correction["content"])
+        extra = estimate_message_tokens(correction)
+        answer = (result.output_tokens or estimate_tokens(result.content)) + MESSAGE_OVERHEAD_TOKENS
         room = self.num_ctx - int(self.options["num_predict"])
-        if used + result.output_tokens + extra <= room:
+        if original_tokens + answer + extra <= room:
             return [*messages, {"role": "assistant", "content": result.content}, correction]
-        return [*messages, correction] if used + extra <= room else None
+        return [*messages, correction] if original_tokens + extra <= room else None

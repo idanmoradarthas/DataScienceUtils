@@ -9,9 +9,11 @@ the same request:
    result is always machine-checkable.
 
 The loop protects the context window. Ollama silently drops the oldest part of a prompt that does not fit in
-``num_ctx``, which would remove the instructions the model is following. So before every round the loop estimates the
-next prompt size (the server-reported size of the last prompt, the model's last answer and the new tool results) and
-stops exploring while there is still room for the final JSON.
+``num_ctx``, which would remove the instructions the model is following. So the loop keeps count of the conversation
+(the server-reported size of the last prompt, the model's last answer and every message added since) and lets nothing
+into it that would leave too little room for the final JSON: a tool result is fetched only when its worst case fits,
+and calls that do not fit are removed from the model's message, together with the answers that were never fetched.
+Exploration stops while there is still room for the final JSON.
 """
 
 from __future__ import annotations
@@ -22,7 +24,14 @@ import sys
 import time
 from typing import Any, Callable
 
-from llm_client import ChatResult, LLMError, OllamaClient, estimate_tokens
+from llm_client import (
+    MESSAGE_OVERHEAD_TOKENS,
+    ChatResult,
+    LLMError,
+    OllamaClient,
+    estimate_message_tokens,
+    estimate_tokens,
+)
 from repo_tools import RepoTools
 
 FINAL_INSTRUCTION = (
@@ -30,9 +39,8 @@ FINAL_INSTRUCTION = (
     "that follows the required schema. Do not call tools."
 )
 REPEAT_NOTICE = "(you already made this exact call; use the earlier result or try something different)"
-NO_ROOM_NOTICE = "error: not run, the context window has no room left for more tool answers; write the answer now"
 MAX_REPEATS_IN_A_ROW = 3
-MESSAGE_OVERHEAD_TOKENS = 8
+ANSWER_SLACK_TOKENS = 200  # margin for the chat template and for estimates that are a little low
 
 
 @dataclass
@@ -57,6 +65,7 @@ class AgentRun:
     stop_reason: str = ""
     rounds: int = 0
     peak_prompt_tokens: int = 0
+    dropped_calls: int = 0  # tool calls of the model that were not run because their answers would not fit
     exploration_note: str = ""
     final_result: ChatResult | None = None
 
@@ -64,13 +73,6 @@ class AgentRun:
 def tools_unsupported(error: LLMError) -> bool:
     """Return True when the server refused the request because the model has no tool support."""
     return error.status == 400 and "tool" in error.body.lower()
-
-
-def _message_tokens(message: dict[str, Any]) -> int:
-    """Estimate the size of one chat message, including the tool calls it carries."""
-    return estimate_tokens(str(message.get("content") or "") + json.dumps(message.get("tool_calls") or [])) + (
-        MESSAGE_OVERHEAD_TOKENS
-    )
 
 
 def _stderr(message: str) -> None:
@@ -102,9 +104,11 @@ def run_agent(
     """
     run = AgentRun()
     messages: list[dict[str, Any]] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-    reserve = int(client.options["num_predict"]) + estimate_tokens(FINAL_INSTRUCTION) + 200
-    tool_budget_tokens = estimate_tokens("x" * tools.max_output_chars)
-    initial_tokens = sum(_message_tokens(message) for message in messages)
+    # What the final request needs after the conversation: the instruction, the answer itself and a margin.
+    reserve = int(client.options["num_predict"]) + estimate_tokens(FINAL_INSTRUCTION) + ANSWER_SLACK_TOKENS
+    tool_message_tokens = estimate_tokens("x" * tools.max_output_chars) + MESSAGE_OVERHEAD_TOKENS  # worst case of one
+    schema_tokens = estimate_tokens(json.dumps(tools.schemas()))  # sent with every exploration request, not the answer
+    initial_tokens = sum(estimate_message_tokens(message) for message in messages)
     if initial_tokens + reserve > client.num_ctx:
         raise LLMError(
             f"The prompt (~{initial_tokens} tokens) and the answer limit ({client.options['num_predict']} tokens) do "
@@ -114,44 +118,51 @@ def run_agent(
     repeats = 0
     run.stop_reason = "max_rounds"
     rounds = max_rounds
-    if initial_tokens + tool_budget_tokens + reserve > client.num_ctx:  # room for the answer, but not for a tool result
-        run.stop_reason, rounds = "context_budget", 0
+    if initial_tokens + schema_tokens + tool_message_tokens + reserve > client.num_ctx:
+        run.stop_reason, rounds = "context_budget", 0  # room for the answer, but not for the tools and one result
     for round_number in range(1, rounds + 1):
         result = client.chat(messages, tools=tools.schemas())
         run.rounds = round_number
         run.peak_prompt_tokens = max(run.peak_prompt_tokens, result.prompt_tokens)
         messages.append(result.message)
-        if not result.tool_calls:
-            run.exploration_note = result.content
-            run.stop_reason = "explored"
-            break
-        # Tokens in the conversation so far; the results of this batch are added one by one, and a result that could
-        # push the prompt past the window (with the answer still to come) is not fetched at all.
+        # Tokens in the conversation now, tool definitions included (so a little more than the final request needs).
         used = (
             result.prompt_tokens + result.output_tokens
             if result.prompt_tokens
-            else sum(_message_tokens(message) for message in messages)
+            else sum(estimate_message_tokens(message) for message in messages) + schema_tokens
         )
-        out_of_room = False
+        if not result.tool_calls:
+            run.exploration_note = result.content
+            run.stop_reason = "explored"
+            if used + reserve > client.num_ctx:  # a long free-text answer must not crowd out the final one
+                messages.pop()
+                log("[agent] the exploration answer is left out of the final request: it does not fit the window")
+            break
+        answer_at, handled, out_of_room = len(messages) - 1, 0, False
         for call in result.tool_calls:
             key = json.dumps([call.name, call.arguments], sort_keys=True)
             repeated = key in seen
+            # The text of an error or of a repeat notice is known; the answer of a real call is assumed to be as long
+            # as a tool answer can be.
+            known = f"error: {call.error}" if call.error else REPEAT_NOTICE if repeated else None
+            cost = estimate_message_tokens({"content": known}) if known else tool_message_tokens
+            if used + cost + reserve > client.num_ctx:
+                out_of_room = True
+                break
             seen.add(key)
             index = len(run.steps) + 1
             started = time.monotonic()
-            if call.error:
-                output, failed = f"error: {call.error}", True
-            elif repeated:
-                output, failed = REPEAT_NOTICE, False
-            elif used + tool_budget_tokens + reserve > client.num_ctx:
-                output, failed, out_of_room = NO_ROOM_NOTICE, True, True
+            failed = bool(call.error)
+            if known is not None:
+                output = known
             else:
                 output = tools.call(call.name, call.arguments)
                 failed = output.startswith("error:")
             repeats = repeats + 1 if repeated else 0
             message = {"role": "tool", "tool_name": call.name, "content": output}
             messages.append(message)
-            used += _message_tokens(message)
+            used += estimate_message_tokens(message)
+            handled += 1
             seconds = time.monotonic() - started
             run.steps.append(
                 Step(index, call.name, call.arguments, len(output), seconds, repeated=repeated, failed=failed)
@@ -161,10 +172,22 @@ def run_agent(
                 f"-> {len(output)} chars in {seconds:.1f}s{' (repeat)' if repeated else ''}"
                 f"{' (error)' if failed else ''}"
             )
+        dropped = len(result.tool_calls) - handled
+        if dropped:
+            # The calls without an answer are removed from the model's own message, so nothing is left unanswered.
+            run.dropped_calls += dropped
+            kept = {**result.message, "tool_calls": result.message["tool_calls"][:handled]}
+            if handled:
+                messages[answer_at] = kept
+            elif kept.get("content"):
+                messages[answer_at] = {key: value for key, value in kept.items() if key != "tool_calls"}
+            else:
+                del messages[answer_at]
+            log(f"[agent] round {round_number}: {dropped} tool call(s) not run, their answers would not fit the window")
         if repeats >= MAX_REPEATS_IN_A_ROW:
             run.stop_reason = "stuck_repeating"
             break
-        if out_of_room or used + tool_budget_tokens + reserve > client.num_ctx:
+        if out_of_room or used + tool_message_tokens + reserve > client.num_ctx:
             run.stop_reason = "context_budget"
             break
     log(f"[agent] exploration stopped: {run.stop_reason} after {run.rounds} round(s), {len(run.steps)} tool call(s)")

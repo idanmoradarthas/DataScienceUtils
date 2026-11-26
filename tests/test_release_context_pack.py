@@ -463,6 +463,53 @@ def test_a_docstring_change_after_the_first_paragraph_is_an_implementation_chang
     assert [(item.new, item.code_changed, item.doc_changed) for item in changes] == [("pkg.m.f", False, True)]
 
 
+def test_a_changed_parameter_description_is_shown_in_the_pack_even_when_the_code_is_the_same(tmp_path: Path):
+    """The model sees which ``:param`` lines changed; a prose-only change keeps just the heading."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    doc = '"""Summary {}.\n\n    :param x: {}\n    """'
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(
+        repo,
+        "Initial",
+        {
+            "pkg/__init__.py": "",
+            "pkg/m.py": f"def f(x):\n    {doc.format('one', 'old meaning')}\n    return x\n"
+            f"\n\ndef g(x):\n    {doc.format('one', 'same')}\n    return x\n",
+        },
+    )
+    _git(repo, "tag", "1.0.0")
+    _commit(
+        repo,
+        "Reword the docs (#2)",
+        {
+            "pkg/m.py": f"def f(x):\n    {doc.format('one', 'new meaning')}\n    return x\n"
+            f"\n\ndef g(x):\n    {doc.format('two', 'same')}\n    return x\n"
+        },
+    )
+    pack, _ = cp.build_pack(cp.analyze(repo, "1.0.0", "HEAD", "pkg"), 4000)
+    section = pack.split("### Existing public symbols whose code or docstring changed")[1].split("## 3.")[0]
+    assert "- pkg.m.f (docstring only)\n    doc -:param x: old meaning\n    doc +:param x: new meaning" in section
+    assert "- pkg.m.g (docstring only)\n\n" in section + "\n"  # nothing to show for g: only its summary changed
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the file name is written with git plumbing and needs a quote sign")
+def test_a_file_with_a_quoted_name_in_an_existing_folder_does_not_make_a_new_folder(tmp_path: Path):
+    """Without NUL-separated output git quotes a name with a quote sign, and the folder name comes out wrong."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial", {"pkg/__init__.py": "", "docs/a.txt": "a\n"})
+    _git(repo, "tag", "1.0.0")
+    blob = tmp_path / "blob.txt"
+    blob.write_text("hi\n")
+    digest = _git(repo, "hash-object", "-w", str(blob)).strip()
+    _git(repo, "update-index", "--add", "--cacheinfo", f'100644,{digest},docs/say "hi".txt')
+    _git(repo, "update-index", "--add", "--cacheinfo", f'100644,{digest},new "dir"/file.txt')
+    _git(repo, "commit", "-q", "-m", "Odd names (#2)")
+    assert cp.new_top_level_paths(repo, "1.0.0", "HEAD") == ['new "dir"/ (1 files)']
+
+
 def test_new_top_level_folders_are_taken_from_the_release_not_from_the_checkout(tmp_path: Path):
     """The range can be compared while another commit is checked out; a folder is recognized by its files' paths."""
     repo = tmp_path / "repo"

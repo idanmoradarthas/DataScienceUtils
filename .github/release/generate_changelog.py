@@ -114,6 +114,7 @@ def _agent_report(run: AgentRun | None) -> dict[str, Any] | None:
         "stop_reason": run.stop_reason,
         "rounds": run.rounds,
         "peak_prompt_tokens": run.peak_prompt_tokens,
+        "dropped_tool_calls": run.dropped_calls,
         "exploration_note": run.exploration_note[:2000],
         "steps": [asdict(step) for step in run.steps],
     }

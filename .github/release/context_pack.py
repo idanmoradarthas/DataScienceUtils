@@ -679,11 +679,12 @@ def diff_workflows(repo: Path, base: str, head: str) -> list[str]:
 
 def new_top_level_paths(repo: Path, base: str, head: str) -> list[str]:
     """List top-level files and directories that did not exist at ``base``, with file counts."""
-    existing = set(git(repo, "ls-tree", "--name-only", base).splitlines())
+    # NUL-separated output: without it git puts a name with a quote sign, a tab or a newline in quotes
+    existing = set(git(repo, "ls-tree", "-z", "--name-only", base).split("\0"))
     counts: Counter[str] = Counter()
     folders: set[str] = set()  # a path with a slash in it lives in a folder, as the new tree says (not the checkout)
-    for line in git(repo, "diff", "--name-status", "--no-renames", base, head).splitlines():
-        status, _, path = line.partition("\t")
+    changes = git(repo, "diff", "-z", "--name-status", "--no-renames", base, head).split("\0")
+    for status, path in zip(changes[0::2], changes[1::2]):
         top = path.split("/")[0]
         if status == "A" and top not in existing:
             counts[top] += 1
@@ -1006,7 +1007,7 @@ def _section_api(analysis: Analysis, caps: Caps) -> str:
         what = "code" if item.code_changed else "docstring only"
         where = item.new if item.old == item.new else f"{item.old} -> {item.new}"
         lines.append(f"- {where} ({what})")
-        lines += [f"    {_clip(text, 160)}" for text in item.diff_lines[: caps.diff_lines] if item.code_changed]
+        lines += [f"    {_clip(text, 160)}" for text in item.diff_lines[: caps.diff_lines]]
     if not diff.implementation_changes:
         lines.append("- none")
     if diff.private_changed:

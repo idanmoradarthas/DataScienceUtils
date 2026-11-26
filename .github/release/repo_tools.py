@@ -32,10 +32,10 @@ MAX_LIST_ROWS = 120
 MAX_SEARCH_RESULTS = 30
 MAX_LOG_ROWS = 40
 MAX_SYMBOL_MATCHES = 8
-SHORT_HASH = 8  # length of the commit hashes shown to the model; any prefix of 4 or more characters is accepted
-FOOTER_CHARS = 100  # room kept in a page for the line that says how to continue
+SHORT_HASH = 8  # length of the commit hashes shown to the model
+MIN_HASH_PREFIX = 4  # shortest prefix of a commit hash that is accepted
 VERSIONS = ("base", "head")
-COMMIT_ID = re.compile(r"^(?:#?(\d{1,6})|([0-9a-fA-F]{4,40}))$")
+COMMIT_ID = re.compile(r"^(?:#(?P<explicit>\d{1,6})|(?P<plain>\d{1,6})|(?P<hex>[0-9a-fA-F]{4,40}))$")
 DRIVE_LETTER = re.compile(r"^[A-Za-z]:")
 ELLIPSIS = "..."
 
@@ -175,7 +175,9 @@ def _page(lines: list[str], start: int, count: int, *, numbered: bool, limit: in
         return f"(no more lines; the text has {total} lines)"
     last = min(start - 1 + count, total)
     width = len(str(last))
-    budget = max(limit - FOOTER_CHARS, limit // 2)
+    # The longest footer this page can get (all lines shown), so the body can never take the room the footer needs.
+    footer_size = len(f"[lines {start}-{last} of {total}; call again with start_line={last + 1} for more]") + 1
+    budget = max(limit - footer_size, 1)
     body: list[str] = []
     size = 0
     for number in range(start, last + 1):
@@ -183,7 +185,7 @@ def _page(lines: list[str], start: int, count: int, *, numbered: bool, limit: in
         if body and size + len(text) + 1 > budget:
             break
         if len(text) > budget:  # one very long line (minified or generated text) still has to fit
-            text = text[: budget - len(ELLIPSIS)] + ELLIPSIS
+            text = text[: budget - len(ELLIPSIS)] + ELLIPSIS if budget > len(ELLIPSIS) else text[:budget]
         body.append(text)
         size += len(text) + 1
     end = start - 1 + len(body)
@@ -207,6 +209,16 @@ def _cap(text: str, limit: int) -> str:
     if line_end >= room // 2:
         head = head[:line_end]
     return (head + note)[:limit]
+
+
+def _import_note(symbol: cp.Symbol, outcome: str) -> str:
+    """Say whether the old import of a symbol still works at head, from :func:`context_pack.resolve_import`."""
+    statement = f"from {symbol.module} import {symbol.name}"
+    if outcome == "ok":
+        return f" ('{statement}' still works at head, so users are not affected)"
+    if outcome == "unknown":
+        return f" (cannot tell whether '{statement}' still works: the module resolves names dynamically)"
+    return ""
 
 
 def _parse_name_status(raw: str) -> dict[str, tuple[str, str]]:
@@ -404,16 +416,25 @@ class RepoTools:
         match = COMMIT_ID.match(value)
         if not match:
             raise ToolError("number must be a pull request number such as 162 or a commit hash")
+        plain = match.group("plain") or ""
+        number = match.group("explicit") or plain
+        # Digits alone can be a pull request number or the start of a hash; '#162' is always a pull request.
+        prefix = (match.group("hex") or (plain if len(plain) >= MIN_HASH_PREFIX else "")).lower()
         commits = self._range_commits([])
-        prefix = (match.group(2) or "").lower()
-        found = None
-        for sha, subject in commits:
-            numbers = cp.PR_SUFFIX.findall(subject)
-            if (match.group(1) and match.group(1) in numbers) or (prefix and sha.startswith(prefix)):
-                found = sha
-                break
-        if found is None:
+        by_number = [sha for sha, subject in commits if number and number in cp.PR_SUFFIX.findall(subject)][:1]
+        by_prefix = [sha for sha, _ in commits if prefix and sha.startswith(prefix)]
+        candidates = list(dict.fromkeys([*by_number, *by_prefix]))
+        if not candidates:
             return f"(no pull request '{value}' in this release; use commit_log to list them)"
+        if len(candidates) > 1:
+            subjects = dict(commits)
+            rows = [f"{sha[:SHORT_HASH]}  {subjects[sha]}" for sha in candidates[:MAX_SYMBOL_MATCHES]]
+            return (
+                f"'{value}' fits more than one pull request of this release:\n"
+                + "\n".join(rows)
+                + "\nwrite '#' and the number for a pull request number, or more characters of the hash"
+            )
+        found = candidates[0]
         subject, _, body = self._git("show", "-s", "--format=%s%x1f%b", found).partition("\x1f")
         status = _parse_name_status(self._git("diff", "--name-status", "-z", "-M", f"{found}^1", found))
         files = [f"{letter}  {path}" for path, (letter, _) in sorted(status.items())]
@@ -444,9 +465,14 @@ class RepoTools:
         if not matches:
             # An exact name that only the previous release has is a removal; a partial match must not hide that.
             matches = [s for s in head.symbols.values() if name.lower() in s.name.lower()]
-            earlier = [s.qualname for s in base.symbols.values() if s.name == name]
+            earlier = sorted((s for s in base.symbols.values() if s.name == name), key=lambda item: item.qualname)
             if earlier:
-                answer = f"'{name}' is not public any more; the previous release had {', '.join(earlier)}"
+                # The definition is gone from the public modules, but the old import can still work (re-export).
+                outcomes = [cp.resolve_import(head, s.module, s.name) for s in earlier]
+                broken = all(outcome not in {"ok", "unknown"} for outcome in outcomes)
+                listing = ", ".join(s.qualname + _import_note(s, outcome) for s, outcome in zip(earlier, outcomes))
+                headline = "is not public any more" if broken else "is no longer defined in a public module"
+                answer = f"'{name}' {headline}; the previous release had {listing}"
                 if matches:
                     similar = sorted(s.qualname for s in matches)[:MAX_SYMBOL_MATCHES]
                     answer += f"\nsimilar names at head: {', '.join(similar)}"

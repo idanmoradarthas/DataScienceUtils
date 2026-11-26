@@ -347,6 +347,7 @@ def test_agent_mode_gives_the_model_tools_and_reports_the_steps(
     report = json.loads((tmp_path / "out" / "run_report.json").read_text(encoding="utf-8"))
     assert [step["name"] for step in report["agent"]["steps"]] == ["changed_files", "find_symbol"]
     assert report["agent"]["stop_reason"] == "explored"
+    assert report["agent"]["dropped_tool_calls"] == 0
 
 
 def test_a_model_without_the_tools_capability_falls_back_to_the_pack(

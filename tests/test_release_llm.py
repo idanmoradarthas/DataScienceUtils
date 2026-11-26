@@ -80,6 +80,8 @@ def _git(repo: Path, *args: str) -> None:
             "-c",
             "commit.gpgsign=false",
             "-c",
+            "tag.gpgsign=false",
+            "-c",
             "core.autocrlf=false",
             *args,
         ],
@@ -258,17 +260,29 @@ def test_an_error_body_that_cannot_be_read_still_gives_an_llm_error_with_the_sta
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
     listener.listen(1)
+    listener.settimeout(5)
+
+    def read_until(connection: socket.socket, done) -> bytes | None:
+        """Read from the client until ``done(data)``; None when the client closed the connection first."""
+        data = b""
+        while not done(data):
+            chunk = connection.recv(4096)
+            if not chunk:
+                return None
+            data += chunk
+        return data
 
     def serve() -> None:
         connection, _ = listener.accept()
         with connection:
-            request = b""
-            while b"\r\n\r\n" not in request:
-                request += connection.recv(4096)
+            connection.settimeout(5)
+            request = read_until(connection, lambda data: b"\r\n\r\n" in data)
+            if request is None:
+                return
             head, _, body = request.partition(b"\r\n\r\n")
             length = int(re.search(rb"content-length:\s*(\d+)", head, re.IGNORECASE).group(1))
-            while len(body) < length:
-                body += connection.recv(4096)
+            if read_until(connection, lambda data: len(body + data) >= length) is None:
+                return
             connection.sendall(
                 b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 100\r\nConnection: close\r\n\r\ncut"
             )
@@ -364,6 +378,44 @@ def test_no_retry_is_sent_when_not_even_the_correction_fits_the_window():
     assert len(requests) == 1
     assert "after 1 attempt(s)" in message
     assert "no room left in the context window" in message
+
+
+def test_a_third_attempt_is_sized_from_the_original_conversation_not_from_the_second_request():
+    """Every corrective request is rebuilt from the original messages, so the first correction does not count."""
+
+    def responder(payload, server):
+        reported = 6000 if len(payload["messages"]) == 1 else 7150  # the longer request reads 1150 tokens more
+        return fo.reply("oops", prompt_tokens=reported, output_tokens=800)
+
+    with _plain_server(responder) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=8192, num_predict=1024)
+        with pytest.raises(lc.LLMError) as caught:
+            client.chat_json_messages([{"role": "user", "content": "question"}], ANSWER_SCHEMA, attempts=3)
+    assert [len(request["messages"]) for request in server.requests] == [1, 3, 3]
+    assert "after 3 attempt(s)" in str(caught.value)
+    assert "no room left" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "tool_calls",
+    [[None], ["search"], [{"function": "search"}], "search", {"function": {}}, 5],
+    ids=lambda value: str(value),
+)
+def test_a_tool_call_that_is_not_an_object_is_an_llm_error(tool_calls):
+    """The generator turns an LLMError into its model-error exit; an AttributeError would be a traceback."""
+    reply = {"message": {"role": "assistant", "tool_calls": tool_calls}, "done": True}
+    with _plain_server(lambda payload, server: reply) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host)
+        with pytest.raises(lc.LLMError, match="tool"):
+            client.chat([{"role": "user", "content": "hi"}])
+
+
+def test_a_reply_message_that_is_not_an_object_is_an_llm_error():
+    """``message`` must be an object like the rest of the reply."""
+    with _plain_server(lambda payload, server: {"message": "text", "done": True}) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host)
+        with pytest.raises(lc.LLMError, match="not an object"):
+            client.chat([{"role": "user", "content": "hi"}])
 
 
 def test_json_inside_a_code_fence_is_accepted():
@@ -584,6 +636,15 @@ def test_one_huge_line_is_clipped_and_the_page_still_continues(edge_repo: Path):
     assert small.call("read_file", {"path": "docs/long.txt", "start_line": 2}).splitlines()[0].endswith("second")
 
 
+def test_a_page_keeps_the_room_its_footer_needs_even_when_the_limit_is_tiny(edge_repo: Path):
+    """The footer says where to continue; the body gets what is left of the limit, not a fixed share."""
+    tiny = rt.RepoTools(edge_repo, "1.0.0", "HEAD", "pkg", max_output_chars=100)
+    page = tiny.call("read_file", {"path": "docs/long.txt"})
+    assert len(page) <= 100
+    assert page.splitlines()[-1] == "[lines 1-1 of 2; call again with start_line=2 for more]"
+    assert "second" in tiny.call("read_file", {"path": "docs/long.txt", "start_line": 2})
+
+
 def test_a_name_that_was_removed_is_reported_even_when_a_longer_name_contains_it(edge_repo: Path):
     """``plot`` is gone and ``plot_more`` is new: the answer must not present the partial match as the symbol."""
     tools = rt.RepoTools(edge_repo, "1.0.0", "HEAD", "pkg")
@@ -593,6 +654,36 @@ def test_a_name_that_was_removed_is_reported_even_when_a_longer_name_contains_it
     assert "NEW" not in answer
     assert "NEW in this release" in tools.call("find_symbol", {"name": "plot_more"})
     assert "plot_more" in tools.call("find_symbol", {"name": "more"})  # still a partial match when nothing was removed
+
+
+def test_a_name_whose_old_import_still_works_is_not_reported_as_removed(tmp_path: Path):
+    """``plot`` moved to a private module and is re-exported, so ``from pkg.plots import plot`` keeps working."""
+    repo = tmp_path / "reexport"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    body = "def {}(values):\n    return values\n"
+    _commit(
+        repo,
+        "Initial release",
+        {"pkg/__init__.py": "", "pkg/plots.py": body.format("plot"), "pkg/lazy.py": body.format("draw")},
+    )
+    _git(repo, "tag", "1.0.0")
+    _commit(
+        repo,
+        "Move the implementations (#2)",
+        {
+            "pkg/_impl.py": body.format("plot"),
+            "pkg/plots.py": "from ._impl import plot\n",
+            "pkg/lazy.py": "def __getattr__(name):\n    raise AttributeError(name)\n",
+        },
+    )
+    tools = rt.RepoTools(repo, "1.0.0", "HEAD", "pkg")
+    answer = tools.call("find_symbol", {"name": "plot"})
+    assert "'from pkg.plots import plot' still works at head, so users are not affected" in answer
+    assert "not public any more" not in answer
+    dynamic = tools.call("find_symbol", {"name": "draw"})
+    assert "cannot tell whether 'from pkg.lazy import draw' still works" in dynamic
+    assert "not public any more" not in dynamic
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the file name is written with git plumbing and needs a quote sign")
@@ -616,6 +707,34 @@ def test_a_pull_request_is_found_by_number_full_hash_or_a_prefix_of_it(tool_repo
     assert f"{full[:8]}  Move the helper (#24)" in tools.call("commit_log", {})
     for value in ("#24", "24", full, full[:8], full[:8].upper(), full[:12]):
         assert tools.call("show_pull_request", {"number": value}).startswith("Move the helper (#24)"), value
+
+
+def test_digits_can_be_a_hash_prefix_a_pull_request_number_or_both(tmp_path: Path):
+    """A hash can start with four digits: ``1234`` is then both; ``#1234`` is always the pull request."""
+    repo = tmp_path / "digits"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "Initial release", {"pkg/__init__.py": ""})
+    _git(repo, "tag", "1.0.0")
+    for number in range(1, 300):  # about one hash in seven starts with four decimal digits
+        _commit(repo, f"Change {number} (#{number})", {f"pkg/m{number}.py": f"value = {number}\n"})
+        sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+        if sha[:4].isdigit():
+            break
+    digits = sha[:4]
+    assert digits.isdigit()
+    tools = rt.RepoTools(repo, "1.0.0", "HEAD", "pkg")
+    assert tools.call("show_pull_request", {"number": digits}).startswith(f"Change {number} (#{number})")
+    assert "no pull request" in tools.call("show_pull_request", {"number": f"#{digits}"})
+    _commit(repo, f"Another change (#{digits})", {"pkg/other.py": "value = 0\n"})
+    tools = rt.RepoTools(repo, "1.0.0", "HEAD", "pkg")
+    both = tools.call("show_pull_request", {"number": digits})
+    assert "fits more than one pull request" in both
+    assert f"{sha[:8]}  Change {number} (#{number})" in both
+    assert tools.call("show_pull_request", {"number": f"#{digits}"}).startswith("Another change")
+    assert tools.call("show_pull_request", {"number": sha[:8]}).startswith(f"Change {number} (#{number})")
 
 
 def test_refs_are_resolved_once_to_commit_hashes(tool_repo: Path):
@@ -793,29 +912,121 @@ def test_agent_skips_the_exploration_when_only_the_answer_fits_the_window(releas
     assert "tools" not in requests[0]
 
 
-def test_agent_does_not_fetch_more_results_of_one_batch_than_the_window_can_hold(tool_repo: Path):
-    """Ten tool calls in one model message: the ones that would overflow the window are not run."""
-    batch = [("read_file", {"path": "docs/manual.md", "start_line": number}) for number in range(1, 11)]
+def _reserve(client: lc.OllamaClient) -> int:
+    """Return the tokens the final request needs after the conversation, as the loop counts them."""
+    return client.options["num_predict"] + lc.estimate_tokens(agent.FINAL_INSTRUCTION) + agent.ANSWER_SLACK_TOKENS
+
+
+def _scripted(first: dict):
+    """Build a responder: ``first`` answers every exploration request, valid JSON answers the final one."""
 
     def responder(payload, server):
         if payload.get("format"):
             return fo.reply(json.dumps({"function": "f", "first_parameter": "p"}))
-        if not any(message["role"] == "tool" for message in payload["messages"]):
-            return fo.reply(tool_calls=batch, prompt_tokens=1500, output_tokens=20)
-        return fo.reply("done")
+        return first
 
+    return responder
+
+
+def _prompt_leaving(client: lc.OllamaClient, room: int, output_tokens: int = 20) -> int:
+    """Return the prompt size to report so that ``room`` tokens are left in the window after the first answer."""
+    return client.num_ctx - _reserve(client) - room - output_tokens
+
+
+def _agent_run(tool_repo: Path, responder, **client_options):
+    """Run the loop against ``responder`` with default tools; return the run, the requests and the client."""
     with fo.FakeOllama(responder) as server:
-        client = lc.OllamaClient("fake:1b", host=server.host, num_ctx=8192)
-        run = agent.run_agent(
-            client, rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg"), "s", "u", SCHEMA, log=lambda _m: None
-        )
-    final = server.requests[-1]["messages"]
-    tool_messages = [message for message in final if message["role"] == "tool"]
-    executed = [step for step in run.steps if not step.failed]
-    assert run.stop_reason == "context_budget"
-    assert 0 < len(executed) < 10
-    assert [message["content"] for message in tool_messages[len(executed) :]] == [agent.NO_ROOM_NOTICE] * (
-        10 - len(executed)
+        client = lc.OllamaClient("fake:1b", host=server.host, **client_options)
+        tools = rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg")
+        run = agent.run_agent(client, tools, "s", "u", SCHEMA, log=lambda _m: None)
+    return run, server.requests, client, tools
+
+
+def _messages_after_exploration(requests: list[dict]) -> tuple[dict, list[dict]]:
+    """Return the assistant message with the tool calls and the tool messages of the final request."""
+    history = requests[-1]["messages"]
+    assistant = next((message for message in history if message.get("tool_calls")), {})
+    return assistant, [message for message in history if message["role"] == "tool"]
+
+
+BATCHES = {
+    "distinct calls": [("read_file", {"path": "docs/manual.md", "start_line": number}) for number in range(1, 101)],
+    "calls with broken arguments": [(f"tool_{number}", "{not json") for number in range(100)],
+    "the same call again and again": [("changed_files", {})] * 100,
+}
+
+
+@pytest.mark.parametrize("batch", BATCHES.values(), ids=BATCHES.keys())
+def test_a_large_batch_never_pushes_the_final_request_past_the_window(tool_repo: Path, batch: list):
+    """Results, errors and repeat notices are all admitted against the window; the rest of the batch is removed."""
+    client_probe = lc.OllamaClient("fake:1b", num_ctx=8192)
+    tool_tokens = lc.estimate_tokens("x" * 6000) + lc.MESSAGE_OVERHEAD_TOKENS
+    prompt_tokens = _prompt_leaving(client_probe, room=tool_tokens + 60)
+    first = fo.reply(tool_calls=batch, prompt_tokens=prompt_tokens, output_tokens=20)
+    run, requests, client, _ = _agent_run(tool_repo, _scripted(first), num_ctx=8192)
+    assistant, tool_messages = _messages_after_exploration(requests)
+    assert run.stop_reason in {"context_budget", "stuck_repeating"}  # the repeats of the last batch may end it first
+    assert 0 < len(tool_messages) < len(batch)
+    assert run.dropped_calls == len(batch) - len(tool_messages) == len(batch) - len(run.steps)
+    assert len(assistant["tool_calls"]) == len(tool_messages)  # no call is left without its answer
+    tokens = prompt_tokens + 20 + sum(lc.estimate_message_tokens(message) for message in tool_messages)
+    assert tokens + _reserve(client) <= client.num_ctx
+    assert requests[-1]["messages"][-1]["content"] == agent.FINAL_INSTRUCTION
+
+
+def test_a_batch_that_has_no_room_for_a_single_answer_leaves_no_trace_in_the_history(tool_repo: Path):
+    """The model's message with its calls is removed entirely when none of them can be answered."""
+    client_probe = lc.OllamaClient("fake:1b", num_ctx=8192)
+    first = fo.reply(
+        tool_calls=[("changed_files", {}), ("commit_log", {})],
+        prompt_tokens=_prompt_leaving(client_probe, room=10),
+        output_tokens=20,
     )
-    tokens = 1500 + 20 + sum(agent._message_tokens(message) for message in tool_messages)
-    assert tokens + agent.estimate_tokens(agent.FINAL_INSTRUCTION) + client.options["num_predict"] <= client.num_ctx
+    run, requests, _, _ = _agent_run(tool_repo, _scripted(first), num_ctx=8192)
+    assert (run.stop_reason, run.steps, run.dropped_calls) == ("context_budget", [], 2)
+    assert [message["role"] for message in requests[-1]["messages"]] == ["system", "user", "user"]
+
+
+def test_a_long_exploration_reply_without_tool_calls_is_not_sent_back_in_the_final_request(tool_repo: Path):
+    """Free text that does not fit next to the final answer stays in the report only; a short one stays in the chat."""
+    client_probe = lc.OllamaClient("fake:1b", num_ctx=8192)
+    long_text = "the model thinks aloud " * 100
+    too_long = fo.reply(long_text, prompt_tokens=_prompt_leaving(client_probe, room=100), output_tokens=500)
+    run, requests, _, _ = _agent_run(tool_repo, _scripted(too_long), num_ctx=8192)
+    assert run.stop_reason == "explored"
+    assert run.exploration_note == long_text
+    assert [message["role"] for message in requests[-1]["messages"]] == ["system", "user", "user"]
+    short = fo.reply("I have seen enough.", prompt_tokens=1000, output_tokens=10)
+    run, requests, _, _ = _agent_run(tool_repo, _scripted(short), num_ctx=8192)
+    assert [message["role"] for message in requests[-1]["messages"]] == ["system", "user", "assistant", "user"]
+
+
+def test_the_tool_definitions_count_against_the_window_before_the_first_exploration_request(tool_repo: Path):
+    """A prompt that leaves room for one tool result but not for the tool definitions as well skips the exploration."""
+    tools = rt.RepoTools(tool_repo, "1.0.0", "HEAD", "pkg")
+    client = lc.OllamaClient("fake:1b", num_ctx=8192)
+    schema_tokens = lc.estimate_tokens(json.dumps(tools.schemas()))
+    tool_tokens = lc.estimate_tokens("x" * tools.max_output_chars) + lc.MESSAGE_OVERHEAD_TOKENS
+    fits_without_definitions = client.num_ctx - _reserve(client) - tool_tokens  # largest prompt, definitions ignored
+
+    def system_for(prompt_tokens: int) -> str:
+        """Return a system text that makes the whole first prompt about ``prompt_tokens`` long, not more."""
+        size = int(prompt_tokens * lc.CHARS_PER_TOKEN)
+        while sum(lc.estimate_message_tokens({"content": text}) for text in ("s" * size, "u")) > prompt_tokens:
+            size -= 1
+        return "s" * size
+
+    def rounds(prompt_tokens: int) -> int:
+        with fo.FakeOllama(_scripted(fo.reply("seen enough", prompt_tokens=100))) as srv:
+            run = agent.run_agent(
+                lc.OllamaClient("fake:1b", host=srv.host, num_ctx=8192),
+                tools,
+                system_for(prompt_tokens),
+                "u",
+                SCHEMA,
+                log=lambda _m: None,
+            )
+        return run.rounds
+
+    assert rounds(fits_without_definitions) == 0  # the old check would have explored here
+    assert rounds(fits_without_definitions - schema_tokens) == 1  # and exactly here the definitions fit as well
