@@ -398,8 +398,22 @@ def test_a_third_attempt_is_sized_from_the_original_conversation_not_from_the_se
 
 @pytest.mark.parametrize(
     "tool_calls",
-    [[None], ["search"], [{"function": "search"}], "search", {"function": {}}, 5],
-    ids=lambda value: str(value),
+    [
+        [None],
+        ["search"],
+        [{}],
+        [{"function": None}],
+        [{"function": []}],
+        [{"function": "search"}],
+        "search",
+        "",
+        0,
+        5,
+        False,
+        {},
+        {"function": {}},
+    ],
+    ids=repr,
 )
 def test_a_tool_call_that_is_not_an_object_is_an_llm_error(tool_calls):
     """The generator turns an LLMError into its model-error exit; an AttributeError would be a traceback."""
@@ -410,12 +424,33 @@ def test_a_tool_call_that_is_not_an_object_is_an_llm_error(tool_calls):
             client.chat([{"role": "user", "content": "hi"}])
 
 
-def test_a_reply_message_that_is_not_an_object_is_an_llm_error():
-    """``message`` must be an object like the rest of the reply."""
-    with _plain_server(lambda payload, server: {"message": "text", "done": True}) as server:
+@pytest.mark.parametrize("message", ["text", "", [], 0, 7, False], ids=repr)
+def test_a_reply_message_that_is_not_an_object_is_an_llm_error(message):
+    """``message`` must be an object like the rest of the reply, whatever the value is."""
+    with _plain_server(lambda payload, server: {"message": message, "done": True}) as server:
         client = lc.OllamaClient("fake:1b", host=server.host)
         with pytest.raises(lc.LLMError, match="not an object"):
             client.chat([{"role": "user", "content": "hi"}])
+
+
+@pytest.mark.parametrize(
+    ("reply", "content"),
+    [
+        ({"message": {"role": "assistant", "content": "ok"}, "done": True}, "ok"),
+        ({"message": {"role": "assistant", "content": "ok", "tool_calls": None}, "done": True}, "ok"),
+        ({"message": {"role": "assistant", "content": "ok", "tool_calls": []}, "done": True}, "ok"),
+        ({"message": None, "done": True}, ""),
+        ({"done": True}, ""),
+    ],
+    ids=["no tool_calls", "null tool_calls", "empty tool_calls", "null message", "no message"],
+)
+def test_a_reply_without_tool_calls_or_without_a_message_is_not_an_error(reply, content):
+    """Absent and ``null`` mean "nothing here"; only a value of the wrong type is a broken reply."""
+    with _plain_server(lambda payload, server: reply) as server:
+        client = lc.OllamaClient("fake:1b", host=server.host)
+        result = client.chat([{"role": "user", "content": "hi"}])
+    assert result.tool_calls == []
+    assert result.content == content
 
 
 def test_json_inside_a_code_fence_is_accepted():
@@ -985,6 +1020,32 @@ def test_a_batch_that_has_no_room_for_a_single_answer_leaves_no_trace_in_the_his
     run, requests, _, _ = _agent_run(tool_repo, _scripted(first), num_ctx=8192)
     assert (run.stop_reason, run.steps, run.dropped_calls) == ("context_budget", [], 2)
     assert [message["role"] for message in requests[-1]["messages"]] == ["system", "user", "user"]
+
+
+@pytest.mark.parametrize(
+    ("output_tokens", "kept"),
+    [(20, True), (500, False)],
+    ids=["a short reply stays", "a reply that leaves no room for the answer goes"],
+)
+def test_the_text_of_a_reply_whose_calls_were_all_dropped_is_checked_against_the_window(
+    tool_repo: Path, output_tokens: int, kept: bool
+):
+    """Without a tool result the message keeps only its text, and that text must fit next to the final answer."""
+    client_probe = lc.OllamaClient("fake:1b", num_ctx=8192)
+    text = "I will look at the changed files first. " * 5
+    first = fo.reply(
+        text,
+        tool_calls=[("changed_files", {})],
+        prompt_tokens=_prompt_leaving(client_probe, room=100),  # a result (up to 6000 characters) cannot fit
+        output_tokens=output_tokens,
+    )
+    run, requests, _, _ = _agent_run(tool_repo, _scripted(first), num_ctx=8192)
+    assert (run.stop_reason, run.steps, run.dropped_calls) == ("context_budget", [], 1)
+    history = requests[-1]["messages"]
+    assert [message["role"] for message in history] == ["system", "user"] + (["assistant"] if kept else []) + ["user"]
+    if kept:
+        assert history[2]["content"] == text
+        assert "tool_calls" not in history[2]
 
 
 def test_a_long_exploration_reply_without_tool_calls_is_not_sent_back_in_the_final_request(tool_repo: Path):

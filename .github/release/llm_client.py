@@ -165,15 +165,18 @@ class Usage:
 def _tool_calls(message: dict[str, Any]) -> list[ToolCall]:
     """Read ``message.tool_calls``; arguments may arrive as an object or as a JSON string.
 
-    Raises :class:`LLMError` when the server sent a tool call that is not an object with a ``function`` object: that
-    is a broken reply, not a mistake of the model, so there is nothing to tell the model about it.
+    A missing ``tool_calls`` and ``null`` mean "no calls". Anything else that is not a list of objects with a
+    ``function`` object raises :class:`LLMError`: that is a broken reply, not a mistake of the model, so there is
+    nothing to tell the model about it.
     """
-    entries = message.get("tool_calls") or []
+    entries = message.get("tool_calls")
+    if entries is None:
+        return []
     if not isinstance(entries, list):
         raise LLMError("The server sent tool_calls that are not a list")
     calls: list[ToolCall] = []
     for entry in entries:
-        function = (entry.get("function") or {}) if isinstance(entry, dict) else None
+        function = entry.get("function") if isinstance(entry, dict) else None
         if not isinstance(function, dict):
             raise LLMError("The server sent a tool call that is not an object with a 'function' object")
         raw = function.get("arguments") or {}
@@ -336,7 +339,9 @@ class OllamaClient:
             payload["think"] = self.think
         started = time.monotonic()
         response = self._post_chat(payload)
-        reply = response.get("message") or {}
+        reply = response.get("message")
+        if reply is None:  # an answer without a message is an empty one
+            reply = {}
         if not isinstance(reply, dict):
             raise LLMError("The server sent a message that is not an object")
         message = dict(reply)
@@ -345,7 +350,7 @@ class OllamaClient:
         if calls:
             # The message goes back to the server in the next request, which wants arguments as an object, not text.
             message["tool_calls"] = [
-                {**entry, "function": {**(entry.get("function") or {}), "arguments": call.arguments}}
+                {**entry, "function": {**entry["function"], "arguments": call.arguments}}
                 for entry, call in zip(message["tool_calls"], calls)
             ]
         result = ChatResult(

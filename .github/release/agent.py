@@ -179,9 +179,11 @@ def run_agent(
             kept = {**result.message, "tool_calls": result.message["tool_calls"][:handled]}
             if handled:
                 messages[answer_at] = kept
-            elif kept.get("content"):
+            elif kept.get("content") and used + reserve <= client.num_ctx:  # the test of a reply without tool calls
                 messages[answer_at] = {key: value for key, value in kept.items() if key != "tool_calls"}
             else:
+                if kept.get("content"):
+                    log("[agent] the reply text is left out of the final request: it does not fit the window")
                 del messages[answer_at]
             log(f"[agent] round {round_number}: {dropped} tool call(s) not run, their answers would not fit the window")
         if repeats >= MAX_REPEATS_IN_A_ROW:
