@@ -132,52 +132,9 @@ if [ ! -f "$GGUF_PATH" ]; then
   echo "✓ GGUF verified and saved to $GGUF_PATH"
 fi
 
-# 2. Install Ollama if not present or version mismatch
-if ! command -v ollama >/dev/null 2>&1; then
-  echo "Installing Ollama $OLLAMA_VERSION ..."
-  OLLAMA_TAR_URL="https://github.com/ollama/ollama/releases/download/$OLLAMA_VERSION/ollama-linux-amd64.tar.zst"
-  OLLAMA_ARCHIVE="$MODELS_CACHE_DIR/ollama-linux-amd64.tar.zst"
-  curl -L -f -s "$OLLAMA_TAR_URL" -o "$OLLAMA_ARCHIVE"
-  ACTUAL_TAR_SHA=$(sha256sum "$OLLAMA_ARCHIVE" | awk '{print $1}')
-  if [ "$ACTUAL_TAR_SHA" != "$OLLAMA_LINUX_AMD64_SHA256" ]; then
-    echo "Error: Ollama archive sha256 verification failed!" >&2
-    echo "  Expected: $OLLAMA_LINUX_AMD64_SHA256" >&2
-    echo "  Actual:   $ACTUAL_TAR_SHA" >&2
-    exit 1
-  fi
-  mkdir -p "$HOME/.local/bin" "$HOME/.local/lib/ollama"
-  tar --zstd -xf "$OLLAMA_ARCHIVE" -C "$HOME/.local"
-  export PATH="$HOME/.local/bin:$PATH"
-fi
-
-# 3. Start Ollama server in background if not already running
-export OLLAMA_HOST="${OLLAMA_HOST:-127.0.0.1:11434}"
-export OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-1}"
-export OLLAMA_MAX_LOADED_MODELS="${OLLAMA_MAX_LOADED_MODELS:-2}"
-export OLLAMA_KEEP_ALIVE="${OLLAMA_KEEP_ALIVE:-30m}"
-
-if ! curl -s "http://$OLLAMA_HOST/api/version" >/dev/null 2>&1; then
-  echo "Starting Ollama server on $OLLAMA_HOST in background..."
-  OLLAMA_LOG="${OLLAMA_LOG:-$MODELS_CACHE_DIR/ollama_server.log}"
-  ollama serve > "$OLLAMA_LOG" 2>&1 &
-  SERVER_PID=$!
-  echo "Ollama server started (PID $SERVER_PID). Waiting for ready..."
-
-  RETRIES=30
-  until curl -s "http://$OLLAMA_HOST/api/version" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
-    sleep 1
-    RETRIES=$((RETRIES - 1))
-  done
-
-  if [ $RETRIES -eq 0 ]; then
-    echo "Error: Ollama server failed to start within 30 seconds." >&2
-    [ -f "$OLLAMA_LOG" ] && cat "$OLLAMA_LOG" >&2
-    exit 1
-  fi
-  echo "✓ Ollama server is responding."
-fi
-
-echo "Ollama version: $(ollama --version 2>&1 || true)"
+# 2. Install the pinned Ollama and start its server (shared with the release workflows; the pin is in pins.env)
+# shellcheck source=.github/tier2/install_ollama.sh
+source "$SCRIPT_DIR/install_ollama.sh"
 
 # Check TIER2_EMBED_ADD_BOS mode
 TIER2_EMBED_ADD_BOS="${TIER2_EMBED_ADD_BOS:-disabled}"

@@ -1,5 +1,7 @@
 """Tests for the generate_error_analysis_report function."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -189,3 +191,16 @@ def test_generate_error_analysis_report_is_error_collision():
     assert report.iloc[0]["feature"] == "is_error"
     assert report.iloc[0]["group"] == "feat_val"
     assert report.iloc[0]["error_count"] == 1
+
+
+def test_generate_error_analysis_report_no_inplace_deprecation_warning():
+    """Test that no pandas ``inplace`` deprecation warning is raised (pandas 3.1 deprecates ``inplace=True``)."""
+    X = pd.DataFrame({"num": [1, 2, 11, 12], "cat": ["A", "A", "B", "B"]})
+    y_true = np.array([0, 0, 1, 1])
+    y_pred = np.array([0, 1, 1, 1])
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message=".*inplace.*", category=DeprecationWarning)
+        report = generate_error_analysis_report(X, y_true, y_pred)
+
+    assert not report.empty

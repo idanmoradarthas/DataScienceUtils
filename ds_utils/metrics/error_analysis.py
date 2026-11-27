@@ -84,7 +84,7 @@ def generate_error_analysis_report(
             .agg(count=("__is_error__", "size"), error_count=("__is_error__", "sum"))
             .reset_index()
         )
-        report.rename(columns={col: "group"}, inplace=True)
+        report = report.rename(columns={col: "group"})
         report["feature"] = col
         report["error_rate"] = report["error_count"] / report["count"]
         report["accuracy"] = 1 - report["error_rate"]

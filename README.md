@@ -11,6 +11,7 @@
 ![Build Status](https://github.com/idanmoradarthas/DataScienceUtils/actions/workflows/test.yml/badge.svg?branch=master)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![codecov](https://codecov.io/gh/idanmoradarthas/DataScienceUtils/graph/badge.svg?token=GRQ86SNBNY)](https://codecov.io/gh/idanmoradarthas/DataScienceUtils)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/idanmoradarthas/DataScienceUtils)](https://coderabbit.ai)
 
 Data Science Utils extends the Scikit-Learn API and Matplotlib API to provide simple methods that simplify tasks and
 visualizations for data science projects.

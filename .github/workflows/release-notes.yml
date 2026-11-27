@@ -1,0 +1,196 @@
+# Release chain, step 1 of the release process: draft the CHANGELOG section and the release title.
+#
+# The workflows of the release are numbered in the name, so the Actions sidebar lists them in the order to run them:
+#   1. Release - Draft release notes   (this one: a model served by Ollama writes the notes; nothing is published)
+#   2. ...                             (later: build and publish the packages)
+#
+# The run prints the result to the log between "===== RELEASE (copy from here) =====" and "===== END =====" and puts it
+# in the job summary. Nothing is committed, tagged or published, and no secret is used: the job has read access only.
+#
+# The runner is a GitHub-hosted ubuntu-latest machine (4 vCPUs, 16 GB RAM, no GPU for public repositories), so the model
+# runs on the CPU. The settings below follow the Ollama FAQ: flash attention, one request at a time (each parallel slot
+# multiplies the memory of the context window), one model loaded, and the context window set to what is asked for.
+# Ollama is installed by .github/tier2/install_ollama.sh, the same script and the same pinned version (pins.env) as the
+# Tier 2 skills workflow.
+
+name: "1. Release - Draft release notes (run first)"
+run-name: "Draft release notes with ${{ inputs.model }} (${{ inputs.mode }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Ollama model that writes the notes, for example granite4.1:3b or phi4-mini:3.8b"
+        required: true
+        type: string
+      mode:
+        description: "pack = the changes are attached, agent = the model explores the repository with tools, hybrid = both"
+        required: true
+        type: choice
+        options:
+          - hybrid
+          - pack
+          - agent
+        default: hybrid
+      num_ctx:
+        description: "Context window in tokens (its memory grows with the size; use q8_0 or q4_0 below for 65536 and more)"
+        required: true
+        type: choice
+        options:
+          - "32768"
+          - "16384"
+          - "65536"
+          - "131072"
+          - "8192"
+        default: "32768"
+      kv_cache:
+        description: "Precision of the context memory: f16 = best, q8_0 = half the memory, q4_0 = a quarter"
+        required: true
+        type: choice
+        options:
+          - f16
+          - q8_0
+          - q4_0
+        default: f16
+      threads:
+        description: "CPU threads for the model (empty = all vCPUs of the runner, 0 = let Ollama decide)"
+        required: false
+        type: string
+        default: ""
+      think:
+        description: "Thinking flag sent to the model (auto = not sent, for models without thinking support)"
+        required: true
+        type: choice
+        options:
+          - auto
+          - "off"
+          - "on"
+        default: auto
+      max_answer_tokens:
+        description: "Maximum tokens of the answer (thinking tokens count too)"
+        required: true
+        type: string
+        default: "4096"
+      base:
+        description: "Previous release to compare with (empty = the newest X.Y.Z tag)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-notes
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  draft:
+    name: "Draft the notes with ${{ inputs.model }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: "3h"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: ${{ inputs.kv_cache }}
+      OLLAMA_CONTEXT_LENGTH: ${{ inputs.num_ctx }}
+    steps:
+      # The inputs reach the shell only through environment variables, never inside the script text.
+      - name: Validate the inputs
+        env:
+          MODEL: ${{ inputs.model }}
+          BASE: ${{ inputs.base }}
+          THREADS: ${{ inputs.threads }}
+          MAX_TOKENS: ${{ inputs.max_answer_tokens }}
+        run: |
+          fail() { echo "::error title=Invalid input::$1"; exit 1; }
+          [[ "$MODEL" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$ ]] || fail "model must look like name:tag, for example granite4.1:3b"
+          [[ -z "$BASE" || "$BASE" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$ ]] || fail "base must be a tag or branch name, or empty"
+          [[ -z "$THREADS" || "$THREADS" =~ ^[0-9]{1,3}$ ]] || fail "threads must be a number, or empty"
+          [[ "$MAX_TOKENS" =~ ^[0-9]{3,6}$ ]] || fail "max_answer_tokens must be a number"
+          echo "Inputs are valid."
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Describe the runner
+        run: |
+          {
+            echo "### Runner"
+            echo '```'
+            echo "vCPUs: $(nproc)"
+            lscpu | grep -E '^(Model name|Thread\(s\) per core|Core\(s\) per socket|Socket\(s\)|CPU\(s\)):' || true
+            free -h | sed -n 1,3p
+            df -h / | sed -n 1,2p
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install Ollama (pinned in .github/tier2/pins.env) and start the server
+        run: OLLAMA_LOG="$RUNNER_TEMP/ollama-server.log" bash .github/tier2/install_ollama.sh
+
+      - name: Pull the model
+        env:
+          MODEL: ${{ inputs.model }}
+        run: |
+          bash .github/tier2/pull_llm.sh "$MODEL" | tee "$RUNNER_TEMP/pull.log"
+          {
+            echo "### Model"
+            echo '```'
+            grep -E "Local manifest sha256|verified against pinned|has no pinned digest|Model details" "$RUNNER_TEMP/pull.log" || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Draft the release notes
+        env:
+          MODEL: ${{ inputs.model }}
+          MODE: ${{ inputs.mode }}
+          NUM_CTX: ${{ inputs.num_ctx }}
+          MAX_TOKENS: ${{ inputs.max_answer_tokens }}
+          THINK: ${{ inputs.think }}
+          THREADS: ${{ inputs.threads }}
+          BASE: ${{ inputs.base }}
+        run: |
+          args=(
+            --repo .
+            --model "$MODEL"
+            --mode "$MODE"
+            --num-ctx "$NUM_CTX"
+            --num-predict "$MAX_TOKENS"
+            --num-thread "${THREADS:-$(nproc)}"
+            --think "$THINK"
+            --timeout 3000
+            --out-dir release-notes-out
+          )
+          if [ -n "$BASE" ]; then args+=(--base "$BASE"); fi
+          python .github/release/generate_changelog.py "${args[@]}"
+
+      - name: Show what the Ollama server reported
+        if: always()
+        run: |
+          mkdir -p release-notes-out
+          cp "$RUNNER_TEMP/ollama-server.log" "$RUNNER_TEMP/pull.log" release-notes-out/ 2>/dev/null || true
+          if [ -f release-notes-out/ollama-server.log ]; then
+            grep -iE "threads|flash|kv|layers|offload|context|memory|runner started|error|warn" release-notes-out/ollama-server.log | tail -n 60 || true
+          fi
+
+      - name: Upload the notes and the run files
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-notes-out/
+          if-no-files-found: warn
+          retention-days: 30
